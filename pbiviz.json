@@ -1,0 +1,25 @@
+{
+    "visual": {
+        "name": "timelineByQueryon",
+        "displayName": "timelineByQueryon",
+        "guid": "timelineByQueryon2DD9A171C1CB4B148AA3DD23CEF5B2F9",
+        "visualClassName": "Visual",
+        "version": "1.0.0",
+        "description": "Timeline Visual",
+        "supportUrl":  "https://queryon.com/pbiviz/timeline",
+        "gitHubUrl": ""
+    },
+    "apiVersion": "2.6.0",
+    "author": {
+        "name": "Queryon",
+        "email": "powerbi@queryon.com"
+    },
+    "assets": {
+        "icon": "assets/icon.png"
+    },
+    "externalJS": [],
+    "style": "style/visual.less",
+    "capabilities": "capabilities.json",
+    "dependencies": null,
+    "stringResources": []
+}

@@ -1,0 +1,66 @@
+{
+    "dataRoles": [
+        {
+            "displayName": "Label",
+            "name": "label",
+            "kind": "Grouping"
+        },
+        {
+            "displayName": "Date/Time",
+            "name": "date",
+            "kind": "GroupingOrMeasure"
+        }
+    ],
+    "objects": {
+        "dataPoint": {
+            "displayName": "Data colors",
+            "properties": {
+                "stagger": {
+                    "displayName": "Stagger text",
+                    "type": {
+                        "bool": true
+                    }
+                },
+                
+                "fontSize": {
+                    "displayName": "Text Size",
+                    "type": {
+                        "formatting": {
+                            "fontSize": true
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "dataViewMappings": [
+        {
+            "conditions": [
+                {
+                    "label": {
+                        "max": 1
+                    },
+                    "date": {
+                        "max": 1
+                    }
+                }
+            ],
+            "table": {
+                "rows": {
+                    "select": [
+                        {
+                            "for": {
+                                "in": "label"
+                            }
+                        },
+                        {
+                            "for": {
+                                "in": "date"
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    ]
+}
