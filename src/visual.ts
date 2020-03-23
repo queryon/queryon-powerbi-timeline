@@ -17,35 +17,28 @@ import ISelectionId = powerbi.extensibility.ISelectionId;
 import ISelectionManager = powerbi.extensibility.ISelectionManager;
 import {
   TooltipEventArgs,
-  // TooltipEnabledDataPoint,
   createTooltipServiceWrapper,
   ITooltipServiceWrapper,
 } from 'powerbi-visuals-utils-tooltiputils'
 import * as svgAnnotations from "d3-svg-annotation";
-import { VisualSettings } from "./settings";
+// import { VisualSettings } from "./settings";
 
 import * as d3 from "d3";
 type Selection<T extends d3.BaseType> = d3.Selection<T, any, any, any>;
 
 export class Visual implements IVisual {
-  //private target: HTMLElement;
-  //private updateCount: number;
-  private settings: VisualSettings;
-  // private textNode: Text;
-  private visualSettings: VisualSettings;
+
   private host: IVisualHost;
   private svg: Selection<SVGElement>;
   private container: Selection<SVGElement>;
-  private circle: Selection<SVGElement>;
-  private textValue: Selection<SVGElement>;
-  private textLabel: Selection<SVGElement>;
   private padding: number;
   private width: number;
   private height: number;
   private barHeight: number;
   private marginTop: number;
-  private minVal: number;
-  private maxVal: number;
+  private minVal: any;
+  private maxVal: any;
+  private viewModel: any;
   private selectionIdBuilder: ISelectionIdBuilder
   private selectionManager: ISelectionManager
   private tooltipServiceWrapper: ITooltipServiceWrapper;
@@ -55,7 +48,6 @@ export class Visual implements IVisual {
     this.svg = d3.select(options.element)
       .append('svg')
     this.container = this.svg.append("g")
-
     this.padding = 15;
     this.host = options.host
     this.selectionIdBuilder = this.host.createSelectionIdBuilder();
@@ -66,59 +58,65 @@ export class Visual implements IVisual {
   }
 
   public update(options: VisualUpdateOptions) {
+    this.viewModel = visualTransform(options, this.host)
+
     //set empty canva
     this.container.selectAll("g").remove();
     this.container.selectAll("rect").remove();
-    //parse data
-    let dataView: DataView = options.dataViews[0];
-    this.visualSettings = VisualSettings.parse<VisualSettings>(dataView);
-  
-    console.log(this.visualSettings)
 
-    let data = []
-    let customColors = ["rgb(186,215,57)", "rgb(0, 188, 178)", "rgb(121, 118, 118)", "rgb(105,161,151)", "rgb(78,205,196)", "rgb(166,197,207)", "rgb(215,204,182)", "rgb(67,158,157)", "rgb(122,141,45)", "rgb(162,157,167)"]
-    let textSize = 12, fontFamily = "Arial"
+    this.container.selectAll("line").remove();
+    let data = this.viewModel.dataPoints
 
-    dataView.table.rows.forEach((row, i) => {
-      let dataPoint = {}, stackedBarX, value, barValue = 0
+    // let dataView: DataView = options.dataViews[0];
+    // this.visualSettings = VisualSettings.parse<VisualSettings>(dataView);
 
-      row.forEach((cell, l) => {
-        //Store data
-        dataPoint[Object.keys(dataView.table.columns[l].roles)[0]] = cell.toString();
+    // let customColors = ["rgb(186,215,57)", "rgb(0, 188, 178)", "rgb(121, 118, 118)", "rgb(105,161,151)", "rgb(78,205,196)", "rgb(166,197,207)", "rgb(215,204,182)", "rgb(67,158,157)", "rgb(122,141,45)", "rgb(162,157,167)"]
 
-        //Store column name for additional tooltip details
-        dataPoint[`${Object.keys(dataView.table.columns[l].roles)[0]}Column`] = dataView.table.columns[l].displayName
-      });
-      //Parse date object
-      value = Date.parse(dataPoint["date"]);
-      dataPoint["dateAsInt"] = value
+    this.width = options.viewport.width;
+    this.height = options.viewport.height;
+    this.marginTop = 20
+    // this.barHeight = 30
+    let spacing = 10,
+      marginTopStagger = 20;
 
-      for (let j = i; j >= 0; j--) {
-        const previousElement = data[j];
-        if (previousElement) {
-          barValue += previousElement["dateAsInt"]
+    //Parse global formats
+    let textSize = this.viewModel.settings.textSettings.textSize,
+      fontFamily = this.viewModel.settings.textSettings.fontFamily,
+      textColor = this.viewModel.settings.textSettings.textColor.solid.color,
+      top = this.viewModel.settings.textSettings.top
+
+
+    data.forEach((dataPoint, i) => {
+      dataPoint["textColor"] = dataPoint.customFormat ? dataPoint.textColor : textColor
+      dataPoint["fontFamily"] = dataPoint.customFormat ? dataPoint.fontFamily : fontFamily
+      dataPoint["textSize"] = dataPoint.customFormat ? dataPoint.textSize : textSize
+      dataPoint["top"] = dataPoint.customFormat ? dataPoint.top : top
+      dataPoint["textWidth"] = this.getTextWidth(dataPoint["labelText"], dataPoint["textSize"], fontFamily)
+
+
+      let textHeight = this.getTextHeight(dataPoint["labelText"], dataPoint["textSize"], fontFamily)
+
+      if (spacing < textHeight) {
+        spacing = textHeight
+        if(dataPoint["top"]){
+           marginTopStagger += textHeight
         }
       }
 
-      dataPoint["selectionId"] = this.host.createSelectionIdBuilder()
-        .withTable(dataView.table, i)
+      if (dataPoint["top"]) {
+        this.marginTop = Math.max(this.marginTop, textHeight + 30)
+     
+      }
 
 
-      dataPoint["barColor"] = !dataPoint["barColor"] ? customColors[i > 10 ? i % 10 : i] : dataPoint["barColor"]
-      dataPoint["labelText"] = `${dataPoint["label"]}: ${dataPoint["date"]}`
-      dataPoint["textWidth"] = this.getTextWidth(dataPoint["labelText"], textSize, fontFamily)
-
-      data.push(dataPoint)
     })
 
 
 
-    this.width = options.viewport.width;
-    this.height = options.viewport.height;
-    this.marginTop = 40,
-      this.barHeight = 30
-    this.minVal = d3.min(data, function (d) { return d.dateAsInt })
-    this.maxVal = d3.max(data, function (d) { return d.dateAsInt })
+    marginTopStagger += (data.filter(element => element.top).length * spacing)
+
+    this.minVal = d3.min(data, function (d: any) { return d.dateAsInt })
+    this.maxVal = d3.max(data, function (d: any) { return d.dateAsInt })
 
     let scale = d3.scaleLinear()
       .domain([this.minVal, this.maxVal]) //min and max data from input
@@ -130,64 +128,63 @@ export class Visual implements IVisual {
 
     let bar
 
-    bar = this.container.selectAll('rect')
-      .data(data.sort(function (a, b) { return b.dateAsInt - a.dateAsInt }))
+    bar = this.container.append("line")
+      .attr("x1", this.padding)
+      .attr("y1", this.viewModel.settings.textSettings.stagger ? marginTopStagger : this.marginTop)
+      .attr("x2", this.width - this.padding)
+      .attr("y2", this.viewModel.settings.textSettings.stagger ? marginTopStagger : this.marginTop)
+      .attr("stroke-width", 2)
+      .attr("stroke", "black");
 
-    bar.enter()
-      .append('rect')
-      .merge(bar)
-      // .attr('class', 'bar')
-      .attr('width', d => {
-        return scale(d.dateAsInt)
-
-      })
-      .attr('class', el => `bar selector_${el.label.replace(/\W/g, '')}_${el.dateAsInt}`)
-      .attr('x', d => {
-        // console.log(d.stackedBarX)
-        return this.padding
-        // + scale(d.stackedBarX)
-
-      })
-      .attr('fill', function (d, i) {
-
-        return d.barColor
-      })
-      //.attr('fill-opacity', (d) => {
-      // if (this.highlighted) {
-      //   return d.highlight ? 1 : 0.1
-      // } else {
-      //   return 1
-      // }
-      //})
-      .attr('y', this.marginTop)
-      .attr('height', this.barHeight)
-    bar.exit().remove()
+    //   .attr('y', this.marginTop)
+    //   .attr('height', this.barHeight)
+    // bar.exit().remove()
 
 
     let annotationsData, makeAnnotations
 
 
     let type = svgAnnotations.annotationLabel
+
     let alignment = {
       "className": "custom",
+      "connector": { "end": "dot" },
       "note": { "align": "dynamic" }
     }
 
+    let countTop = 1, countBottom = 1, counter
+
     data.forEach((element, i) => {
-      element["x"] = this.padding + scale(element.dateAsInt)
+     
+      if(element.top){
+        countTop ++;
+        counter = countTop
+      } else{
+        countBottom++;
+        counter = countBottom
+      }
+      
+      element["x"] = this.padding + scale(element["dateAsInt"])
+
+
+      if (this.viewModel.settings.textSettings.stagger) {
+        element["dy"] = element.top ? spacing * (-1 * (counter)) : spacing * (counter)
+      } else {
+        element["dy"] = element.top ? -20 : 20
+      }
       alignment.note.align = this.getAnnotationOrientation(element)
-      //    element.x = this.padding + scale(element.x)
+
       annotationsData = [{
         note: {
           wrap: 900,
           label: element.labelText,
           bgPadding: 10
         },
-        x: element.x,
+        x: element["x"],
         // scale(element.dateAsInt),
-        y: this.marginTop + this.barHeight,
-        dy: 10,
-        color: element.barColor,
+        y: this.viewModel.settings.textSettings.stagger ? marginTopStagger : this.marginTop,
+        dy: element["dy"],
+        color: element.textColor,
         id: element.selectionId
       }]
 
@@ -195,12 +192,11 @@ export class Visual implements IVisual {
         .annotations(annotationsData)
         .type(new svgAnnotations.annotationCustomType(type, alignment))
 
-      //   if (this.viewModel.settings.textFormatting.annotationStyle === 'textOnly') {
-      makeAnnotations
-        .disable(["connector"])
+      //   if (this.viewModel.settings.textSettings.annotationStyle === 'textOnly') {
+      // makeAnnotations
+      //   .disable(["connector"])
 
       //   }
-
 
 
       this.container
@@ -208,8 +204,8 @@ export class Visual implements IVisual {
         // .attr('class', 'annotations')
         .attr('class', `annotation_selector_${element.label.replace(/\W/g, '')}_${element.dateAsInt} annotationSelector`)
         //.style('stroke', 'transparent')
-        .style('font-size', textSize + "px")
-        .style('font-family', fontFamily)
+        .style('font-size', element.textSize + "px")
+        .style('font-family', element.fontFamily)
         .style('background-color', 'transparent')
         // .style('text-decoration', () => {
         //   if (this.highlighted) {
@@ -265,7 +261,7 @@ export class Visual implements IVisual {
 
             this.container.selectAll('.annotationSelector').style('text-decoration', "line-through")
             d3.select(`.annotation_selector_${dataPoint.label.replace(/\W/g, '')}_${dataPoint.dateAsInt}`).style('text-decoration', "none")
-            
+
           } else {
             this.container.selectAll('.bar').style('fill-opacity', 1)
             this.container.selectAll('.annotationSelector').style('text-decoration', "none")
@@ -288,7 +284,7 @@ export class Visual implements IVisual {
       const eventTarget: EventTarget = mouseEvent.target;
       let args = []
       let dataPoint: any = d3.select(<Element>eventTarget).datum();
-
+      console.log(dataPoint)
       if (dataPoint && dataPoint.labelColumn) {
 
         args = [{
@@ -305,15 +301,11 @@ export class Visual implements IVisual {
       }
     })
 
-    // this.settings = Visual.parseSettings(options && options.dataViews && options.dataViews[0]);
-    // console.log('Visual update', options);
-    // if (this.textNode) {
-    //     this.textNode.textContent = (this.updateCount++).toString();
-    // }
   }
 
-  private static parseSettings(dataView: DataView): VisualSettings {
-    return <VisualSettings>VisualSettings.parse(dataView);
+  private static parseSettings(dataView) {
+
+    // return this.enumerateObjectInstances(this.options)
   }
 
   /**
@@ -322,13 +314,90 @@ export class Visual implements IVisual {
    *
    */
   public enumerateObjectInstances(options: EnumerateVisualObjectInstancesOptions): VisualObjectInstance[] | VisualObjectInstanceEnumerationObject {
-    const settings: VisualSettings = this.visualSettings || <VisualSettings>VisualSettings.getDefault();
-    return VisualSettings.enumerateObjectInstances(settings, options);
+
+    let objectName: string = options.objectName;
+    let objectEnumeration: VisualObjectInstance[] = [];
+
+
+    switch (objectName) {
+      case 'textSettings':
+        objectEnumeration.push({
+          objectName: objectName,
+          properties: {
+            stagger: this.viewModel.settings.textSettings.stagger,
+            top: this.viewModel.settings.textSettings.top,
+            fontFamily: this.viewModel.settings.textSettings.fontFamily,
+            textSize: this.viewModel.settings.textSettings.textSize,
+            textColor: this.viewModel.settings.textSettings.textColor
+          },
+          selector: null
+        });
+        break;
+
+
+
+      case "dataPoint":
+        for (let dataElement of this.viewModel.dataPoints) {//.sort((a, b) => (a.value > b.value) ? 1 : -1)) {
+          objectEnumeration.push({
+            objectName: objectName,
+            displayName: dataElement.label + " custom format",
+            properties: {
+              customFormat: dataElement.customFormat
+            },
+            selector: dataElement.selectionId.getSelector()
+          });
+
+
+
+          if (dataElement.customFormat) {
+
+            objectEnumeration.push({
+              objectName: objectName,
+              displayName: dataElement.label + " Label on top",
+              properties: {
+                top: dataElement.top
+              },
+              selector: dataElement.selectionId.getSelector()
+            });
+
+            objectEnumeration.push({
+              objectName: objectName,
+              displayName: dataElement.label + " Font Family",
+              properties: {
+                fontFamily: dataElement.fontFamily
+              },
+              selector: dataElement.selectionId.getSelector()
+            });
+
+            objectEnumeration.push({
+              objectName: objectName,
+              displayName: dataElement.label + " Text Size",
+              properties: {
+                textSize: dataElement.textSize
+              },
+              selector: dataElement.selectionId.getSelector()
+            });
+
+            objectEnumeration.push({
+              objectName: objectName,
+              displayName: dataElement.label + " Text Color",
+              properties: {
+                textColor: dataElement.textColor
+              },
+              selector: dataElement.selectionId.getSelector()
+            });
+
+          }
+        }
+    };
+
+
+    return objectEnumeration;
 
   }
 
 
-  private getTextWidth(textString: string, fontSize: number, fontFamily: string) {
+  private getTextWidth(textString: string, textSize: number, fontFamily: string) {
     let textData = [textString]
 
     let textWidth
@@ -340,7 +409,7 @@ export class Visual implements IVisual {
       .enter()
       .append("text")
       .attr("font-family", fontFamily)
-      .attr("font-size", fontSize)
+      .attr("font-size", textSize)
       .text(function (d) { return d })
       // .each(function (d, i) {
       //   let thisWidth = this.getComputedTextLength()
@@ -362,7 +431,7 @@ export class Visual implements IVisual {
     return textWidth
   }
 
-  private getTextHeight(textString: string, fontSize: number, fontFamily: string) {
+  private getTextHeight(textString: string, textSize: number, fontFamily: string) {
     let textData = [textString]
 
     let textHeight
@@ -374,7 +443,7 @@ export class Visual implements IVisual {
       .enter()
       .append("text")
       .attr("font-family", fontFamily)
-      .attr("font-size", fontSize)
+      .attr("font-size", textSize)
       .text(function (d) { return d })
       // .each(function (d, i) {
       //   let thisHeight = this.getBBox().height
@@ -408,3 +477,200 @@ export class Visual implements IVisual {
 
 
 }
+
+function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
+  let dataViews = options.dataViews;
+
+  let defaultSettings = {
+    textSettings: {
+      stagger: true,
+      fontFamily: "Arial",
+      textSize: 12,
+      textColor: { solid: { color: 'Black' } },
+      top: false
+    }
+  };
+
+  let viewModel = {
+    dataPoints: [],
+    settings: defaultSettings
+  };
+
+  let timelineDataPoints = []
+
+  let dataView: DataView = options.dataViews[0];
+  let objects = dataViews[0].metadata.objects;
+
+  let categorical = dataViews[0].categorical;
+  let labelData, dateData, labelColumn, dateColumn, category
+
+
+  //parse data
+  if (!dataViews
+    || !dataViews[0]
+    || !dataViews[0].categorical
+  ) {
+    return viewModel;
+  }
+
+
+  if (dataViews[0].categorical.categories[0].source.roles["label"]) {
+    labelData = dataViews[0].categorical.categories[0].values
+    labelColumn = dataViews[0].categorical.categories[0].source.displayName
+    dateData = dataViews[0].categorical.categories[1].values
+    dateColumn = dataViews[0].categorical.categories[1].source.displayName
+    category = dataViews[0].categorical.categories[0]
+
+  } else {
+    dateData = dataViews[0].categorical.categories[0].values
+    dateColumn = dataViews[0].categorical.categories[0].source.displayName
+    labelData = dataViews[0].categorical.categories[1].values
+    labelColumn = dataViews[0].categorical.categories[1].source.displayName
+    category = dataViews[0].categorical.categories[1]
+  }
+
+  for (let i = 0; i < Math.min(dateData.length, labelData.length); i++) {
+    let element = {}
+    element["label"] = labelData[i]
+    element["date"] = dateData[i]
+    element["labelColumn"] = labelColumn
+    element["dateColumn"] = dateColumn
+    element["labelText"] = `${element["label"]}: ${element["date"]}`
+    element["selectionId"] = host.createSelectionIdBuilder()
+      .withCategory(category, i)
+      .createSelectionId()
+
+    let value = Date.parse(element["date"]);
+    element["dateAsInt"] = value
+    element["labelText"] = `${element["label"]}: ${element["date"]}`
+
+    element["customFormat"] = getCategoricalObjectValue(category, i, 'dataPoint', 'customFormat', false)
+    element["fontFamily"] = getCategoricalObjectValue(category, i, 'dataPoint', 'fontFamily', "Arial")
+    element["textSize"] = getCategoricalObjectValue(category, i, 'dataPoint', 'textSize', 12)
+    element["textColor"] = getCategoricalObjectValue(category, i, 'dataPoint', 'textColor', { "solid": { "color": "black" } }).solid.color
+    element["top"] = getCategoricalObjectValue(category, i, 'dataPoint', 'top', false)
+    console.log(element["top"])
+    timelineDataPoints.push(element)
+  }
+
+  //dataViews[0].categorical.categories[0].source.roles
+
+
+
+  // let dataValues = categorical.values;
+  // let category, dataValue, highlightsArray
+
+
+  // if (categorical.categories) {
+  //   category = categorical.categories[0];
+  //   dataValue = categorical.values[0];
+  //   if (dataValue.highlights) {
+  //     highlightsArray = categorical.values[0].highlights
+  //   }
+  // }
+
+  let timelineSettings = {
+    textSettings: {
+      // sameAsBarColor: getValue(objects, 'textSettings', 'sameAsBarColor', defaultSettings.textSettings.sameAsBarColor),
+      stagger: getValue(objects, 'textSettings', 'stagger', defaultSettings.textSettings.stagger),
+      // separator: getValue(objects, 'textSettings', 'separator', defaultSettings.textSettings.separator),
+      // editMode: getValue(objects, 'textSettings', 'editMode', defaultSettings.textSettings.editMode),
+      top: getValue(objects, 'textSettings', 'top', defaultSettings.textSettings.top),
+      // labelOrientation: getValue<string>(objects, 'textSettings', 'labelOrientation', defaultSettings.textSettings.labelOrientation),
+      // annotationStyle: getValue<string>(objects, 'textSettings', 'annotationStyle', defaultSettings.textSettings.annotationStyle),
+      textColor: getValue(objects, 'textSettings', 'textColor', defaultSettings.textSettings.textColor),
+      textSize: getValue(objects, 'textSettings', 'textSize', defaultSettings.textSettings.textSize),
+      fontFamily: getValue(objects, 'textSettings', 'fontFamily', defaultSettings.textSettings.fontFamily),
+      // fill: getValue(objects, 'textSettings', 'fill', defaultSettings.textSettings.fill).solid.color
+
+    }
+  }
+  return {
+    dataPoints: timelineDataPoints,
+    settings: timelineSettings
+  };
+}
+
+export function getValue(objects, objectName, propertyName, defaultValue) {
+
+  //gets settings from global attributes in property pane.
+  if (objects) {
+    let object = objects[objectName];
+
+    if (object) {
+
+      let property = object[propertyName];
+      if (property !== undefined) {
+
+        return property;
+      }
+    }
+  }
+  return defaultValue;
+}
+export function getCategoricalObjectValue(category, index, objectName, propertyName, defaultValue) {
+
+  let categoryObjects = category.objects
+
+  if (categoryObjects) {
+    let categoryObject
+
+    categoryObject = categoryObjects[index];
+
+    if (categoryObject) {
+      let object
+      // if (category.categories) {
+      object = categoryObject[objectName]
+
+
+      if (object) {
+        let property = object[propertyName];
+
+        if (property !== undefined) {
+          return property;
+        }
+      }
+
+    }
+  }
+
+  return defaultValue;
+}
+
+
+
+// export function getCategoricalObjectValue(category: any, index: number, objectName: string, propertyName: string, defaultValue) {
+//   console.log(category)
+//   let categoryObjects
+//   if (!category.categories) {
+//     categoryObjects = category.values;
+//   }
+//   else {
+//     categoryObjects = category.categories[0].objects
+//   }
+//   if (categoryObjects) {
+//     let categoryObject
+//     categoryObject = categoryObjects[index];
+//     if (categoryObject) {
+//       let object
+//       if (category.categories) {
+//         object = categoryObject[objectName]
+//       } else {
+//         if (categoryObject.source.objects) {
+//           object = categoryObject.source.objects[objectName];
+
+//         }
+//       }
+//       if (object) {
+//         let property = object[propertyName];
+
+//         if (property !== undefined) {
+//           return property;
+//         }
+//       }
+
+//     }
+//   }
+
+//   return defaultValue;
+// }
