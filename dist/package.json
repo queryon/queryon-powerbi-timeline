@@ -8,7 +8,7 @@
             "file": "resources/timelineByQueryon2DD9A171C1CB4B148AA3DD23CEF5B2F9.pbiviz.json"
         }
     ],
-    "visual": {"name":"timelineByQueryon","displayName":"timelineByQueryon","guid":"timelineByQueryon2DD9A171C1CB4B148AA3DD23CEF5B2F9","visualClassName":"Visual","version":"1.0.0","description":"Timeline Visual","supportUrl":"https://queryon.com/pbiviz/annotated-bar","gitHubUrl":""},
+    "visual": {"name":"timelineByQueryon","displayName":"timelineByQueryon","guid":"timelineByQueryon2DD9A171C1CB4B148AA3DD23CEF5B2F9","visualClassName":"Visual","version":"1.0.0","description":"Timeline Visual","supportUrl":"https://queryon.com/pbiviz/timeline","gitHubUrl":""},
     "metadata": {
         "pbivizjson": {
             "resourceId": "rId0"

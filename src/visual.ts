@@ -23,7 +23,12 @@ import {
 import * as svgAnnotations from "d3-svg-annotation";
 // import { VisualSettings } from "./settings";
 
+import {
+  valueFormatter as vf,
+} from "powerbi-visuals-utils-formattingutils";
+
 import * as d3 from "d3";
+import { IValueFormatter } from "powerbi-visuals-utils-formattingutils/lib/src/valueFormatter";
 type Selection<T extends d3.BaseType> = d3.Selection<T, any, any, any>;
 
 export class Visual implements IVisual {
@@ -42,7 +47,6 @@ export class Visual implements IVisual {
   private selectionIdBuilder: ISelectionIdBuilder
   private selectionManager: ISelectionManager
   private tooltipServiceWrapper: ITooltipServiceWrapper;
-
 
   constructor(options: VisualConstructorOptions) {
     this.svg = d3.select(options.element)
@@ -85,8 +89,19 @@ export class Visual implements IVisual {
       textColor = this.viewModel.settings.textSettings.textColor.solid.color,
       top = this.viewModel.settings.textSettings.top
 
+    //date formatting
+    let format, valueFormatter
+    if (options.dataViews[0].categorical.categories[0].source.roles["label"]) {
+      format = options.dataViews[0].categorical.categories[1].source.format
+    } else {
+      format = options.dataViews[0].categorical.categories[0].source.format
+    }
+    valueFormatter = createFormatter(format);
 
     data.forEach((dataPoint, i) => {
+      dataPoint["formatted"] = valueFormatter.format(dataPoint["date"])
+      dataPoint["labelText"] = `${dataPoint["formatted"]}: ${dataPoint["label"]}`
+
       dataPoint["textColor"] = dataPoint.customFormat ? dataPoint.textColor : textColor
       dataPoint["fontFamily"] = dataPoint.customFormat ? dataPoint.fontFamily : fontFamily
       dataPoint["textSize"] = dataPoint.customFormat ? dataPoint.textSize : textSize
@@ -94,18 +109,19 @@ export class Visual implements IVisual {
       dataPoint["textWidth"] = this.getTextWidth(dataPoint["labelText"], dataPoint["textSize"], fontFamily)
 
 
+
       let textHeight = this.getTextHeight(dataPoint["labelText"], dataPoint["textSize"], fontFamily)
 
       if (spacing < textHeight) {
         spacing = textHeight
-        if(dataPoint["top"]){
-           marginTopStagger += textHeight
+        if (dataPoint["top"]) {
+          marginTopStagger += textHeight
         }
       }
 
       if (dataPoint["top"]) {
         this.marginTop = Math.max(this.marginTop, textHeight + 30)
-     
+
       }
 
 
@@ -140,6 +156,40 @@ export class Visual implements IVisual {
     //   .attr('height', this.barHeight)
     // bar.exit().remove()
 
+    //axis settings
+
+    let x_axis
+    x_axis = d3.axisBottom(scale)
+      .tickFormat(d => {
+        return valueFormatter.format(new Date(<any>d))
+      })
+
+    // 
+    //Append group and insert axis
+    this.container.append("g")
+      .attr("transform", "translate(" + this.padding + "," + (this.viewModel.settings.textSettings.stagger ? marginTopStagger : this.marginTop) + ")")
+      .call(x_axis)
+      .attr('class', 'axis')
+
+     .attr('style', `color :${this.viewModel.settings.axisSettings.axisColor.solid.color}`)
+     .attr('style', `stroke :${this.viewModel.settings.axisSettings.axisColor.solid.color}`)
+
+     this.container.selectAll('path, line')
+       .attr('style', `color :${this.viewModel.settings.axisSettings.axisColor.solid.color}`)
+
+     if (this.viewModel.settings.axisSettings.bold) {
+       this.container.classed("xAxis", false);
+     } else {
+       this.container.attr('class', 'xAxis')
+     }
+     if (this.viewModel.settings.axisSettings.axis === "None") {
+       this.container.selectAll("text").remove()
+     } else {
+       this.container.selectAll("text").style('font-size', this.viewModel.settings.axisSettings.fontSize)
+       this.container.selectAll("text").style('fill', this.viewModel.settings.axisSettings.axisColor.solid.color)
+       this.container.selectAll("text").style('font-family', this.viewModel.settings.axisSettings.fontFamily)
+
+     }
 
     let annotationsData, makeAnnotations
 
@@ -155,15 +205,15 @@ export class Visual implements IVisual {
     let countTop = 1, countBottom = 1, counter
 
     data.forEach((element, i) => {
-     
-      if(element.top){
-        countTop ++;
+
+      if (element.top) {
+        countTop++;
         counter = countTop
-      } else{
+      } else {
         countBottom++;
         counter = countBottom
       }
-      
+
       element["x"] = this.padding + scale(element["dateAsInt"])
 
 
@@ -282,9 +332,12 @@ export class Visual implements IVisual {
     this.svg.on('mouseover', el => {
       const mouseEvent: MouseEvent = d3.event as MouseEvent;
       const eventTarget: EventTarget = mouseEvent.target;
+
+      //to-do grab data element based on annotation css class so hover works on annotation
+
       let args = []
       let dataPoint: any = d3.select(<Element>eventTarget).datum();
-      console.log(dataPoint)
+      // console.log(dataPoint)
       if (dataPoint && dataPoint.labelColumn) {
 
         args = [{
@@ -333,7 +386,28 @@ export class Visual implements IVisual {
           selector: null
         });
         break;
+      case 'axisSettings':
+        objectEnumeration.push({
+          objectName: objectName,
+          properties: {
+            axis: this.viewModel.settings.axisSettings.axis,
+            axisColor: this.viewModel.settings.axisSettings.axisColor
+          },
+          selector: null
+        });
 
+        if (this.viewModel.settings.axisSettings.axis !== "None") {
+          objectEnumeration.push({
+            objectName: objectName,
+            properties: {
+              fontSize: this.viewModel.settings.axisSettings.fontSize,
+              fontFamily: this.viewModel.settings.axisSettings.fontFamily,
+              bold: this.viewModel.settings.axisSettings.bold
+            },
+            selector: null
+          });
+        }
+        break
 
 
       case "dataPoint":
@@ -488,6 +562,14 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
       textSize: 12,
       textColor: { solid: { color: 'Black' } },
       top: false
+    },
+    axisSettings: {
+      axis: "None",
+      axisColor: { solid: { color: 'gray' } },
+      fontSize: 12,
+      fontFamily: 'Arial',
+      bold: false
+     
     }
   };
 
@@ -514,6 +596,10 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
   }
 
 
+
+
+  let format, valueFormatter
+
   if (dataViews[0].categorical.categories[0].source.roles["label"]) {
     labelData = dataViews[0].categorical.categories[0].values
     labelColumn = dataViews[0].categorical.categories[0].source.displayName
@@ -521,35 +607,40 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
     dateColumn = dataViews[0].categorical.categories[1].source.displayName
     category = dataViews[0].categorical.categories[0]
 
+    // format = options.dataViews[0].categorical.categories[1].source.format
   } else {
     dateData = dataViews[0].categorical.categories[0].values
     dateColumn = dataViews[0].categorical.categories[0].source.displayName
     labelData = dataViews[0].categorical.categories[1].values
     labelColumn = dataViews[0].categorical.categories[1].source.displayName
     category = dataViews[0].categorical.categories[1]
+
+    // format = options.dataViews[0].categorical.categories[0].source.format
   }
 
+
+  // valueFormatter = createFormatter(format);
+
   for (let i = 0; i < Math.min(dateData.length, labelData.length); i++) {
+
     let element = {}
     element["label"] = labelData[i]
-    element["date"] = dateData[i]
+    element["date"] = new Date(dateData[i])
     element["labelColumn"] = labelColumn
     element["dateColumn"] = dateColumn
-    element["labelText"] = `${element["label"]}: ${element["date"]}`
+
     element["selectionId"] = host.createSelectionIdBuilder()
       .withCategory(category, i)
       .createSelectionId()
 
     let value = Date.parse(element["date"]);
     element["dateAsInt"] = value
-    element["labelText"] = `${element["label"]}: ${element["date"]}`
-
     element["customFormat"] = getCategoricalObjectValue(category, i, 'dataPoint', 'customFormat', false)
     element["fontFamily"] = getCategoricalObjectValue(category, i, 'dataPoint', 'fontFamily', "Arial")
     element["textSize"] = getCategoricalObjectValue(category, i, 'dataPoint', 'textSize', 12)
     element["textColor"] = getCategoricalObjectValue(category, i, 'dataPoint', 'textColor', { "solid": { "color": "black" } }).solid.color
     element["top"] = getCategoricalObjectValue(category, i, 'dataPoint', 'top', false)
-    console.log(element["top"])
+
     timelineDataPoints.push(element)
   }
 
@@ -582,6 +673,13 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
       textSize: getValue(objects, 'textSettings', 'textSize', defaultSettings.textSettings.textSize),
       fontFamily: getValue(objects, 'textSettings', 'fontFamily', defaultSettings.textSettings.fontFamily),
       // fill: getValue(objects, 'textSettings', 'fill', defaultSettings.textSettings.fill).solid.color
+    },
+    axisSettings: {
+      axis: getValue(objects, 'axisSettings', 'axis', defaultSettings.axisSettings.axis),
+      axisColor: getValue(objects, 'axisSettings', 'axisColor', defaultSettings.axisSettings.axisColor),
+      fontSize: getValue(objects, 'axisSettings', 'fontSize', defaultSettings.axisSettings.fontSize),
+      fontFamily: getValue(objects, 'axisSettings', 'fontFamily', defaultSettings.axisSettings.fontFamily),
+      bold: getValue(objects, 'axisSettings', 'bold', defaultSettings.axisSettings.bold)
 
     }
   }
@@ -674,3 +772,15 @@ export function getCategoricalObjectValue(category, index, objectName, propertyN
 
 //   return defaultValue;
 // }
+
+function createFormatter(format, precision?: any, value?: number) {
+  let valueFormatter = {}
+  valueFormatter["format"] = format;
+  valueFormatter["value"] = value
+
+  if (precision !== false) {
+    valueFormatter["precision"] = precision
+  }
+
+  return vf.create(valueFormatter)
+}
