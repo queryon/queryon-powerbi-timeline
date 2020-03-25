@@ -80,14 +80,16 @@ export class Visual implements IVisual {
     this.height = options.viewport.height;
     this.marginTop = 20
     // this.barHeight = 30
-    let spacing = 10,
-      marginTopStagger = 20;
+    // let spacing = 10,
+    let marginTopStagger = 20;
 
     //Parse global formats
     let textSize = this.viewModel.settings.textSettings.textSize,
       fontFamily = this.viewModel.settings.textSettings.fontFamily,
       textColor = this.viewModel.settings.textSettings.textColor.solid.color,
-      top = this.viewModel.settings.textSettings.top
+      top = this.viewModel.settings.textSettings.top,
+      labelOrientation = this.viewModel.settings.textSettings.labelOrientation,
+      annotationStyle = this.viewModel.settings.textSettings.annotationStyle
 
     //date formatting
     let format, valueFormatter
@@ -100,20 +102,22 @@ export class Visual implements IVisual {
 
     data.forEach((dataPoint, i) => {
       dataPoint["formatted"] = valueFormatter.format(dataPoint["date"])
-      dataPoint["labelText"] = `${dataPoint["formatted"]}: ${dataPoint["label"]}`
+      dataPoint["labelText"] = `${dataPoint["formatted"]}${this.viewModel.settings.textSettings.separator} ${dataPoint["label"]}`
 
       dataPoint["textColor"] = dataPoint.customFormat ? dataPoint.textColor : textColor
       dataPoint["fontFamily"] = dataPoint.customFormat ? dataPoint.fontFamily : fontFamily
       dataPoint["textSize"] = dataPoint.customFormat ? dataPoint.textSize : textSize
       dataPoint["top"] = dataPoint.customFormat ? dataPoint.top : top
+      dataPoint["labelOrientation"] = dataPoint.customFormat ? dataPoint.labelOrientation : labelOrientation
+      dataPoint["annotationStyle"] = dataPoint.customFormat ? dataPoint.annotationStyle : annotationStyle
       dataPoint["textWidth"] = this.getTextWidth(dataPoint["labelText"], dataPoint["textSize"], fontFamily)
 
 
 
       let textHeight = this.getTextHeight(dataPoint["labelText"], dataPoint["textSize"], fontFamily)
 
-      if (spacing < textHeight) {
-        spacing = textHeight
+      if (this.viewModel.settings.textSettings.spacing < textHeight) {
+        this.viewModel.settings.textSettings.spacing = textHeight
         if (dataPoint["top"]) {
           marginTopStagger += textHeight
         }
@@ -121,7 +125,6 @@ export class Visual implements IVisual {
 
       if (dataPoint["top"]) {
         this.marginTop = Math.max(this.marginTop, textHeight + 30)
-
       }
 
 
@@ -129,7 +132,7 @@ export class Visual implements IVisual {
 
 
 
-    marginTopStagger += (data.filter(element => element.top).length * spacing)
+    marginTopStagger += (data.filter(element => element.top).length * this.viewModel.settings.textSettings.spacing)
 
     this.minVal = d3.min(data, function (d: any) { return d.dateAsInt })
     this.maxVal = d3.max(data, function (d: any) { return d.dateAsInt })
@@ -171,38 +174,28 @@ export class Visual implements IVisual {
       .call(x_axis)
       .attr('class', 'axis')
 
-     .attr('style', `color :${this.viewModel.settings.axisSettings.axisColor.solid.color}`)
-     .attr('style', `stroke :${this.viewModel.settings.axisSettings.axisColor.solid.color}`)
+      .attr('style', `color :${this.viewModel.settings.axisSettings.axisColor.solid.color}`)
+      .attr('style', `stroke :${this.viewModel.settings.axisSettings.axisColor.solid.color}`)
 
-     this.container.selectAll('path, line')
-       .attr('style', `color :${this.viewModel.settings.axisSettings.axisColor.solid.color}`)
+    this.container.selectAll('path, line')
+      .attr('style', `color :${this.viewModel.settings.axisSettings.axisColor.solid.color}`)
 
-     if (this.viewModel.settings.axisSettings.bold) {
-       this.container.classed("xAxis", false);
-     } else {
-       this.container.attr('class', 'xAxis')
-     }
-     if (this.viewModel.settings.axisSettings.axis === "None") {
-       this.container.selectAll("text").remove()
-     } else {
-       this.container.selectAll("text").style('font-size', this.viewModel.settings.axisSettings.fontSize)
-       this.container.selectAll("text").style('fill', this.viewModel.settings.axisSettings.axisColor.solid.color)
-       this.container.selectAll("text").style('font-family', this.viewModel.settings.axisSettings.fontFamily)
+    if (this.viewModel.settings.axisSettings.bold) {
+      this.container.classed("xAxis", false);
+    } else {
+      this.container.attr('class', 'xAxis')
+    }
+    if (this.viewModel.settings.axisSettings.axis === "None") {
+      this.container.selectAll("text").remove()
+    } else {
+      this.container.selectAll("text").style('font-size', this.viewModel.settings.axisSettings.fontSize)
+      this.container.selectAll("text").style('fill', this.viewModel.settings.axisSettings.axisColor.solid.color)
+      this.container.selectAll("text").style('font-family', this.viewModel.settings.axisSettings.fontFamily)
 
-     }
-
-    let annotationsData, makeAnnotations
-
-
-    let type = svgAnnotations.annotationLabel
-
-    let alignment = {
-      "className": "custom",
-      "connector": { "end": "dot" },
-      "note": { "align": "dynamic" }
     }
 
-    let countTop = 1, countBottom = 1, counter
+    let annotationsData, makeAnnotations
+   let countTop = 0, countBottom = 0, counter
 
     data.forEach((element, i) => {
 
@@ -218,11 +211,22 @@ export class Visual implements IVisual {
 
 
       if (this.viewModel.settings.textSettings.stagger) {
-        element["dy"] = element.top ? spacing * (-1 * (counter)) : spacing * (counter)
+        element["dy"] = element.top ? this.viewModel.settings.textSettings.spacing * (-1 * (counter)) : this.viewModel.settings.textSettings.spacing * (counter)
       } else {
         element["dy"] = element.top ? -20 : 20
       }
-      alignment.note.align = this.getAnnotationOrientation(element)
+
+      element["alignment"] = {
+        "className": "custom",
+        "connector": { "end": "dot" },
+        "note": { "align": "dynamic" }
+      }
+  
+      if (element.labelOrientation !== "Auto") {
+        element.alignment.note.align = element.labelOrientation
+      } else {
+        element.alignment.note.align = this.getAnnotationOrientation(element)
+      }
 
       annotationsData = [{
         note: {
@@ -238,15 +242,20 @@ export class Visual implements IVisual {
         id: element.selectionId
       }]
 
+      element["style"] = element.annotationStyle !== "textOnly" ? svgAnnotations[element.annotationStyle] : svgAnnotations['annotationLabel']
+      element["type"] = new svgAnnotations.annotationCustomType(
+        element.style,
+        element.alignment
+      )
       makeAnnotations = svgAnnotations.annotation()
         .annotations(annotationsData)
-        .type(new svgAnnotations.annotationCustomType(type, alignment))
+        .type(new svgAnnotations.annotationCustomType(element.type, element.alignment))
 
-      //   if (this.viewModel.settings.textSettings.annotationStyle === 'textOnly') {
-      // makeAnnotations
-      //   .disable(["connector"])
+      if (element.annotationStyle === 'textOnly') {
+      makeAnnotations
+        .disable(["connector"])
 
-      //   }
+        }
 
 
       this.container
@@ -272,6 +281,11 @@ export class Visual implements IVisual {
               d3.select(`.selector_${element.label.replace(/\W/g, '')}_${element.dateAsInt}`).style('fill-opacity', 1)
               this.container.selectAll('.annotationSelector').style('text-decoration', "line-through")
               d3.selectAll(`.annotation_selector_${element.label.replace(/\W/g, '')}_${element.dateAsInt}`).style('text-decoration', "none")
+
+              //Open link 
+              if (element.URL) {
+                this.host.launchUrl(element.URL)
+              }
 
 
             } else {
@@ -330,6 +344,7 @@ export class Visual implements IVisual {
     });
 
     this.svg.on('mouseover', el => {
+
       const mouseEvent: MouseEvent = d3.event as MouseEvent;
       const eventTarget: EventTarget = mouseEvent.target;
 
@@ -377,7 +392,28 @@ export class Visual implements IVisual {
         objectEnumeration.push({
           objectName: objectName,
           properties: {
-            stagger: this.viewModel.settings.textSettings.stagger,
+            stagger: this.viewModel.settings.textSettings.stagger
+          },
+          selector: null
+        });
+
+        if (this.viewModel.settings.textSettings.stagger) {
+          objectEnumeration.push({
+            objectName: objectName,
+            properties: {
+              spacing: this.viewModel.settings.textSettings.spacing
+            },
+            selector: null
+          });
+
+        }
+
+        objectEnumeration.push({
+          objectName: objectName,
+          properties: {
+            separator: this.viewModel.settings.textSettings.separator,
+            labelOrientation: this.viewModel.settings.textSettings.labelOrientation,
+            annotationStyle: this.viewModel.settings.textSettings.annotationStyle,
             top: this.viewModel.settings.textSettings.top,
             fontFamily: this.viewModel.settings.textSettings.fontFamily,
             textSize: this.viewModel.settings.textSettings.textSize,
@@ -430,6 +466,25 @@ export class Visual implements IVisual {
               displayName: dataElement.label + " Label on top",
               properties: {
                 top: dataElement.top
+              },
+              selector: dataElement.selectionId.getSelector()
+            });
+
+            objectEnumeration.push({
+              objectName: objectName,
+              displayName: dataElement.label + " Label style",
+              properties: {
+                annotationStyle: dataElement.annotationStyle
+              },
+              selector: dataElement.selectionId.getSelector()
+            });
+
+
+            objectEnumeration.push({
+              objectName: objectName,
+              displayName: dataElement.label + " Label orientation",
+              properties: {
+                labelOrientation: dataElement.labelOrientation
               },
               selector: dataElement.selectionId.getSelector()
             });
@@ -558,6 +613,10 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
   let defaultSettings = {
     textSettings: {
       stagger: true,
+      spacing: 10,
+      separator: ":",
+      annotationStyle: "textOnly",
+      labelOrientation: "Auto",
       fontFamily: "Arial",
       textSize: 12,
       textColor: { solid: { color: 'Black' } },
@@ -569,7 +628,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
       fontSize: 12,
       fontFamily: 'Arial',
       bold: false
-     
+
     }
   };
 
@@ -584,7 +643,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
   let objects = dataViews[0].metadata.objects;
 
   let categorical = dataViews[0].categorical;
-  let labelData, dateData, labelColumn, dateColumn, category
+  let labelData, dateData, linkData, labelColumn, dateColumn, linkColumn, category
 
 
   //parse data
@@ -595,28 +654,44 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
     return viewModel;
   }
 
+  let categoricalData = {}
+
+  dataViews[0].categorical.categories.forEach(category => {
+    let categoryName = Object.keys(category.source.roles)[0]
+    categoricalData[categoryName] = category
+  })
+
+  category = categoricalData["label"]
+
+  labelData = categoricalData["label"].values
+  labelColumn = categoricalData["label"].source.displayName
+
+  linkData = categoricalData["link"] ? categoricalData["link"].values : false
+  linkColumn = categoricalData["link"] ? categoricalData["link"].source.displayName : false
+
+  dateData = categoricalData["date"].values
+  dateColumn = categoricalData["date"].source.displayName
 
 
+  // let format, valueFormatter
 
-  let format, valueFormatter
+  // if (dataViews[0].categorical.categories[0].source.roles["label"]) {
+  // labelData = dataViews[0].categorical.categories[0].values
+  // labelColumn = dataViews[0].categorical.categories[0].source.displayName
+  // dateData = dataViews[0].categorical.categories[1].values
+  // dateColumn = dataViews[0].categorical.categories[1].source.displayName
+  // category = dataViews[0].categorical.categories[0]
 
-  if (dataViews[0].categorical.categories[0].source.roles["label"]) {
-    labelData = dataViews[0].categorical.categories[0].values
-    labelColumn = dataViews[0].categorical.categories[0].source.displayName
-    dateData = dataViews[0].categorical.categories[1].values
-    dateColumn = dataViews[0].categorical.categories[1].source.displayName
-    category = dataViews[0].categorical.categories[0]
+  // format = options.dataViews[0].categorical.categories[1].source.format
+  // } else {
+  // dateData = dataViews[0].categorical.categories[0].values
+  // dateColumn = dataViews[0].categorical.categories[0].source.displayName
+  // labelData = dataViews[0].categorical.categories[1].values
+  // labelColumn = dataViews[0].categorical.categories[1].source.displayName
+  // category = dataViews[0].categorical.categories[1]
 
-    // format = options.dataViews[0].categorical.categories[1].source.format
-  } else {
-    dateData = dataViews[0].categorical.categories[0].values
-    dateColumn = dataViews[0].categorical.categories[0].source.displayName
-    labelData = dataViews[0].categorical.categories[1].values
-    labelColumn = dataViews[0].categorical.categories[1].source.displayName
-    category = dataViews[0].categorical.categories[1]
-
-    // format = options.dataViews[0].categorical.categories[0].source.format
-  }
+  // format = options.dataViews[0].categorical.categories[0].source.format
+  // }
 
 
   // valueFormatter = createFormatter(format);
@@ -626,6 +701,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
     let element = {}
     element["label"] = labelData[i]
     element["date"] = new Date(dateData[i])
+    element["URL"] = linkData[i]
     element["labelColumn"] = labelColumn
     element["dateColumn"] = dateColumn
 
@@ -640,7 +716,9 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
     element["textSize"] = getCategoricalObjectValue(category, i, 'dataPoint', 'textSize', 12)
     element["textColor"] = getCategoricalObjectValue(category, i, 'dataPoint', 'textColor', { "solid": { "color": "black" } }).solid.color
     element["top"] = getCategoricalObjectValue(category, i, 'dataPoint', 'top', false)
-
+    
+    element["annotationStyle"] = getCategoricalObjectValue(category, i, 'dataPoint', 'annotationStyle', 'textOnly')
+    element["labelOrientation"] = getCategoricalObjectValue(category, i, 'dataPoint', 'labelOrientation', 'Auto')
     timelineDataPoints.push(element)
   }
 
@@ -662,13 +740,12 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
 
   let timelineSettings = {
     textSettings: {
-      // sameAsBarColor: getValue(objects, 'textSettings', 'sameAsBarColor', defaultSettings.textSettings.sameAsBarColor),
       stagger: getValue(objects, 'textSettings', 'stagger', defaultSettings.textSettings.stagger),
-      // separator: getValue(objects, 'textSettings', 'separator', defaultSettings.textSettings.separator),
-      // editMode: getValue(objects, 'textSettings', 'editMode', defaultSettings.textSettings.editMode),
+      separator: getValue(objects, 'textSettings', 'separator', defaultSettings.textSettings.separator),
+      spacing: getValue(objects, 'textSettings', 'spacing', defaultSettings.textSettings.spacing),
       top: getValue(objects, 'textSettings', 'top', defaultSettings.textSettings.top),
-      // labelOrientation: getValue<string>(objects, 'textSettings', 'labelOrientation', defaultSettings.textSettings.labelOrientation),
-      // annotationStyle: getValue<string>(objects, 'textSettings', 'annotationStyle', defaultSettings.textSettings.annotationStyle),
+      labelOrientation: getValue(objects, 'textSettings', 'labelOrientation', defaultSettings.textSettings.labelOrientation),
+      annotationStyle: getValue(objects, 'textSettings', 'annotationStyle', defaultSettings.textSettings.annotationStyle),
       textColor: getValue(objects, 'textSettings', 'textColor', defaultSettings.textSettings.textColor),
       textSize: getValue(objects, 'textSettings', 'textSize', defaultSettings.textSettings.textSize),
       fontFamily: getValue(objects, 'textSettings', 'fontFamily', defaultSettings.textSettings.fontFamily),
