@@ -1,5 +1,3 @@
-# timeline_by_queryon
-
 # Install
 npm install
 npm install -g powerbi-visuals-tools
