@@ -23,7 +23,8 @@
                 "annotationStyle": {
                     "displayName": "Labels Style",
                     "type": {
-                        "enumeration": [{
+                        "enumeration": [
+                            {
                                 "displayName": "Annotation Label",
                                 "value": "annotationLabel"
                             },
@@ -66,18 +67,19 @@
                         "bool": true
                     }
                 },
-                
                 "labelOrientation": {
                     "displayName": "Labels orientation",
                     "type": {
-                        "enumeration": [{
+                        "enumeration": [
+                            {
                                 "displayName": "Auto",
                                 "value": "Auto"
                             },
                             {
                                 "displayName": "Align Left",
                                 "value": "left"
-                            }, {
+                            },
+                            {
                                 "displayName": "Align Right",
                                 "value": "right"
                             },
@@ -202,7 +204,8 @@
                     }
                 }
             }
-        },  "axisSettings": {
+        },
+        "axisSettings": {
             "displayName": "X Axis",
             "properties": {
                 "manualScale": {
@@ -210,6 +213,36 @@
                     "description": "Manual Scale",
                     "type": {
                         "bool": true
+                    }
+                },
+                "dateFormat": {
+                    "displayName": "Date format",
+                    "type": {
+                        "enumeration": [
+                            {
+                                "displayName": "Same as column format",
+                                "value": "same"
+                            },
+                            {
+                                "displayName": "Year",
+                                "value": "yyyy"
+                            }, 
+                            {
+                                "displayName": "Year-month",
+                                "value": "yyyy\\-MM"
+                            },
+                            {
+                                "displayName": "Month, day (mmmm d)",
+                                "value": "MMMM %d"                    
+                            },
+                            {
+                                "displayName": "m/d/yyyy",
+                                "value": "%M/%d/yyyy"
+                            }, {
+                                "displayName": "Time (h:mm:ss)",
+                                "value": "%h:mm:ss"
+                            }
+                        ]
                     }
                 },
                 "barMin": {
@@ -241,21 +274,23 @@
                 "axis": {
                     "displayName": "Show Axis values",
                     "type": {
-                        "enumeration": [{
+                        "enumeration": [
+                            {
                                 "displayName": "None",
                                 "value": "None"
-                            }, {
-                                "displayName": "Data",
+                            },
+                            {
+                                "displayName": "Date",
                                 "value": "Values"
                             }
-
                         ]
                     }
                 },
                 "fontFamily": {
                     "displayName": "Axis Font family",
                     "type": {
-                        "enumeration": [{
+                        "enumeration": [
+                            {
                                 "displayName": "Default",
                                 "description": "helvetica, arial, sans-serif",
                                 "value": "helvetica, arial, sans-serif"
@@ -350,7 +385,6 @@
                             }
                         ]
                     }
-
                 },
                 "axisColor": {
                     "displayName": "Axis color",
@@ -375,7 +409,8 @@
                 "annotationStyle": {
                     "displayName": "Label Style",
                     "type": {
-                        "enumeration": [{
+                        "enumeration": [
+                            {
                                 "displayName": "Annotation Label",
                                 "value": "annotationLabel"
                             },
@@ -403,14 +438,16 @@
                 "labelOrientation": {
                     "displayName": "Labels orientation",
                     "type": {
-                        "enumeration": [{
+                        "enumeration": [
+                            {
                                 "displayName": "Auto",
                                 "value": "Auto"
                             },
                             {
                                 "displayName": "Align Left",
                                 "value": "left"
-                            }, {
+                            },
+                            {
                                 "displayName": "Align Right",
                                 "value": "right"
                             },
@@ -542,15 +579,13 @@
             "conditions": [
                 {
                     "label": {
-                        "max": 1, 
-                        "min": 1
+                        "max": 1
                     },
                     "date": {
-                        "max": 1,
-                        "min": 1
+                        "max": 1
                     },
-                    "link":{
-                        "max":1
+                    "link": {
+                        "max": 1
                     }
                 }
             ],

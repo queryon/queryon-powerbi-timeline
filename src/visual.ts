@@ -93,17 +93,26 @@ export class Visual implements IVisual {
 
     //date formatting
     let format, valueFormatter
-    if (options.dataViews[0].categorical.categories[0].source.roles["label"]) {
-      format = options.dataViews[0].categorical.categories[1].source.format
-    } else {
-      format = options.dataViews[0].categorical.categories[0].source.format
-    }
+    // if (options.dataViews[0].categorical.categories[0].source.roles["label"]) {
+    //   format = options.dataViews[0].categorical.categories[1].source.format
+    // } else {
+    //   format = options.dataViews[0].categorical.categories[0].source.format
+    // }
+
+    options.dataViews[0].categorical.categories.forEach(category => {
+      let categoryName = Object.keys(category.source.roles)[0]
+      if (categoryName == "date"){
+       format = category.source.format 
+      }
+      
+    })
+  
     valueFormatter = createFormatter(format);
 
     data.forEach((dataPoint, i) => {
       dataPoint["formatted"] = valueFormatter.format(dataPoint["date"])
       dataPoint["labelText"] = `${dataPoint["formatted"]}${this.viewModel.settings.textSettings.separator} ${dataPoint["label"]}`
-
+      // dataPoint["labelText"] = format //trick to capture format string from pbi desktop
       dataPoint["textColor"] = dataPoint.customFormat ? dataPoint.textColor : textColor
       dataPoint["fontFamily"] = dataPoint.customFormat ? dataPoint.fontFamily : fontFamily
       dataPoint["textSize"] = dataPoint.customFormat ? dataPoint.textSize : textSize
@@ -161,10 +170,12 @@ export class Visual implements IVisual {
 
     //axis settings
 
+    let axisValueFormatter = this.viewModel.settings.axisSettings.dateFormat == "same" ? valueFormatter : createFormatter(this.viewModel.settings.axisSettings.dateFormat);
+
     let x_axis
     x_axis = d3.axisBottom(scale)
       .tickFormat(d => {
-        return valueFormatter.format(new Date(<any>d))
+        return axisValueFormatter.format(new Date(<any>d))
       })
 
     // 
@@ -214,6 +225,10 @@ export class Visual implements IVisual {
         element["dy"] = element.top ? this.viewModel.settings.textSettings.spacing * (-1 * (counter)) : this.viewModel.settings.textSettings.spacing * (counter)
       } else {
         element["dy"] = element.top ? -20 : 20
+      }
+
+      if(this.viewModel.settings.axisSettings.axis != "None" && !element.top){
+        element["dy"] += 20
       }
 
       element["alignment"] = {
@@ -436,6 +451,7 @@ export class Visual implements IVisual {
           objectEnumeration.push({
             objectName: objectName,
             properties: {
+              dateFormat: this.viewModel.settings.axisSettings.dateFormat,
               fontSize: this.viewModel.settings.axisSettings.fontSize,
               fontFamily: this.viewModel.settings.axisSettings.fontFamily,
               bold: this.viewModel.settings.axisSettings.bold
@@ -615,7 +631,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
       stagger: true,
       spacing: 10,
       separator: ":",
-      annotationStyle: "textOnly",
+      annotationStyle: "annotationLabel",
       labelOrientation: "Auto",
       fontFamily: "Arial",
       textSize: 12,
@@ -624,6 +640,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
     },
     axisSettings: {
       axis: "None",
+      dateFormat: "same",
       axisColor: { solid: { color: 'gray' } },
       fontSize: 12,
       fontFamily: 'Arial',
@@ -756,7 +773,8 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
       axisColor: getValue(objects, 'axisSettings', 'axisColor', defaultSettings.axisSettings.axisColor),
       fontSize: getValue(objects, 'axisSettings', 'fontSize', defaultSettings.axisSettings.fontSize),
       fontFamily: getValue(objects, 'axisSettings', 'fontFamily', defaultSettings.axisSettings.fontFamily),
-      bold: getValue(objects, 'axisSettings', 'bold', defaultSettings.axisSettings.bold)
+      bold: getValue(objects, 'axisSettings', 'bold', defaultSettings.axisSettings.bold),
+      dateFormat: getValue(objects, 'axisSettings', 'dateFormat', defaultSettings.axisSettings.bold),
 
     }
   }
