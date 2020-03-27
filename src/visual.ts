@@ -143,10 +143,18 @@ export class Visual implements IVisual {
 
     marginTopStagger += (data.filter(element => element.top).length * this.viewModel.settings.textSettings.spacing)
 
-    this.minVal = d3.min(data, function (d: any) { return d.dateAsInt })
-    this.maxVal = d3.max(data, function (d: any) { return d.dateAsInt })
+    // this.minVal = d3.min(data, function (d: any) { return d.dateAsInt })
+    // this.maxVal = d3.max(data, function (d: any) { return d.dateAsInt })
 
-    let scale = d3.scaleLinear()
+    this.minVal = data.reduce(function (a, b) { return a.date < b.date ? a : b; }).date; 
+    this.maxVal = data.reduce(function (a, b) { return a.date > b.date ? a : b; }).date;
+    
+    // let scale = d3.scaleLinear()
+    //   .domain([this.minVal, this.maxVal]) //min and max data from input
+    //   .range([0, this.width - (this.padding * 2)]); //min and max width in px           
+
+
+    let scale = d3.scaleTime()
       .domain([this.minVal, this.maxVal]) //min and max data from input
       .range([0, this.width - (this.padding * 2)]); //min and max width in px           
 
@@ -218,7 +226,7 @@ export class Visual implements IVisual {
         counter = countBottom
       }
 
-      element["x"] = this.padding + scale(element["dateAsInt"])
+      element["x"] = this.padding + scale(element["date"])
 
 
       if (this.viewModel.settings.textSettings.stagger) {
@@ -281,9 +289,9 @@ export class Visual implements IVisual {
         .style('font-size', element.textSize + "px")
         .style('font-family', element.fontFamily)
         .style('background-color', 'transparent')
-        // .style('text-decoration', () => {
+        // .style('font-weight', () => {
         //   if (this.highlighted) {
-        //     return element.highlight ? "none" : "line-through";
+        //     return element.highlight ? "none" : "bold";
         //   } else {
         //     return "none"
         //   }
@@ -293,9 +301,11 @@ export class Visual implements IVisual {
           this.selectionManager.select(element.selectionId).then((ids: ISelectionId[]) => {
             if (ids.length > 0) {
               this.container.selectAll('.bar').style('fill-opacity', 0.1)
+
               d3.select(`.selector_${element.label.replace(/\W/g, '')}_${element.dateAsInt}`).style('fill-opacity', 1)
-              this.container.selectAll('.annotationSelector').style('text-decoration', "line-through")
-              d3.selectAll(`.annotation_selector_${element.label.replace(/\W/g, '')}_${element.dateAsInt}`).style('text-decoration', "none")
+
+              this.container.selectAll('.annotationSelector').style('font-weight', "normal")
+              d3.selectAll(`.annotation_selector_${element.label.replace(/\W/g, '')}_${element.dateAsInt}`).style('font-weight', "bold")
 
               //Open link 
               if (element.URL) {
@@ -305,7 +315,7 @@ export class Visual implements IVisual {
 
             } else {
               this.container.selectAll('.bar').style('fill-opacity', 1)
-              this.container.selectAll('.annotationSelector').style('text-decoration', "none")
+              this.container.selectAll('.annotationSelector').style('font-weight', "normal")
 
             }
 
@@ -338,12 +348,12 @@ export class Visual implements IVisual {
             this.container.selectAll('.bar').style('fill-opacity', 0.1)
             d3.select(<Element>eventTarget).style('fill-opacity', 1)
 
-            this.container.selectAll('.annotationSelector').style('text-decoration', "line-through")
-            d3.select(`.annotation_selector_${dataPoint.label.replace(/\W/g, '')}_${dataPoint.dateAsInt}`).style('text-decoration', "none")
+            this.container.selectAll('.annotationSelector').style('font-weight', "normal")
+            d3.select(`.annotation_selector_${dataPoint.label.replace(/\W/g, '')}_${dataPoint.dateAsInt}`).style('font-weight', "bold")
 
           } else {
             this.container.selectAll('.bar').style('fill-opacity', 1)
-            this.container.selectAll('.annotationSelector').style('text-decoration', "none")
+            this.container.selectAll('.annotationSelector').style('font-weight', "normal")
           }
         })
       } else {
@@ -351,7 +361,7 @@ export class Visual implements IVisual {
         this.selectionManager.clear().then(() => {
 
           this.container.selectAll('.bar').style('fill-opacity', 1)
-          this.container.selectAll('.annotationSelector').style('text-decoration', "none")
+          this.container.selectAll('.annotationSelector').style('font-weight', "normal")
 
         })
       }
@@ -442,11 +452,25 @@ export class Visual implements IVisual {
           objectName: objectName,
           properties: {
             axis: this.viewModel.settings.axisSettings.axis,
-            axisColor: this.viewModel.settings.axisSettings.axisColor
+            axisColor: this.viewModel.settings.axisSettings.axisColor,
+            manualScale: this.viewModel.settings.axisSettings.manualScale
+
           },
           selector: null
         });
 
+        if (this.viewModel.settings.axisSettings.manualScale){
+          objectEnumeration.push({
+            objectName: objectName,
+            properties: {
+              barMin: this.viewModel.settings.axisSettings.barMin,
+              barMax: this.viewModel.settings.axisSettings.barMax
+            },
+            selector: null
+          });
+  
+
+        }
         if (this.viewModel.settings.axisSettings.axis !== "None") {
           objectEnumeration.push({
             objectName: objectName,
@@ -641,6 +665,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
     axisSettings: {
       axis: "None",
       dateFormat: "same",
+      manualScale: false,
       axisColor: { solid: { color: 'gray' } },
       fontSize: 12,
       fontFamily: 'Arial',
@@ -774,8 +799,8 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
       fontSize: getValue(objects, 'axisSettings', 'fontSize', defaultSettings.axisSettings.fontSize),
       fontFamily: getValue(objects, 'axisSettings', 'fontFamily', defaultSettings.axisSettings.fontFamily),
       bold: getValue(objects, 'axisSettings', 'bold', defaultSettings.axisSettings.bold),
-      dateFormat: getValue(objects, 'axisSettings', 'dateFormat', defaultSettings.axisSettings.bold),
-
+      dateFormat: getValue(objects, 'axisSettings', 'dateFormat', defaultSettings.axisSettings.dateFormat),
+      manualScale: getValue(objects, 'axisSettings', 'manualScale', defaultSettings.axisSettings.manualScale)
     }
   }
   return {

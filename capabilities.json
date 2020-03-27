@@ -248,13 +248,13 @@
                 "barMin": {
                     "displayName": "Manual Scale start",
                     "type": {
-                        "numeric": true
+                        "text": true
                     }
                 },
                 "barMax": {
                     "displayName": "Manual Scale end",
                     "type": {
-                        "numeric": true
+                        "text": true
                     }
                 },
                 "fontSize": {
