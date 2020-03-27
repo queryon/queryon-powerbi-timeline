@@ -101,12 +101,12 @@ export class Visual implements IVisual {
 
     options.dataViews[0].categorical.categories.forEach(category => {
       let categoryName = Object.keys(category.source.roles)[0]
-      if (categoryName == "date"){
-       format = category.source.format 
+      if (categoryName == "date") {
+        format = category.source.format
       }
-      
+
     })
-  
+
     valueFormatter = createFormatter(format);
 
     data.forEach((dataPoint, i) => {
@@ -143,12 +143,48 @@ export class Visual implements IVisual {
 
     marginTopStagger += (data.filter(element => element.top).length * this.viewModel.settings.textSettings.spacing)
 
-    // this.minVal = d3.min(data, function (d: any) { return d.dateAsInt })
-    // this.maxVal = d3.max(data, function (d: any) { return d.dateAsInt })
+    let minFromData = d3.min(data, function (d: any) { return d.dateAsInt })
+    let maxFromData = d3.max(data, function (d: any) { return d.dateAsInt })
 
-    this.minVal = data.reduce(function (a, b) { return a.date < b.date ? a : b; }).date; 
-    this.maxVal = data.reduce(function (a, b) { return a.date > b.date ? a : b; }).date;
-    
+    if (this.viewModel.settings.axisSettings.manualScale) {
+
+      if (this.viewModel.settings.axisSettings.barMin && this.viewModel.settings.axisSettings.barMin != "") {
+        let minFromInput = new Date(this.viewModel.settings.axisSettings.barMin)
+
+        if (Object.prototype.toString.call(minFromInput) === '[object Date]' && !isNaN(minFromInput.getTime())) {
+          this.minVal = minFromInput
+        } else {
+          this.minVal = minFromData
+
+        }
+      }
+
+      if (this.viewModel.settings.axisSettings.barMax && this.viewModel.settings.axisSettings.barMax != "") {
+        let maxFromInput = new Date(this.viewModel.settings.axisSettings.barMax)
+
+        if (Object.prototype.toString.call(maxFromInput) === '[object Date]' && !isNaN(maxFromInput.getTime())) {
+          this.maxVal = maxFromInput
+        } else {
+          this.maxVal = maxFromData
+
+        }
+
+      }
+
+      // this.maxVal = this.viewModel.settings.axisSettings.barMax &&  this.viewModel.settings.axisSettings.barMax != "" ? new Date(this.viewModel.settings.axisSettings.barMax) : d3.min(data, function (d: any) { return d.dateAsInt })
+    }
+    else {
+      this.minVal = minFromData
+      this.maxVal = maxFromData
+
+      this.viewModel.settings.axisSettings.barMin = false;
+      this.viewModel.settings.axisSettings.barMax = false;
+    }
+
+    //  data.reduce(function (a, b) { return a.date < b.date ? a : b; }).date; 
+
+    // data.reduce(function (a, b) { return a.date > b.date ? a : b; }).date;
+
     // let scale = d3.scaleLinear()
     //   .domain([this.minVal, this.maxVal]) //min and max data from input
     //   .range([0, this.width - (this.padding * 2)]); //min and max width in px           
@@ -214,7 +250,7 @@ export class Visual implements IVisual {
     }
 
     let annotationsData, makeAnnotations
-   let countTop = 0, countBottom = 0, counter
+    let countTop = 0, countBottom = 0, counter
 
     data.forEach((element, i) => {
 
@@ -235,7 +271,7 @@ export class Visual implements IVisual {
         element["dy"] = element.top ? -20 : 20
       }
 
-      if(this.viewModel.settings.axisSettings.axis != "None" && !element.top){
+      if (this.viewModel.settings.axisSettings.axis != "None" && !element.top) {
         element["dy"] += 20
       }
 
@@ -244,7 +280,7 @@ export class Visual implements IVisual {
         "connector": { "end": "dot" },
         "note": { "align": "dynamic" }
       }
-  
+
       if (element.labelOrientation !== "Auto") {
         element.alignment.note.align = element.labelOrientation
       } else {
@@ -275,10 +311,10 @@ export class Visual implements IVisual {
         .type(new svgAnnotations.annotationCustomType(element.type, element.alignment))
 
       if (element.annotationStyle === 'textOnly') {
-      makeAnnotations
-        .disable(["connector"])
+        makeAnnotations
+          .disable(["connector"])
 
-        }
+      }
 
 
       this.container
@@ -459,7 +495,9 @@ export class Visual implements IVisual {
           selector: null
         });
 
-        if (this.viewModel.settings.axisSettings.manualScale){
+
+        if (this.viewModel.settings.axisSettings.manualScale) {
+
           objectEnumeration.push({
             objectName: objectName,
             properties: {
@@ -468,9 +506,10 @@ export class Visual implements IVisual {
             },
             selector: null
           });
-  
+
 
         }
+
         if (this.viewModel.settings.axisSettings.axis !== "None") {
           objectEnumeration.push({
             objectName: objectName,
@@ -669,7 +708,9 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
       axisColor: { solid: { color: 'gray' } },
       fontSize: 12,
       fontFamily: 'Arial',
-      bold: false
+      bold: false,
+      barMin: false,
+      barMax: false
 
     }
   };
@@ -758,11 +799,13 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
     element["textSize"] = getCategoricalObjectValue(category, i, 'dataPoint', 'textSize', 12)
     element["textColor"] = getCategoricalObjectValue(category, i, 'dataPoint', 'textColor', { "solid": { "color": "black" } }).solid.color
     element["top"] = getCategoricalObjectValue(category, i, 'dataPoint', 'top', false)
-    
+
     element["annotationStyle"] = getCategoricalObjectValue(category, i, 'dataPoint', 'annotationStyle', 'textOnly')
     element["labelOrientation"] = getCategoricalObjectValue(category, i, 'dataPoint', 'labelOrientation', 'Auto')
     timelineDataPoints.push(element)
   }
+
+
 
   //dataViews[0].categorical.categories[0].source.roles
 
@@ -800,7 +843,10 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
       fontFamily: getValue(objects, 'axisSettings', 'fontFamily', defaultSettings.axisSettings.fontFamily),
       bold: getValue(objects, 'axisSettings', 'bold', defaultSettings.axisSettings.bold),
       dateFormat: getValue(objects, 'axisSettings', 'dateFormat', defaultSettings.axisSettings.dateFormat),
-      manualScale: getValue(objects, 'axisSettings', 'manualScale', defaultSettings.axisSettings.manualScale)
+      manualScale: getValue(objects, 'axisSettings', 'manualScale', defaultSettings.axisSettings.manualScale),
+      barMin: getValue(objects, 'axisSettings', 'barMin', defaultSettings.axisSettings.barMin),
+      barMax: getValue(objects, 'axisSettings', 'barMax', defaultSettings.axisSettings.barMax)
+
     }
   }
   return {
