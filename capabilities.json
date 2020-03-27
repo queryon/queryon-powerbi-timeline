@@ -14,6 +14,16 @@
             "displayName": "Optional URL",
             "name": "link",
             "kind": "GroupingOrMeasure"
+        },
+        {
+            "displayName": "Optional image",
+            "name": "image_url",
+            "kind": "GroupingOrMeasure"
+        },
+        {
+            "displayName": "Optional Description",
+            "name": "description",
+            "kind": "GroupingOrMeasure"
         }
     ],
     "objects": {
@@ -202,6 +212,47 @@
                             }
                         }
                     }
+                },
+                "dateFormat": {
+                    "displayName": "Date format",
+                    "type": {
+                        "enumeration": [
+                            {
+                                "displayName": "Same as column format",
+                                "value": "same"
+                            },
+                            {
+                                "displayName": "Year",
+                                "value": "yyyy"
+                            },
+                            {
+                                "displayName": "Year-month",
+                                "value": "yyyy\\-MM"
+                            },
+                            {
+                                "displayName": "Month, day (mmmm d)",
+                                "value": "MMMM %d"
+                            },
+                            {
+                                "displayName": "m/d/yyyy",
+                                "value": "%M/%d/yyyy"
+                            },
+                            {
+                                "displayName": "Time (h:mm:ss)",
+                                "value": "%h:mm:ss"
+                            },
+                            {
+                                "displayName": "Custom Javascript",
+                                "value": "customJS"
+                            }
+                        ]
+                    }
+                },
+                "customJS": {
+                    "displayName": "Enter Jasvascript Date string",
+                    "type": {
+                        "text": true
+                    }
                 }
             }
         },
@@ -226,23 +277,34 @@
                             {
                                 "displayName": "Year",
                                 "value": "yyyy"
-                            }, 
+                            },
                             {
                                 "displayName": "Year-month",
                                 "value": "yyyy\\-MM"
                             },
                             {
                                 "displayName": "Month, day (mmmm d)",
-                                "value": "MMMM %d"                    
+                                "value": "MMMM %d"
                             },
                             {
                                 "displayName": "m/d/yyyy",
                                 "value": "%M/%d/yyyy"
-                            }, {
+                            },
+                            {
                                 "displayName": "Time (h:mm:ss)",
                                 "value": "%h:mm:ss"
+                            },
+                            {
+                                "displayName": "Custom Javascript",
+                                "value": "customJS"
                             }
                         ]
+                    }
+                },
+                "customJS": {
+                    "displayName": "Enter Jasvascript Date string",
+                    "type": {
+                        "text": true
                     }
                 },
                 "barMin": {
@@ -586,6 +648,9 @@
                     },
                     "link": {
                         "max": 1
+                    }, 
+                    "description": {
+                        "max":1
                     }
                 }
             ],
@@ -605,6 +670,16 @@
                         {
                             "for": {
                                 "in": "link"
+                            }
+                        },
+                        {
+                            "for": {
+                                "in": "image_url"
+                            }
+                        },
+                        {
+                            "for": {
+                                "in": "description"
                             }
                         }
                     ]

@@ -71,80 +71,8 @@ export class Visual implements IVisual {
     this.container.selectAll("line").remove();
     let data = this.viewModel.dataPoints
 
-    // let dataView: DataView = options.dataViews[0];
-    // this.visualSettings = VisualSettings.parse<VisualSettings>(dataView);
-
-    // let customColors = ["rgb(186,215,57)", "rgb(0, 188, 178)", "rgb(121, 118, 118)", "rgb(105,161,151)", "rgb(78,205,196)", "rgb(166,197,207)", "rgb(215,204,182)", "rgb(67,158,157)", "rgb(122,141,45)", "rgb(162,157,167)"]
-
-    this.width = options.viewport.width;
-    this.height = options.viewport.height;
-    this.marginTop = 20
-    // this.barHeight = 30
-    // let spacing = 10,
-    let marginTopStagger = 20;
-
-    //Parse global formats
-    let textSize = this.viewModel.settings.textSettings.textSize,
-      fontFamily = this.viewModel.settings.textSettings.fontFamily,
-      textColor = this.viewModel.settings.textSettings.textColor.solid.color,
-      top = this.viewModel.settings.textSettings.top,
-      labelOrientation = this.viewModel.settings.textSettings.labelOrientation,
-      annotationStyle = this.viewModel.settings.textSettings.annotationStyle
-
-    //date formatting
-    let format, valueFormatter
-    // if (options.dataViews[0].categorical.categories[0].source.roles["label"]) {
-    //   format = options.dataViews[0].categorical.categories[1].source.format
-    // } else {
-    //   format = options.dataViews[0].categorical.categories[0].source.format
-    // }
-
-    options.dataViews[0].categorical.categories.forEach(category => {
-      let categoryName = Object.keys(category.source.roles)[0]
-      if (categoryName == "date") {
-        format = category.source.format
-      }
-
-    })
-
-    valueFormatter = createFormatter(format);
-
-    data.forEach((dataPoint, i) => {
-      dataPoint["formatted"] = valueFormatter.format(dataPoint["date"])
-      dataPoint["labelText"] = `${dataPoint["formatted"]}${this.viewModel.settings.textSettings.separator} ${dataPoint["label"]}`
-      // dataPoint["labelText"] = format //trick to capture format string from pbi desktop
-      dataPoint["textColor"] = dataPoint.customFormat ? dataPoint.textColor : textColor
-      dataPoint["fontFamily"] = dataPoint.customFormat ? dataPoint.fontFamily : fontFamily
-      dataPoint["textSize"] = dataPoint.customFormat ? dataPoint.textSize : textSize
-      dataPoint["top"] = dataPoint.customFormat ? dataPoint.top : top
-      dataPoint["labelOrientation"] = dataPoint.customFormat ? dataPoint.labelOrientation : labelOrientation
-      dataPoint["annotationStyle"] = dataPoint.customFormat ? dataPoint.annotationStyle : annotationStyle
-      dataPoint["textWidth"] = this.getTextWidth(dataPoint["labelText"], dataPoint["textSize"], fontFamily)
-
-
-
-      let textHeight = this.getTextHeight(dataPoint["labelText"], dataPoint["textSize"], fontFamily)
-
-      if (this.viewModel.settings.textSettings.spacing < textHeight) {
-        this.viewModel.settings.textSettings.spacing = textHeight
-        if (dataPoint["top"]) {
-          marginTopStagger += textHeight
-        }
-      }
-
-      if (dataPoint["top"]) {
-        this.marginTop = Math.max(this.marginTop, textHeight + 30)
-      }
-
-
-    })
-
-
-
-    marginTopStagger += (data.filter(element => element.top).length * this.viewModel.settings.textSettings.spacing)
-
-    let minFromData = d3.min(data, function (d: any) { return d.dateAsInt })
-    let maxFromData = d3.max(data, function (d: any) { return d.dateAsInt })
+    let minFromData = d3.min(data, function (d: any) { return d.date })
+    let maxFromData = d3.max(data, function (d: any) { return d.date })
 
     if (this.viewModel.settings.axisSettings.manualScale) {
 
@@ -171,8 +99,7 @@ export class Visual implements IVisual {
 
       }
 
-      // this.maxVal = this.viewModel.settings.axisSettings.barMax &&  this.viewModel.settings.axisSettings.barMax != "" ? new Date(this.viewModel.settings.axisSettings.barMax) : d3.min(data, function (d: any) { return d.dateAsInt })
-    }
+     }
     else {
       this.minVal = minFromData
       this.maxVal = maxFromData
@@ -180,6 +107,81 @@ export class Visual implements IVisual {
       this.viewModel.settings.axisSettings.barMin = false;
       this.viewModel.settings.axisSettings.barMax = false;
     }
+    // let customColors = ["rgb(186,215,57)", "rgb(0, 188, 178)", "rgb(121, 118, 118)", "rgb(105,161,151)", "rgb(78,205,196)", "rgb(166,197,207)", "rgb(215,204,182)", "rgb(67,158,157)", "rgb(122,141,45)", "rgb(162,157,167)"]
+
+    this.width = options.viewport.width;
+    this.height = options.viewport.height;
+    this.marginTop = 20
+    // this.barHeight = 30
+    // let spacing = 10,
+    let marginTopStagger = 20;
+
+    //Parse global formats
+    let textSize = this.viewModel.settings.textSettings.textSize,
+      fontFamily = this.viewModel.settings.textSettings.fontFamily,
+      textColor = this.viewModel.settings.textSettings.textColor.solid.color,
+      top = this.viewModel.settings.textSettings.top,
+      labelOrientation = this.viewModel.settings.textSettings.labelOrientation,
+      annotationStyle = this.viewModel.settings.textSettings.annotationStyle
+
+    //date formatting
+    let format, valueFormatter
+    if (this.viewModel.settings.textSettings.dateFormat === "same"){
+      options.dataViews[0].categorical.categories.forEach(category => {
+        let categoryName = Object.keys(category.source.roles)[0]
+        if (categoryName == "date") {
+          format = category.source.format
+        }
+      })
+    } else {
+      format = this.viewModel.settings.textSettings.dateFormat != "customJS" ? this.viewModel.settings.textSettings.dateFormat : this.viewModel.settings.textSettings.customJS
+    }
+
+    valueFormatter = createFormatter(format);
+
+    data.forEach((dataPoint, i) => {
+      dataPoint["formatted"] = valueFormatter.format(dataPoint["date"])
+      dataPoint["labelText"] = `${dataPoint["formatted"]}${this.viewModel.settings.textSettings.separator} ${dataPoint["label"]}`
+      // dataPoint["labelText"] = format //trick to capture format string from pbi desktop
+      dataPoint["textColor"] = dataPoint.customFormat ? dataPoint.textColor : textColor
+      dataPoint["fontFamily"] = dataPoint.customFormat ? dataPoint.fontFamily : fontFamily
+      dataPoint["textSize"] = dataPoint.customFormat ? dataPoint.textSize : textSize
+      dataPoint["top"] = dataPoint.customFormat ? dataPoint.top : top
+      dataPoint["labelOrientation"] = dataPoint.customFormat ? dataPoint.labelOrientation : labelOrientation
+      dataPoint["annotationStyle"] = dataPoint.customFormat ? dataPoint.annotationStyle : annotationStyle
+      dataPoint["textWidth"] = this.getTextWidth(dataPoint["labelText"], dataPoint["textSize"], fontFamily)
+
+
+
+      let textHeight, 
+      titleHeight = this.getTextHeight(dataPoint["labelText"], dataPoint["textSize"], fontFamily)
+
+      if(dataPoint.description){
+        textHeight = titleHeight + this.getTextHeight(dataPoint["description"], dataPoint["textSize"], fontFamily) + 2
+      } else {
+        textHeight = titleHeight
+      }
+
+
+      if (this.viewModel.settings.textSettings.spacing < textHeight) {
+        this.viewModel.settings.textSettings.spacing = textHeight
+        if (dataPoint["top"]) {
+          marginTopStagger += textHeight
+        }
+      }
+
+      if (dataPoint["top"]) {
+        this.marginTop = Math.max(this.marginTop, textHeight + 30)
+      }
+
+
+    })
+
+
+
+    marginTopStagger += (data.filter(element => element.top).length * this.viewModel.settings.textSettings.spacing)
+
+    
 
     //  data.reduce(function (a, b) { return a.date < b.date ? a : b; }).date; 
 
@@ -188,7 +190,6 @@ export class Visual implements IVisual {
     // let scale = d3.scaleLinear()
     //   .domain([this.minVal, this.maxVal]) //min and max data from input
     //   .range([0, this.width - (this.padding * 2)]); //min and max width in px           
-
 
     let scale = d3.scaleTime()
       .domain([this.minVal, this.maxVal]) //min and max data from input
@@ -214,7 +215,11 @@ export class Visual implements IVisual {
 
     //axis settings
 
-    let axisValueFormatter = this.viewModel.settings.axisSettings.dateFormat == "same" ? valueFormatter : createFormatter(this.viewModel.settings.axisSettings.dateFormat);
+
+    let axisFormat = this.viewModel.settings.axisSettings.dateFormat != "customJS" ? this.viewModel.settings.axisSettings.dateFormat : this.viewModel.settings.axisSettings.customJS
+
+    console.log(axisFormat)
+    let axisValueFormatter = axisFormat == "same" ? valueFormatter : createFormatter(axisFormat);
 
     let x_axis
     x_axis = d3.axisBottom(scale)
@@ -290,7 +295,8 @@ export class Visual implements IVisual {
       annotationsData = [{
         note: {
           wrap: 900,
-          label: element.labelText,
+          title: element.labelText,
+          label: element.description,
           bgPadding: 10
         },
         x: element["x"],
@@ -341,7 +347,12 @@ export class Visual implements IVisual {
               d3.select(`.selector_${element.label.replace(/\W/g, '')}_${element.dateAsInt}`).style('fill-opacity', 1)
 
               this.container.selectAll('.annotationSelector').style('font-weight', "normal")
+              this.container.selectAll('.annotationSelector  .annotation-note-title ').style('font-weight', "normal")
+
               d3.selectAll(`.annotation_selector_${element.label.replace(/\W/g, '')}_${element.dateAsInt}`).style('font-weight', "bold")
+              d3.selectAll(`.annotation_selector_${element.label.replace(/\W/g, '')}_${element.dateAsInt}  .annotation-note-title `).style('font-weight', "bold")
+             
+
 
               //Open link 
               if (element.URL) {
@@ -352,7 +363,7 @@ export class Visual implements IVisual {
             } else {
               this.container.selectAll('.bar').style('fill-opacity', 1)
               this.container.selectAll('.annotationSelector').style('font-weight', "normal")
-
+              this.container.selectAll('.annotationSelector .annotation-note-title').style('font-weight', "normal")
             }
 
           })
@@ -478,10 +489,22 @@ export class Visual implements IVisual {
             top: this.viewModel.settings.textSettings.top,
             fontFamily: this.viewModel.settings.textSettings.fontFamily,
             textSize: this.viewModel.settings.textSettings.textSize,
-            textColor: this.viewModel.settings.textSettings.textColor
+            textColor: this.viewModel.settings.textSettings.textColor,
+            dateFormat: this.viewModel.settings.textSettings.dateFormat
           },
           selector: null
         });
+
+        if (this.viewModel.settings.textSettings.dateFormat == "customJS") {
+          objectEnumeration.push({
+            objectName: objectName,
+            properties: {
+              customJS: this.viewModel.settings.textSettings.customJS
+            },
+            selector: null
+          });
+
+        }
         break;
       case 'axisSettings':
         objectEnumeration.push({
@@ -514,14 +537,29 @@ export class Visual implements IVisual {
           objectEnumeration.push({
             objectName: objectName,
             properties: {
-              dateFormat: this.viewModel.settings.axisSettings.dateFormat,
+
               fontSize: this.viewModel.settings.axisSettings.fontSize,
               fontFamily: this.viewModel.settings.axisSettings.fontFamily,
-              bold: this.viewModel.settings.axisSettings.bold
+              bold: this.viewModel.settings.axisSettings.bold,
+              dateFormat: this.viewModel.settings.axisSettings.dateFormat
             },
             selector: null
           });
+
+          if (this.viewModel.settings.axisSettings.dateFormat == "customJS") {
+            objectEnumeration.push({
+              objectName: objectName,
+              properties: {
+                customJS: this.viewModel.settings.axisSettings.customJS
+              },
+              selector: null
+            });
+
+          }
         }
+
+
+
         break
 
 
@@ -699,7 +737,9 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
       fontFamily: "Arial",
       textSize: 12,
       textColor: { solid: { color: 'Black' } },
-      top: false
+      top: false,
+      dateFormat: "same",
+      customJS: "mm/dd/yyyy"
     },
     axisSettings: {
       axis: "None",
@@ -709,8 +749,9 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
       fontSize: 12,
       fontFamily: 'Arial',
       bold: false,
-      barMin: false,
-      barMax: false
+      barMin: "",
+      barMax: "",
+      customJS: "mm/dd/yyyy"
 
     }
   };
@@ -726,7 +767,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
   let objects = dataViews[0].metadata.objects;
 
   let categorical = dataViews[0].categorical;
-  let labelData, dateData, linkData, labelColumn, dateColumn, linkColumn, category
+  let labelData, dateData, linkData, descriptionData, labelColumn, dateColumn, linkColumn, descriptionColumn, category
 
 
   //parse data
@@ -748,12 +789,15 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
 
   labelData = categoricalData["label"].values
   labelColumn = categoricalData["label"].source.displayName
+  
+  dateData = categoricalData["date"].values
+  dateColumn = categoricalData["date"].source.displayName
 
   linkData = categoricalData["link"] ? categoricalData["link"].values : false
   linkColumn = categoricalData["link"] ? categoricalData["link"].source.displayName : false
 
-  dateData = categoricalData["date"].values
-  dateColumn = categoricalData["date"].source.displayName
+  descriptionData = categoricalData["description"] ? categoricalData["description"].values : false
+  descriptionColumn = categoricalData["description"] ? categoricalData["description"].source.displayName : false
 
 
   // let format, valueFormatter
@@ -784,7 +828,8 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
     let element = {}
     element["label"] = labelData[i]
     element["date"] = new Date(dateData[i])
-    element["URL"] = linkData[i]
+    element["URL"] = linkData[i]    
+    element["description"] = descriptionData[i]
     element["labelColumn"] = labelColumn
     element["dateColumn"] = dateColumn
 
@@ -834,7 +879,8 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
       textColor: getValue(objects, 'textSettings', 'textColor', defaultSettings.textSettings.textColor),
       textSize: getValue(objects, 'textSettings', 'textSize', defaultSettings.textSettings.textSize),
       fontFamily: getValue(objects, 'textSettings', 'fontFamily', defaultSettings.textSettings.fontFamily),
-      // fill: getValue(objects, 'textSettings', 'fill', defaultSettings.textSettings.fill).solid.color
+      dateFormat: getValue(objects, 'textSettings', 'dateFormat', defaultSettings.textSettings.dateFormat),
+      customJS: getValue(objects, 'textSettings', 'customJS', defaultSettings.textSettings.customJS)
     },
     axisSettings: {
       axis: getValue(objects, 'axisSettings', 'axis', defaultSettings.axisSettings.axis),
@@ -845,7 +891,8 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
       dateFormat: getValue(objects, 'axisSettings', 'dateFormat', defaultSettings.axisSettings.dateFormat),
       manualScale: getValue(objects, 'axisSettings', 'manualScale', defaultSettings.axisSettings.manualScale),
       barMin: getValue(objects, 'axisSettings', 'barMin', defaultSettings.axisSettings.barMin),
-      barMax: getValue(objects, 'axisSettings', 'barMax', defaultSettings.axisSettings.barMax)
+      barMax: getValue(objects, 'axisSettings', 'barMax', defaultSettings.axisSettings.barMax),
+      customJS: getValue(objects, 'axisSettings', 'customJS', defaultSettings.axisSettings.customJS)
 
     }
   }
