@@ -21,6 +21,8 @@ import {
   ITooltipServiceWrapper,
 } from 'powerbi-visuals-utils-tooltiputils'
 import * as svgAnnotations from "d3-svg-annotation";
+import * as d3PlusText from "d3plus-text";
+
 // import { VisualSettings } from "./settings";
 
 import {
@@ -41,6 +43,7 @@ export class Visual implements IVisual {
   private height: number;
   private barHeight: number;
   private marginTop: number;
+  private finalMarginTop: number;
   private minVal: any;
   private maxVal: any;
   private viewModel: any;
@@ -67,12 +70,16 @@ export class Visual implements IVisual {
     //set empty canva
     this.container.selectAll("g").remove();
     this.container.selectAll("rect").remove();
+    this.container.selectAll("image").remove();
 
     this.container.selectAll("line").remove();
     let data = this.viewModel.dataPoints
 
     let minFromData = d3.min(data, function (d: any) { return d.date })
     let maxFromData = d3.max(data, function (d: any) { return d.date })
+
+    let imagesHeight = this.viewModel.settings.imageSettings.imagesHeight
+    let imagesWidth = this.viewModel.settings.imageSettings.imagesWidth
 
     if (this.viewModel.settings.axisSettings.manualScale) {
 
@@ -83,7 +90,6 @@ export class Visual implements IVisual {
           this.minVal = minFromInput
         } else {
           this.minVal = minFromData
-
         }
       }
 
@@ -138,11 +144,25 @@ export class Visual implements IVisual {
     }
 
     valueFormatter = createFormatter(format);
+    let filteredData
 
-    data.forEach((dataPoint, i) => {
+    //sort so staggering works in right order
+    data = data.sort((a, b) => (a.date > b.date) ? 1 : -1)
+
+    //filter data out of axis range, reverse order if axis is in decremental order
+    if(this.minVal > this.maxVal){
+      filteredData = data.filter(element => element.date <= this.minVal && element.date >= this.maxVal)
+      data.reverse()
+    } else {
+       filteredData = data.filter(element => element.date >= this.minVal && element.date <= this.maxVal)
+    }
+
+    let addToMargin = this.viewModel.settings.imageSettings.style == "alternate"?  (imagesHeight*2) +20: imagesHeight +20
+          
+
+    filteredData.forEach((dataPoint, i) => {
       dataPoint["formatted"] = valueFormatter.format(dataPoint["date"])
       dataPoint["labelText"] = `${dataPoint["formatted"]}${this.viewModel.settings.textSettings.separator} ${dataPoint["label"]}`
-      // dataPoint["labelText"] = format //trick to capture format string from pbi desktop
       dataPoint["textColor"] = dataPoint.customFormat ? dataPoint.textColor : textColor
       dataPoint["fontFamily"] = dataPoint.customFormat ? dataPoint.fontFamily : fontFamily
       dataPoint["textSize"] = dataPoint.customFormat ? dataPoint.textSize : textSize
@@ -172,6 +192,12 @@ export class Visual implements IVisual {
 
       if (dataPoint["top"]) {
         this.marginTop = Math.max(this.marginTop, textHeight + 30)
+      } else {
+       
+        if(dataPoint.image){
+          this.marginTop = Math.max(this.marginTop,addToMargin)
+          
+        }
       }
 
 
@@ -180,7 +206,17 @@ export class Visual implements IVisual {
 
 
     marginTopStagger += (data.filter(element => element.top).length * this.viewModel.settings.textSettings.spacing)
+    
+    if(this.viewModel.settings.imageSettings.style == "stagger"){
+      marginTopStagger += (data.filter(element => !element.top && element.image).length * imagesHeight)
+    }
+    
+    if(data.filter(el => !el.top && el.image).length > 0){
+     
+      marginTopStagger = Math.max(marginTopStagger, addToMargin)
+    }
 
+    this.finalMarginTop = this.viewModel.settings.textSettings.stagger ? marginTopStagger : this.marginTop
     
 
     //  data.reduce(function (a, b) { return a.date < b.date ? a : b; }).date; 
@@ -203,11 +239,11 @@ export class Visual implements IVisual {
 
     bar = this.container.append("line")
       .attr("x1", this.padding)
-      .attr("y1", this.viewModel.settings.textSettings.stagger ? marginTopStagger : this.marginTop)
+      .attr("y1", this.finalMarginTop)
       .attr("x2", this.width - this.padding)
-      .attr("y2", this.viewModel.settings.textSettings.stagger ? marginTopStagger : this.marginTop)
-      .attr("stroke-width", 2)
-      .attr("stroke", "black");
+      .attr("y2", this.finalMarginTop)
+      .attr("stroke-width", this.viewModel.settings.style.lineThickness)
+      .attr("stroke", this.viewModel.settings.style.lineColor.solid.color);
 
     //   .attr('y', this.marginTop)
     //   .attr('height', this.barHeight)
@@ -218,7 +254,6 @@ export class Visual implements IVisual {
 
     let axisFormat = this.viewModel.settings.axisSettings.dateFormat != "customJS" ? this.viewModel.settings.axisSettings.dateFormat : this.viewModel.settings.axisSettings.customJS
 
-    console.log(axisFormat)
     let axisValueFormatter = axisFormat == "same" ? valueFormatter : createFormatter(axisFormat);
 
     let x_axis
@@ -230,7 +265,7 @@ export class Visual implements IVisual {
     // 
     //Append group and insert axis
     this.container.append("g")
-      .attr("transform", "translate(" + this.padding + "," + (this.viewModel.settings.textSettings.stagger ? marginTopStagger : this.marginTop) + ")")
+      .attr("transform", "translate(" + this.padding + "," + (this.finalMarginTop) + ")")
       .call(x_axis)
       .attr('class', 'axis')
 
@@ -256,6 +291,8 @@ export class Visual implements IVisual {
 
     let annotationsData, makeAnnotations
     let countTop = 0, countBottom = 0, counter
+    let imgCountTop = 0, imgCountBottom = 0, imgCounter
+
 
     data.forEach((element, i) => {
 
@@ -294,14 +331,14 @@ export class Visual implements IVisual {
 
       annotationsData = [{
         note: {
-          wrap: 900,
+          wrap: this.viewModel.settings.textSettings.wrap,
           title: element.labelText,
           label: element.description,
           bgPadding: 10
         },
         x: element["x"],
         // scale(element.dateAsInt),
-        y: this.viewModel.settings.textSettings.stagger ? marginTopStagger : this.marginTop,
+        y: this.finalMarginTop,
         dy: element["dy"],
         color: element.textColor,
         id: element.selectionId
@@ -315,11 +352,52 @@ export class Visual implements IVisual {
       makeAnnotations = svgAnnotations.annotation()
         .annotations(annotationsData)
         .type(new svgAnnotations.annotationCustomType(element.type, element.alignment))
+        
 
       if (element.annotationStyle === 'textOnly') {
         makeAnnotations
           .disable(["connector"])
 
+      }
+
+      if(element.image){
+        if(element.top){
+          imgCountTop++
+          imgCounter = imgCountTop
+        } else {
+          imgCountBottom++
+          imgCounter = imgCountBottom
+        }
+        let imageY 
+        if(this.viewModel.settings.imageSettings.style == "stagger"){
+
+          let staggerDY = element.top ? imagesHeight * (-1 * (imgCounter)) : imagesHeight * (imgCounter)
+          imageY = this.finalMarginTop - staggerDY -20
+        } else {
+          imageY = element.top ? this.finalMarginTop +20 : 0
+
+          if(this.viewModel.settings.imageSettings.style == "alternate" && imgCounter%2 == 0 ){
+            imageY += imagesHeight
+          } 
+       
+        }
+
+        let connector = this.container.append("line")
+        .attr("x1", element.x)
+        .attr("y1", this.finalMarginTop)
+        .attr("x2", element.x)
+        .attr("y2", element.top? imageY : imageY + imagesHeight)
+        .attr("stroke-width", 1)
+        .attr("stroke", element.textColor);
+
+        let image = this.container.append('image')
+        .attr('xlink:href', element.image)
+        .attr('width', imagesWidth)
+        .attr('height', imagesHeight)
+        .attr('x', element.x - (imagesWidth/2))
+        .attr('y', imageY)
+
+   
       }
 
 
@@ -345,10 +423,12 @@ export class Visual implements IVisual {
               this.container.selectAll('.bar').style('fill-opacity', 0.1)
 
               d3.select(`.selector_${element.label.replace(/\W/g, '')}_${element.dateAsInt}`).style('fill-opacity', 1)
-
               this.container.selectAll('.annotationSelector').style('font-weight', "normal")
-              this.container.selectAll('.annotationSelector  .annotation-note-title ').style('font-weight', "normal")
 
+              if(!this.viewModel.settings.textSettings.boldTitles){
+                this.container.selectAll('.annotationSelector  .annotation-note-title ').style('font-weight', "normal")
+              }
+              
               d3.selectAll(`.annotation_selector_${element.label.replace(/\W/g, '')}_${element.dateAsInt}`).style('font-weight', "bold")
               d3.selectAll(`.annotation_selector_${element.label.replace(/\W/g, '')}_${element.dateAsInt}  .annotation-note-title `).style('font-weight', "bold")
              
@@ -363,12 +443,20 @@ export class Visual implements IVisual {
             } else {
               this.container.selectAll('.bar').style('fill-opacity', 1)
               this.container.selectAll('.annotationSelector').style('font-weight', "normal")
-              this.container.selectAll('.annotationSelector .annotation-note-title').style('font-weight', "normal")
+              
+              if(!this.viewModel.settings.textSettings.boldTitles){
+                this.container.selectAll('.annotationSelector .annotation-note-title').style('font-weight', "normal")
+              }
             }
 
           })
         })
     })
+
+    //remove default bold if bold titles is off
+    if(!this.viewModel.settings.textSettings.boldTitles){
+      this.container.selectAll('.annotationSelector  .annotation-note-title ').style('font-weight', "normal")
+    }
 
 
     //Handle context menu - right click
@@ -394,7 +482,6 @@ export class Visual implements IVisual {
           if (ids.length > 0) {
             this.container.selectAll('.bar').style('fill-opacity', 0.1)
             d3.select(<Element>eventTarget).style('fill-opacity', 1)
-
             this.container.selectAll('.annotationSelector').style('font-weight', "normal")
             d3.select(`.annotation_selector_${dataPoint.label.replace(/\W/g, '')}_${dataPoint.dateAsInt}`).style('font-weight', "bold")
 
@@ -409,7 +496,11 @@ export class Visual implements IVisual {
 
           this.container.selectAll('.bar').style('fill-opacity', 1)
           this.container.selectAll('.annotationSelector').style('font-weight', "normal")
-
+          
+          
+          if(!this.viewModel.settings.textSettings.boldTitles){
+            this.container.selectAll('.annotationSelector  .annotation-note-title ').style('font-weight', "normal")
+          }
         })
       }
 
@@ -441,11 +532,6 @@ export class Visual implements IVisual {
       }
     })
 
-  }
-
-  private static parseSettings(dataView) {
-
-    // return this.enumerateObjectInstances(this.options)
   }
 
   /**
@@ -484,9 +570,11 @@ export class Visual implements IVisual {
           objectName: objectName,
           properties: {
             separator: this.viewModel.settings.textSettings.separator,
+            wrap: this.viewModel.settings.textSettings.wrap,
             labelOrientation: this.viewModel.settings.textSettings.labelOrientation,
             annotationStyle: this.viewModel.settings.textSettings.annotationStyle,
             top: this.viewModel.settings.textSettings.top,
+            boldTitles: this.viewModel.settings.textSettings.boldTitles,
             fontFamily: this.viewModel.settings.textSettings.fontFamily,
             textSize: this.viewModel.settings.textSettings.textSize,
             textColor: this.viewModel.settings.textSettings.textColor,
@@ -635,8 +723,30 @@ export class Visual implements IVisual {
 
           }
         }
-    };
+        break;
 
+        case "style":
+          objectEnumeration.push({
+            objectName: objectName,
+            properties: {
+              lineColor: this.viewModel.settings.style.lineColor,
+              lineThickness: this.viewModel.settings.style.lineThickness
+            },
+            selector: null
+          });
+        break;
+        case "imageSettings":
+          objectEnumeration.push({
+            objectName: objectName,
+            properties: {
+              imagesHeight: this.viewModel.settings.imageSettings.imagesHeight,
+              imagesWidth: this.viewModel.settings.imageSettings.imagesWidth,
+              style: this.viewModel.settings.imageSettings.style
+            },
+            selector: null
+          });
+        break;
+    };
 
     return objectEnumeration;
 
@@ -674,7 +784,7 @@ export class Visual implements IVisual {
 
         return "white"
       })
-    return textWidth
+    return Math.min(textWidth,this.viewModel.settings.textSettings.wrap)
   }
 
   private getTextHeight(textString: string, textSize: number, fontFamily: string) {
@@ -682,7 +792,12 @@ export class Visual implements IVisual {
 
     let textHeight
 
-    //Measure text's width for correct positioning of annotation
+    // let styles =    {
+    //   "font-family": fontFamily,
+    //   "font-size": `${textSize}px`
+    // }
+    // let width = d3PlusText.textWidth(textString,styles)
+
     this.svg.append('g')
       .selectAll('.dummyText')
       .data(textData)
@@ -690,6 +805,7 @@ export class Visual implements IVisual {
       .append("text")
       .attr("font-family", fontFamily)
       .attr("font-size", textSize)
+      .attr("width", this.viewModel.settings.textSettings.wrap)
       .text(function (d) { return d })
       // .each(function (d, i) {
       //   let thisHeight = this.getBBox().height
@@ -709,6 +825,7 @@ export class Visual implements IVisual {
         return "white"
       })
 
+      
     return textHeight
   }
   private getAnnotationOrientation(element) {
@@ -732,6 +849,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
       stagger: true,
       spacing: 10,
       separator: ":",
+      boldTitles: false,
       annotationStyle: "annotationLabel",
       labelOrientation: "Auto",
       fontFamily: "Arial",
@@ -739,7 +857,8 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
       textColor: { solid: { color: 'Black' } },
       top: false,
       dateFormat: "same",
-      customJS: "mm/dd/yyyy"
+      customJS: "mm/dd/yyyy",
+      wrap: 100
     },
     axisSettings: {
       axis: "None",
@@ -753,6 +872,15 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
       barMax: "",
       customJS: "mm/dd/yyyy"
 
+    },
+    style:{
+      lineColor: { solid: { color: 'black' } },
+      lineThickness: 2
+    },
+    imageSettings:{
+      imagesHeight: 100,
+      imagesWidth: 100,
+      style: 'alternate'
     }
   };
 
@@ -767,7 +895,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
   let objects = dataViews[0].metadata.objects;
 
   let categorical = dataViews[0].categorical;
-  let labelData, dateData, linkData, descriptionData, labelColumn, dateColumn, linkColumn, descriptionColumn, category
+  let labelData, imageData, dateData, linkData, descriptionData, labelColumn, imageColumn, dateColumn, linkColumn, descriptionColumn, category
 
 
   //parse data
@@ -799,36 +927,16 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
   descriptionData = categoricalData["description"] ? categoricalData["description"].values : false
   descriptionColumn = categoricalData["description"] ? categoricalData["description"].source.displayName : false
 
-
-  // let format, valueFormatter
-
-  // if (dataViews[0].categorical.categories[0].source.roles["label"]) {
-  // labelData = dataViews[0].categorical.categories[0].values
-  // labelColumn = dataViews[0].categorical.categories[0].source.displayName
-  // dateData = dataViews[0].categorical.categories[1].values
-  // dateColumn = dataViews[0].categorical.categories[1].source.displayName
-  // category = dataViews[0].categorical.categories[0]
-
-  // format = options.dataViews[0].categorical.categories[1].source.format
-  // } else {
-  // dateData = dataViews[0].categorical.categories[0].values
-  // dateColumn = dataViews[0].categorical.categories[0].source.displayName
-  // labelData = dataViews[0].categorical.categories[1].values
-  // labelColumn = dataViews[0].categorical.categories[1].source.displayName
-  // category = dataViews[0].categorical.categories[1]
-
-  // format = options.dataViews[0].categorical.categories[0].source.format
-  // }
-
-
-  // valueFormatter = createFormatter(format);
-
+  imageData = categoricalData["image_url"] ? categoricalData["image_url"].values : false
+  imageColumn = categoricalData["image_url"] ? categoricalData["image_url"].source.displayName : false
+  
   for (let i = 0; i < Math.min(dateData.length, labelData.length); i++) {
 
     let element = {}
     element["label"] = labelData[i]
     element["date"] = new Date(dateData[i])
     element["URL"] = linkData[i]    
+    element["image"] = imageData[i]
     element["description"] = descriptionData[i]
     element["labelColumn"] = labelColumn
     element["dateColumn"] = dateColumn
@@ -844,29 +952,16 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
     element["textSize"] = getCategoricalObjectValue(category, i, 'dataPoint', 'textSize', 12)
     element["textColor"] = getCategoricalObjectValue(category, i, 'dataPoint', 'textColor', { "solid": { "color": "black" } }).solid.color
     element["top"] = getCategoricalObjectValue(category, i, 'dataPoint', 'top', false)
-
-    element["annotationStyle"] = getCategoricalObjectValue(category, i, 'dataPoint', 'annotationStyle', 'textOnly')
+    
+    element["annotationStyle"] = getCategoricalObjectValue(category, i, 'dataPoint', 'annotationStyle', 'annotationLabel')
     element["labelOrientation"] = getCategoricalObjectValue(category, i, 'dataPoint', 'labelOrientation', 'Auto')
-    timelineDataPoints.push(element)
+  
+    // console.log(element)
+    // if(element["label"]){
+      timelineDataPoints.push(element)
+    // }
   }
 
-
-
-  //dataViews[0].categorical.categories[0].source.roles
-
-
-
-  // let dataValues = categorical.values;
-  // let category, dataValue, highlightsArray
-
-
-  // if (categorical.categories) {
-  //   category = categorical.categories[0];
-  //   dataValue = categorical.values[0];
-  //   if (dataValue.highlights) {
-  //     highlightsArray = categorical.values[0].highlights
-  //   }
-  // }
 
   let timelineSettings = {
     textSettings: {
@@ -880,7 +975,10 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
       textSize: getValue(objects, 'textSettings', 'textSize', defaultSettings.textSettings.textSize),
       fontFamily: getValue(objects, 'textSettings', 'fontFamily', defaultSettings.textSettings.fontFamily),
       dateFormat: getValue(objects, 'textSettings', 'dateFormat', defaultSettings.textSettings.dateFormat),
-      customJS: getValue(objects, 'textSettings', 'customJS', defaultSettings.textSettings.customJS)
+      customJS: getValue(objects, 'textSettings', 'customJS', defaultSettings.textSettings.customJS),
+      boldTitles: getValue(objects, 'textSettings', 'boldTitles', defaultSettings.textSettings.boldTitles),
+      wrap: getValue(objects, 'textSettings', 'wrap', defaultSettings.textSettings.wrap),
+      
     },
     axisSettings: {
       axis: getValue(objects, 'axisSettings', 'axis', defaultSettings.axisSettings.axis),
@@ -894,6 +992,15 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
       barMax: getValue(objects, 'axisSettings', 'barMax', defaultSettings.axisSettings.barMax),
       customJS: getValue(objects, 'axisSettings', 'customJS', defaultSettings.axisSettings.customJS)
 
+    },
+    style:{
+      lineColor:getValue(objects, 'style', 'lineColor', defaultSettings.style.lineColor),
+      lineThickness: getValue(objects, 'style', 'lineThickness', defaultSettings.style.lineThickness)
+    },
+    imageSettings:{
+      imagesHeight: getValue(objects, 'imageSettings', 'imagesHeight', defaultSettings.imageSettings.imagesHeight),
+      imagesWidth: getValue(objects, 'imageSettings', 'imagesWidth', defaultSettings.imageSettings.imagesWidth),
+      style: getValue(objects, 'imageSettings', 'style', defaultSettings.imageSettings.style)
     }
   }
   return {

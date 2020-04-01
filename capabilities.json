@@ -59,10 +59,22 @@
                         "bool": true
                     }
                 },
+                "wrap": {
+                    "displayName": "Label width",
+                    "type": {
+                        "numeric": true
+                    }
+                },
                 "spacing": {
                     "displayName": "Stagger spacing",
                     "type": {
                         "numeric": true
+                    }
+                },
+                "boldTitles": {
+                    "displayName": "Bold titles",
+                    "type": {
+                        "bool": true
                     }
                 },
                 "separator": {
@@ -634,6 +646,64 @@
                     }
                 }
             }
+        },
+        "imageSettings": {
+            "displayName": "Image Settings",
+            "properties": {
+                "imagesWidth": {
+                    "displayName": "Images width",
+                    "type": {
+                        "numeric": true
+                    }
+                },
+                "imagesHeight": {
+                    "displayName": "Images height",
+                    "type": {
+                        "numeric": true
+                    }
+                },
+                "style": {
+                    "displayName": "Design Style",
+                    "type": {
+                        "enumeration": [
+                            {
+                                "displayName": "Straight",
+                                "value": "straight"
+                            },
+                            {
+                                "displayName": "Alternate",
+                                "value": "alternate"
+                            },
+                            {
+                                "displayName": "Stagger",
+                                "value": "stagger"
+                            }
+                        ]
+                    }
+                }
+            }
+        },
+        "style": {
+            "displayName": "Style",
+            "properties": {
+                "lineColor": {
+                    "displayName": "Line Color",
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
+                    }
+                },
+                "lineThickness": {
+                    "displayName": "Line Thickness",
+                    "type":{
+                        "numeric": true
+                    }
+
+                }
+            }
         }
     },
     "dataViewMappings": [
@@ -648,9 +718,9 @@
                     },
                     "link": {
                         "max": 1
-                    }, 
+                    },
                     "description": {
-                        "max":1
+                        "max": 1
                     }
                 }
             ],
