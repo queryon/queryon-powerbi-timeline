@@ -74,6 +74,11 @@ export class Visual implements IVisual {
 
     this.container.selectAll("line").remove();
     let data = this.viewModel.dataPoints
+    
+    //min label width from annotation plugin
+    if(this.viewModel.settings.textSettings.wrap < 90){
+      this.viewModel.settings.textSettings.wrap = 90
+    }
 
     let minFromData = d3.min(data, function (d: any) { return d.date })
     let maxFromData = d3.max(data, function (d: any) { return d.date })
@@ -170,22 +175,21 @@ export class Visual implements IVisual {
       dataPoint["labelOrientation"] = dataPoint.customFormat ? dataPoint.labelOrientation : labelOrientation
       dataPoint["annotationStyle"] = dataPoint.customFormat ? dataPoint.annotationStyle : annotationStyle
       dataPoint["textWidth"] = this.getTextWidth(dataPoint["labelText"], dataPoint["textSize"], fontFamily)
-      dataPoint["textHeight"] = 0
 
 
       // let textHeight, 
-      let titleHeight = this.getTextHeight(dataPoint["labelText"], dataPoint["textSize"], fontFamily)
+      dataPoint["textHeight"] = this.getTextHeight(dataPoint["labelText"], dataPoint["textSize"], fontFamily) + 10
 
       if (dataPoint.description) {
-        dataPoint["textHeight"] = titleHeight + this.getTextHeight(dataPoint["description"], dataPoint["textSize"], fontFamily) + 2
-      } else {
-        dataPoint["textHeight"] = titleHeight
+        dataPoint["textHeight"] += this.getTextHeight(dataPoint["description"], dataPoint["textSize"], fontFamily) + 2
       }
 
-      if(dataPoint.image && this.viewModel.settings.imageSettings.style == "default"){
+      if (dataPoint.image && this.viewModel.settings.imageSettings.style == "default") {
         dataPoint["textHeight"] += imagesHeight
+        if (!dataPoint["top"]) {
+          dataPoint["textHeight"] += 10
+        }
       }
-
 
       if (this.viewModel.settings.textSettings.spacing < dataPoint["textHeight"]) {
         this.viewModel.settings.textSettings.spacing = dataPoint["textHeight"]
@@ -215,7 +219,7 @@ export class Visual implements IVisual {
     //   marginTopStagger += (data.filter(element => !element.top && element.image).length * imagesHeight)
     // }
 
-    if (data.filter(el => !el.top && el.image).length > 0) {
+    if (this.viewModel.settings.imageSettings.style !== "default" && data.filter(el => !el.top && el.image).length > 0) {
 
       marginTopStagger = Math.max(marginTopStagger, addToMargin)
     }
@@ -382,16 +386,16 @@ export class Visual implements IVisual {
         //   imageY = this.finalMarginTop - staggerDY - 20
 
         // } else 
-        
-        if (this.viewModel.settings.imageSettings.style == "default") {
-          imageY = !element.top ? (this.finalMarginTop + element.dy) + (element.textHeight - imagesHeight) +10 : (this.finalMarginTop + element.dy) - element.textHeight  - 10
 
-          if (orientation == "middle"){ imageX =  element.x - (imagesWidth / 2)} 
-          else if (orientation == "left"){imageX = element.x} 
-          else {imageX = element.x - imagesWidth}
+        if (this.viewModel.settings.imageSettings.style == "default") {
+          imageY = !element.top ? (this.finalMarginTop + element.dy) - 10 + (element.textHeight - imagesHeight) : (this.finalMarginTop + element.dy) - element.textHeight - 10
+
+          if (orientation == "middle") { imageX = element.x - (imagesWidth / 2) }
+          else if (orientation == "left") { imageX = element.x }
+          else { imageX = element.x - imagesWidth }
         }
         else {
-          imageY = element.top ? this.finalMarginTop + 20 : 0
+          imageY = element.top ? this.finalMarginTop + 20 : this.finalMarginTop - 20 - imagesHeight
 
           if (this.viewModel.settings.imageSettings.style == "alternate" && imgCounter % 2 == 0) {
             imageY += imagesHeight
@@ -412,10 +416,10 @@ export class Visual implements IVisual {
             .attr("stroke", element.textColor);
         }
 
-        
-     
-        
-        
+
+
+
+
         let image = this.container.append('image')
           .attr('xlink:href', element.image)
           .attr('width', imagesWidth)
@@ -836,11 +840,11 @@ export class Visual implements IVisual {
       .attr("font-family", fontFamily)
       .attr("font-size", textSize)
       .text(function (d) { return d })
-      // .call(wrap, this.viewModel.settings.textSettings.wrap)
+      .call(wrap, this.viewModel.settings.textSettings.wrap)
       .attr("color", function (d) {
         //Irrelevant color. ".EACH" does not work on IE and we need to iterate over the elements after they have been appended to dom.
         let thisHeight = this.getBBox().height
-        console.log(thisHeight)
+       
         textHeight = thisHeight
         // this.remove()
         if (this.parentNode) {
@@ -1132,19 +1136,23 @@ function createFormatter(format, precision?: any, value?: number) {
 }
 function wrap(text, width) {
   text.each(function () {
-    console.log(this)
+   
     var text = d3.select(this),
       words = text.text().split(/\s+/).reverse(),
       word,
       line = [],
       lineNumber = 0,
-      lineHeight = 1,
+      lineHeight = 1.0,
       // lineHeight = 1.1, // ems
       x = text.attr("x"),
       y = text.attr("y"),
       dy = 0, //parseFloat(text.attr("dy")),
       tspan = text.text(null)
+
         .append("tspan")
+
+        // .attr("font-family", fontFamily)
+        // .attr("font-size", textSize)
         .attr("x", x)
         .attr("y", y)
         .attr("dy", dy + "em");
