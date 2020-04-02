@@ -21,7 +21,6 @@ import {
   ITooltipServiceWrapper,
 } from 'powerbi-visuals-utils-tooltiputils'
 import * as svgAnnotations from "d3-svg-annotation";
-import * as d3PlusText from "d3plus-text";
 
 // import { VisualSettings } from "./settings";
 
@@ -352,7 +351,7 @@ export class Visual implements IVisual {
       makeAnnotations = svgAnnotations.annotation()
         .annotations(annotationsData)
         .type(new svgAnnotations.annotationCustomType(element.type, element.alignment))
-        
+      
 
       if (element.annotationStyle === 'textOnly') {
         makeAnnotations
@@ -798,6 +797,9 @@ export class Visual implements IVisual {
     // }
     // let width = d3PlusText.textWidth(textString,styles)
 
+  
+
+
     this.svg.append('g')
       .selectAll('.dummyText')
       .data(textData)
@@ -805,17 +807,13 @@ export class Visual implements IVisual {
       .append("text")
       .attr("font-family", fontFamily)
       .attr("font-size", textSize)
-      .attr("width", this.viewModel.settings.textSettings.wrap)
       .text(function (d) { return d })
-      // .each(function (d, i) {
-      //   let thisHeight = this.getBBox().height
-      //   textHeight = thisHeight
-      //   this.remove() // remove them just after displaying them
-      // })
+      .call(wrap, this.viewModel.settings.textSettings.wrap)
       .attr("color", function (d) {
         //Irrelevant color. ".EACH" does not work on IE and we need to iterate over the elements after they have been appended to dom.
         let thisHeight = this.getBBox().height
-        textHeight = thisHeight
+        console.log(thisHeight)
+        textHeight = thisHeight 
         // this.remove()
         if (this.parentNode) {
           this.parentNode.removeChild(this);
@@ -1103,4 +1101,38 @@ function createFormatter(format, precision?: any, value?: number) {
   }
 
   return vf.create(valueFormatter)
+}
+function wrap(text, width) {
+  text.each(function () {
+    console.log(this)
+      var text = d3.select(this),
+          words = text.text().split(/\s+/).reverse(),
+          word,
+          line = [],
+          lineNumber = 0,
+          lineHeight = 1,
+          // lineHeight = 1.1, // ems
+          x = text.attr("x"),
+          y = text.attr("y"),
+          dy = 0, //parseFloat(text.attr("dy")),
+          tspan = text.text(null)
+                      .append("tspan")
+                      .attr("x", x)
+                      .attr("y", y)
+                      .attr("dy", dy + "em");
+      while (word = words.pop()) {
+          line.push(word);
+          tspan.text(line.join(" "));
+          if (tspan.node().getComputedTextLength() > width) {
+              line.pop();
+              tspan.text(line.join(" "));
+              line = [word];
+              tspan = text.append("tspan")
+                          .attr("x", x)
+                          .attr("y", y)
+                          .attr("dy", ++lineNumber * lineHeight + dy + "em")
+                          .text(word);
+          }
+      }
+  });
 }
