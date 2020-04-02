@@ -667,16 +667,16 @@
                     "type": {
                         "enumeration": [
                             {
+                                "displayName": "Default",
+                                "value": "default"
+                            },
+                            {
                                 "displayName": "Straight",
                                 "value": "straight"
                             },
                             {
                                 "displayName": "Alternate",
                                 "value": "alternate"
-                            },
-                            {
-                                "displayName": "Stagger",
-                                "value": "stagger"
                             }
                         ]
                     }
