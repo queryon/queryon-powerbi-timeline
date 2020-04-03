@@ -93,9 +93,7 @@ export class Visual implements IVisual {
 
         if (Object.prototype.toString.call(minFromInput) === '[object Date]' && !isNaN(minFromInput.getTime())) {
           this.minVal = minFromInput
-        } else {
-          this.minVal = minFromData
-        }
+        } 
       }
 
       if (this.viewModel.settings.axisSettings.barMax && this.viewModel.settings.axisSettings.barMax != "") {
@@ -103,12 +101,15 @@ export class Visual implements IVisual {
 
         if (Object.prototype.toString.call(maxFromInput) === '[object Date]' && !isNaN(maxFromInput.getTime())) {
           this.maxVal = maxFromInput
-        } else {
-          this.maxVal = maxFromData
-
-        }
+        } 
 
       }
+
+      
+      this.maxVal = !this.maxVal? maxFromData : this.maxVal
+
+      this.minVal = !this.minVal? minFromData : this.minVal
+
 
     }
     else {
@@ -394,10 +395,11 @@ export class Visual implements IVisual {
           else if (orientation == "left") { imageX = element.x }
           else { imageX = element.x - imagesWidth }
         }
-        else {
+        else if (this.viewModel.settings.imageSettings.style == "straight") {
           imageY = element.top ? this.finalMarginTop + 20 : this.finalMarginTop - 20 - imagesHeight
-
-          if (this.viewModel.settings.imageSettings.style == "alternate" && imgCounter % 2 == 0) {
+        } else {
+          imageY = element.top ? this.finalMarginTop + 20 : 0
+          if (imgCounter % 2 == 0) {
             imageY += imagesHeight
           }
 
@@ -986,10 +988,10 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
     element["annotationStyle"] = getCategoricalObjectValue(category, i, 'dataPoint', 'annotationStyle', 'annotationLabel')
     element["labelOrientation"] = getCategoricalObjectValue(category, i, 'dataPoint', 'labelOrientation', 'Auto')
 
-    // console.log(element)
-    // if(element["label"]){
-    timelineDataPoints.push(element)
-    // }
+    console.log(element)
+    if(element["date"]){
+      timelineDataPoints.push(element)
+    }
   }
 
 
