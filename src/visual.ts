@@ -3,6 +3,7 @@
 import "core-js/stable";
 import "./../style/visual.less";
 import powerbi from "powerbi-visuals-api";
+
 import VisualConstructorOptions = powerbi.extensibility.visual.VisualConstructorOptions;
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import IVisual = powerbi.extensibility.visual.IVisual;
@@ -21,16 +22,14 @@ import {
   ITooltipServiceWrapper,
 } from 'powerbi-visuals-utils-tooltiputils'
 import * as svgAnnotations from "d3-svg-annotation";
-
-// import { VisualSettings } from "./settings";
-
 import {
   valueFormatter as vf,
 } from "powerbi-visuals-utils-formattingutils";
-
 import * as d3 from "d3";
-import { IValueFormatter } from "powerbi-visuals-utils-formattingutils/lib/src/valueFormatter";
-import { image } from "d3";
+import * as fse from 'fs-extra';
+
+const ics = require('ics')
+
 type Selection<T extends d3.BaseType> = d3.Selection<T, any, any, any>;
 
 export class Visual implements IVisual {
@@ -74,9 +73,9 @@ export class Visual implements IVisual {
 
     this.container.selectAll("line").remove();
     let data = this.viewModel.dataPoints
-    
+
     //min label width from annotation plugin
-    if(this.viewModel.settings.textSettings.wrap < 90){
+    if (this.viewModel.settings.textSettings.wrap < 90) {
       this.viewModel.settings.textSettings.wrap = 90
     }
 
@@ -93,7 +92,7 @@ export class Visual implements IVisual {
 
         if (Object.prototype.toString.call(minFromInput) === '[object Date]' && !isNaN(minFromInput.getTime())) {
           this.minVal = minFromInput
-        } 
+        }
       }
 
       if (this.viewModel.settings.axisSettings.barMax && this.viewModel.settings.axisSettings.barMax != "") {
@@ -101,14 +100,14 @@ export class Visual implements IVisual {
 
         if (Object.prototype.toString.call(maxFromInput) === '[object Date]' && !isNaN(maxFromInput.getTime())) {
           this.maxVal = maxFromInput
-        } 
+        }
 
       }
 
-      
-      this.maxVal = !this.maxVal? maxFromData : this.maxVal
 
-      this.minVal = !this.minVal? minFromData : this.minVal
+      this.maxVal = !this.maxVal ? maxFromData : this.maxVal
+
+      this.minVal = !this.minVal ? minFromData : this.minVal
 
 
     }
@@ -243,68 +242,71 @@ export class Visual implements IVisual {
     this.svg.attr("width", this.width);
     this.svg.attr("height", this.height);
 
+    if (this.viewModel.settings.imageSettings.style !== "image") {
+      let bar
 
-    let bar
+      bar = this.container.append("line")
+        .attr("x1", this.padding)
+        .attr("y1", this.finalMarginTop)
+        .attr("x2", this.width - this.padding)
+        .attr("y2", this.finalMarginTop)
+        .attr("stroke-width", this.viewModel.settings.style.lineThickness)
+        .attr("stroke", this.viewModel.settings.style.lineColor.solid.color);
 
-    bar = this.container.append("line")
-      .attr("x1", this.padding)
-      .attr("y1", this.finalMarginTop)
-      .attr("x2", this.width - this.padding)
-      .attr("y2", this.finalMarginTop)
-      .attr("stroke-width", this.viewModel.settings.style.lineThickness)
-      .attr("stroke", this.viewModel.settings.style.lineColor.solid.color);
+      //   .attr('y', this.marginTop)
+      //   .attr('height', this.barHeight)
+      // bar.exit().remove()
 
-    //   .attr('y', this.marginTop)
-    //   .attr('height', this.barHeight)
-    // bar.exit().remove()
-
-    //axis settings
+      //axis settings
 
 
-    let axisFormat = this.viewModel.settings.axisSettings.dateFormat != "customJS" ? this.viewModel.settings.axisSettings.dateFormat : this.viewModel.settings.axisSettings.customJS
 
-    let axisValueFormatter = axisFormat == "same" ? valueFormatter : createFormatter(axisFormat);
+      let axisFormat = this.viewModel.settings.axisSettings.dateFormat != "customJS" ? this.viewModel.settings.axisSettings.dateFormat : this.viewModel.settings.axisSettings.customJS
 
-    let x_axis
-    x_axis = d3.axisBottom(scale)
-      .tickFormat(d => {
-        return axisValueFormatter.format(new Date(<any>d))
-      })
+      let axisValueFormatter = axisFormat == "same" ? valueFormatter : createFormatter(axisFormat);
 
-    // 
-    //Append group and insert axis
-    this.container.append("g")
-      .attr("transform", "translate(" + this.padding + "," + (this.finalMarginTop) + ")")
-      .call(x_axis)
-      .attr('class', 'axis')
+      let x_axis
+      x_axis = d3.axisBottom(scale)
+        .tickFormat(d => {
+          return axisValueFormatter.format(new Date(<any>d))
+        })
 
-      .attr('style', `color :${this.viewModel.settings.axisSettings.axisColor.solid.color}`)
-      .attr('style', `stroke :${this.viewModel.settings.axisSettings.axisColor.solid.color}`)
+      // 
+      //Append group and insert axis
+      this.container.append("g")
+        .attr("transform", "translate(" + this.padding + "," + (this.finalMarginTop) + ")")
+        .call(x_axis)
+        .attr('class', 'axis')
 
-    this.container.selectAll('path, line')
-      .attr('style', `color :${this.viewModel.settings.axisSettings.axisColor.solid.color}`)
+        .attr('style', `color :${this.viewModel.settings.axisSettings.axisColor.solid.color}`)
+        .attr('style', `stroke :${this.viewModel.settings.axisSettings.axisColor.solid.color}`)
 
-    if (this.viewModel.settings.axisSettings.bold) {
-      this.container.classed("xAxis", false);
-    } else {
-      this.container.attr('class', 'xAxis')
+      this.container.selectAll('path, line')
+        .attr('style', `color :${this.viewModel.settings.axisSettings.axisColor.solid.color}`)
+
+      if (this.viewModel.settings.axisSettings.bold) {
+        this.container.classed("xAxis", false);
+      } else {
+        this.container.attr('class', 'xAxis')
+      }
+      if (this.viewModel.settings.axisSettings.axis === "None") {
+        this.container.selectAll("text").remove()
+      } else {
+        this.container.selectAll("text").style('font-size', this.viewModel.settings.axisSettings.fontSize)
+        this.container.selectAll("text").style('fill', this.viewModel.settings.axisSettings.axisColor.solid.color)
+        this.container.selectAll("text").style('font-family', this.viewModel.settings.axisSettings.fontFamily)
+
+      }
     }
-    if (this.viewModel.settings.axisSettings.axis === "None") {
-      this.container.selectAll("text").remove()
-    } else {
-      this.container.selectAll("text").style('font-size', this.viewModel.settings.axisSettings.fontSize)
-      this.container.selectAll("text").style('fill', this.viewModel.settings.axisSettings.axisColor.solid.color)
-      this.container.selectAll("text").style('font-family', this.viewModel.settings.axisSettings.fontFamily)
 
-    }
-
-    let annotationsData, makeAnnotations
+    let annotationsData, makeAnnotations, dateStyle, dateType, datesData, makeDates
     let countTop = 0, countBottom = 0, counter
     let imgCountTop = 0, imgCountBottom = 0, imgCounter
 
+    let pixelWidth = (this.width - this.padding * 2) / data.length
 
     data.forEach((element, i) => {
-
+      let orientation
       if (element.top) {
         countTop++;
         counter = countTop
@@ -313,31 +315,74 @@ export class Visual implements IVisual {
         counter = countBottom
       }
 
-      element["x"] = this.padding + scale(element["date"])
+      if (this.viewModel.settings.imageSettings.style == "image") {
+        element["x"] = this.padding + pixelWidth * i
+        element["dy"] = imagesHeight / 2 + 10
+        orientation = "left"
+
+        element["alignment"] = {
+          "className": "custom",
+          "connector": { "end": "dot" },
+          "note": { "align": "dynamic" }
+        }
+
+        dateStyle = svgAnnotations['annotationLabel']
+        dateType = new svgAnnotations.annotationCustomType(
+          dateStyle,
+          element.alignment
+        )
+
+        element.alignment.note.align = orientation
+        datesData = [{
+          note: {
+            wrap: this.viewModel.settings.textSettings.wrap,
+            title: element.formatted,
+            bgPadding: 10
+          },
+          x: element["x"],
+          y: this.finalMarginTop,
+          dy: element["dy"] * -1,
+          color: element.textColor,
+          // id: element.selectionId
+        }]
+
+        makeDates = svgAnnotations.annotation()
+          .annotations(datesData)
+          .type(new svgAnnotations.annotationCustomType(dateType, element.alignment))
+
+        makeDates
+          .disable(["connector"])
 
 
-      if (this.viewModel.settings.textSettings.stagger) {
-        element["dy"] = element.top ? this.viewModel.settings.textSettings.spacing * (-1 * (counter)) : this.viewModel.settings.textSettings.spacing * (counter)
       } else {
-        element["dy"] = element.top ? -20 : 20
+        element["x"] = this.padding + scale(element["date"])
+
+
+        if (this.viewModel.settings.textSettings.stagger) {
+          element["dy"] = element.top ? this.viewModel.settings.textSettings.spacing * (-1 * (counter)) : this.viewModel.settings.textSettings.spacing * (counter)
+        } else {
+          element["dy"] = element.top ? -20 : 20
+        }
+
+        if (this.viewModel.settings.axisSettings.axis != "None" && !element.top) {
+          element["dy"] += 20
+        }
+        if (element.labelOrientation !== "Auto") {
+          orientation = element.labelOrientation
+        } else {
+          orientation = this.getAnnotationOrientation(element)
+        }
+
+        element["alignment"] = {
+          "className": "custom",
+          "connector": { "end": "dot" },
+          "note": { "align": "dynamic" }
+        }
       }
 
-      if (this.viewModel.settings.axisSettings.axis != "None" && !element.top) {
-        element["dy"] += 20
-      }
 
-      element["alignment"] = {
-        "className": "custom",
-        "connector": { "end": "dot" },
-        "note": { "align": "dynamic" }
-      }
 
-      let orientation
-      if (element.labelOrientation !== "Auto") {
-        orientation = element.labelOrientation
-      } else {
-        orientation = this.getAnnotationOrientation(element)
-      }
+
 
       element.alignment.note.align = orientation
       annotationsData = [{
@@ -387,28 +432,38 @@ export class Visual implements IVisual {
         //   imageY = this.finalMarginTop - staggerDY - 20
 
         // } else 
+        switch (this.viewModel.settings.imageSettings.style) {
+          case "default":
+            imageY = !element.top ? (this.finalMarginTop + element.dy) - 10 + (element.textHeight - imagesHeight) : (this.finalMarginTop + element.dy) - element.textHeight - 10
 
-        if (this.viewModel.settings.imageSettings.style == "default") {
-          imageY = !element.top ? (this.finalMarginTop + element.dy) - 10 + (element.textHeight - imagesHeight) : (this.finalMarginTop + element.dy) - element.textHeight - 10
+            if (orientation == "middle") { imageX = element.x - (imagesWidth / 2) }
+            else if (orientation == "left") { imageX = element.x }
+            else { imageX = element.x - imagesWidth }
+            break;
 
-          if (orientation == "middle") { imageX = element.x - (imagesWidth / 2) }
-          else if (orientation == "left") { imageX = element.x }
-          else { imageX = element.x - imagesWidth }
-        }
-        else if (this.viewModel.settings.imageSettings.style == "straight") {
-          imageY = element.top ? this.finalMarginTop + 20 : this.finalMarginTop - 20 - imagesHeight
-        } else {
-          imageY = element.top ? this.finalMarginTop + 20 : 0
-          if (imgCounter % 2 == 0) {
-            imageY += imagesHeight
-          }
+          case "straight":
+            imageY = element.top ? this.finalMarginTop + 20 : this.finalMarginTop - 20 - imagesHeight
+            break;
+
+          case "image":
+            imageY = this.finalMarginTop - imagesHeight / 2
+            imageX = element.x
+
+            break;
+
+
+          default:
+            imageY = element.top ? this.finalMarginTop + 20 : 0
+            if (imgCounter % 2 == 0) {
+              imageY += imagesHeight
+            }
 
         }
 
         imageX = !imageX ? element.x - (imagesWidth / 2) : imageX
 
 
-        if (this.viewModel.settings.imageSettings.style != "default") {
+        if (this.viewModel.settings.imageSettings.style != "default" && this.viewModel.settings.imageSettings.style != "image") {
           let connector = this.container.append("line")
             .attr("x1", element.x)
             .attr("y1", this.finalMarginTop)
@@ -421,7 +476,6 @@ export class Visual implements IVisual {
 
 
 
-
         let image = this.container.append('image')
           .attr('xlink:href', element.image)
           .attr('width', imagesWidth)
@@ -430,9 +484,55 @@ export class Visual implements IVisual {
           // .attr('x', element.labelOrientation !== "middle" ? element.x : element.x - (imagesWidth / 2))
           .attr('y', imageY)
 
-
+          .on("click", () => {
+            this.host.launchUrl(element.URL)
+          });
       }
 
+
+
+
+      //export calendar
+      this.container.append("text")
+        .attr("x", 20)
+        .attr("y", data[data.length - 1].dy)
+        .text("Download Calendar")
+        .on('click', () => {
+          let events = []
+          data.forEach(el => {
+            // cal.addEvent(el.label, el.description, false, el.date, el.date);
+          
+            let startTime = [ el.date.getFullYear(), el.date.getMonth()+1, el.date.getDate(), el.date.getHours(), el.date.getMinutes() ];
+
+            events.push({
+              title: el.label,
+              description: el.description,
+              startInputType: 'utc',
+              start: startTime,
+              duration: { minutes: 30 }
+            })
+
+            if (error) {
+              // console.log(error)
+              return
+            }
+            fse.writeFileSync(`event.ics`, value)
+
+          })
+
+          const { error, value } = ics.createEvents(events)
+
+          if (error) {
+            console.log(error)
+            return
+          }
+
+          console.log(value)
+
+
+          // console.log(icsBrowserGen)
+          // cal.download(filename);
+        })
 
       this.container
         .append("g")
@@ -846,7 +946,7 @@ export class Visual implements IVisual {
       .attr("color", function (d) {
         //Irrelevant color. ".EACH" does not work on IE and we need to iterate over the elements after they have been appended to dom.
         let thisHeight = this.getBBox().height
-       
+
         textHeight = thisHeight
         // this.remove()
         if (this.parentNode) {
@@ -988,8 +1088,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
     element["annotationStyle"] = getCategoricalObjectValue(category, i, 'dataPoint', 'annotationStyle', 'annotationLabel')
     element["labelOrientation"] = getCategoricalObjectValue(category, i, 'dataPoint', 'labelOrientation', 'Auto')
 
-    console.log(element)
-    if(element["date"]){
+    if (element["date"]) {
       timelineDataPoints.push(element)
     }
   }
@@ -1121,6 +1220,7 @@ export function getCategoricalObjectValue(category, index, objectName, propertyN
 
 //     }
 //   }
+declare function require(name: string);
 
 //   return defaultValue;
 // }
@@ -1138,7 +1238,7 @@ function createFormatter(format, precision?: any, value?: number) {
 }
 function wrap(text, width) {
   text.each(function () {
-   
+
     var text = d3.select(this),
       words = text.text().split(/\s+/).reverse(),
       word,

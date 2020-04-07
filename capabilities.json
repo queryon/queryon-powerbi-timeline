@@ -677,6 +677,10 @@
                             {
                                 "displayName": "Alternate",
                                 "value": "alternate"
+                            },
+                            {
+                                "displayName": "Image focused",
+                                "value": "image"
                             }
                         ]
                     }
