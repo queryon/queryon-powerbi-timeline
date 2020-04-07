@@ -26,10 +26,9 @@ import {
   valueFormatter as vf,
 } from "powerbi-visuals-utils-formattingutils";
 import * as d3 from "d3";
-import * as fse from 'fs-extra';
+import * as FileSaver from 'file-saver';
 
 const ics = require('ics')
-
 type Selection<T extends d3.BaseType> = d3.Selection<T, any, any, any>;
 
 export class Visual implements IVisual {
@@ -516,8 +515,6 @@ export class Visual implements IVisual {
               // console.log(error)
               return
             }
-            fse.writeFileSync(`event.ics`, value)
-
           })
 
           const { error, value } = ics.createEvents(events)
@@ -526,8 +523,14 @@ export class Visual implements IVisual {
             console.log(error)
             return
           }
+          
+          // let file = new File(value, "test.ics", {type: "text/plain;charset=utf-8"});
+          var file = new File(["Hello, world!"], "hello world.txt", {type: "text/plain;charset=utf-8"});
 
-          console.log(value)
+          FileSaver.saveAs(file);
+
+          // saveAs("sadasdsadas", "test.txt");
+          // console.log(value)
 
 
           // console.log(icsBrowserGen)
