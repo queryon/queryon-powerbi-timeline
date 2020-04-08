@@ -3,7 +3,7 @@
 import "core-js/stable";
 import "./../style/visual.less";
 import powerbi from "powerbi-visuals-api";
-
+import {BlobBuilder} from "blob"
 import VisualConstructorOptions = powerbi.extensibility.visual.VisualConstructorOptions;
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import IVisual = powerbi.extensibility.visual.IVisual;
@@ -524,18 +524,18 @@ export class Visual implements IVisual {
             return
           }
           
-          // let file = new File(value, "test.ics", {type: "text/plain;charset=utf-8"});
-          var file = new File(["Hello, world!"], "hello world.txt", {type: "text/plain;charset=utf-8"});
-
-          FileSaver.saveAs(file);
-
-          // saveAs("sadasdsadas", "test.txt");
-          // console.log(value)
-
-
-          // console.log(icsBrowserGen)
-          // cal.download(filename);
-        })
+     
+          var blob;
+          // if (navigator.userAgent.indexOf('MSIE 10') === -1) { // chrome or firefox
+            blob = new Blob([value]);
+          // } else { // ie
+            // var bb = new BlobBuilder();
+            // bb.append(value);
+            // blob = bb.getBlob('text/x-vCalendar;charset=' + document.characterSet);
+          // }
+          FileSaver.saveAs(blob, "calendar.ics");
+    
+       })
 
       this.container
         .append("g")
