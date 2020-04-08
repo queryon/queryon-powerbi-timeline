@@ -73,6 +73,62 @@ export class Visual implements IVisual {
     this.container.selectAll("line").remove();
     let data = this.viewModel.dataPoints
 
+    console.log(this.viewModel.settings.download.downloadCalendar)
+    //download calendar
+    if(this.viewModel.settings.download.downloadCalendar){
+      let events = []
+          data.forEach(el => {
+            // cal.addEvent(el.label, el.description, false, el.date, el.date);
+          
+            let startTime = [ el.date.getFullYear(), el.date.getMonth()+1, el.date.getDate(), el.date.getHours(), el.date.getMinutes() ];
+
+            events.push({
+              title: el.label,
+              description: el.description,
+              startInputType: 'utc',
+              start: startTime,
+              duration: { minutes: 30 }
+            })
+
+            if (error) {
+              // console.log(error)
+              return
+            }
+          })
+
+          const { error, value } = ics.createEvents(events)
+
+          if (error) {
+            console.log(error)
+            return
+          }
+          
+     
+          var blob;
+          // if (navigator.userAgent.indexOf('MSIE 10') === -1) { // chrome or firefox
+            blob = new Blob([value]);
+          // } else { // ie
+            // var bb = new BlobBuilder();
+            // bb.append(value);
+            // blob = bb.getBlob('text/x-vCalendar;charset=' + document.characterSet);
+          // }
+          FileSaver.saveAs(blob, "calendar.ics");
+    
+          this.host.persistProperties({
+            merge: [
+              {
+                objectName: "download",
+                selector: null,
+                properties: {
+                    downloadCalendar: false
+                }
+              }
+            ]
+        });
+      // this.viewModel.settings.download.downloadCalendar= false;
+    }
+
+
     //min label width from annotation plugin
     if (this.viewModel.settings.textSettings.wrap < 90) {
       this.viewModel.settings.textSettings.wrap = 90
@@ -489,54 +545,6 @@ export class Visual implements IVisual {
       }
 
 
-
-
-      //export calendar
-      this.container.append("text")
-        .attr("x", 20)
-        .attr("y", data[data.length - 1].dy)
-        .text("Download Calendar")
-        .on('click', () => {
-          let events = []
-          data.forEach(el => {
-            // cal.addEvent(el.label, el.description, false, el.date, el.date);
-          
-            let startTime = [ el.date.getFullYear(), el.date.getMonth()+1, el.date.getDate(), el.date.getHours(), el.date.getMinutes() ];
-
-            events.push({
-              title: el.label,
-              description: el.description,
-              startInputType: 'utc',
-              start: startTime,
-              duration: { minutes: 30 }
-            })
-
-            if (error) {
-              // console.log(error)
-              return
-            }
-          })
-
-          const { error, value } = ics.createEvents(events)
-
-          if (error) {
-            console.log(error)
-            return
-          }
-          
-     
-          var blob;
-          // if (navigator.userAgent.indexOf('MSIE 10') === -1) { // chrome or firefox
-            blob = new Blob([value]);
-          // } else { // ie
-            // var bb = new BlobBuilder();
-            // bb.append(value);
-            // blob = bb.getBlob('text/x-vCalendar;charset=' + document.characterSet);
-          // }
-          FileSaver.saveAs(blob, "calendar.ics");
-    
-       })
-
       this.container
         .append("g")
         // .attr('class', 'annotations')
@@ -682,6 +690,15 @@ export class Visual implements IVisual {
 
 
     switch (objectName) {
+      case 'download':
+        objectEnumeration.push({
+          objectName: objectName,
+          properties: {
+            downloadCalendar: this.viewModel.settings.download.downloadCalendar
+          },
+          selector: null
+        });
+        break;
       case 'textSettings':
         objectEnumeration.push({
           objectName: objectName,
@@ -945,7 +962,7 @@ export class Visual implements IVisual {
       .attr("font-family", fontFamily)
       .attr("font-size", textSize)
       .text(function (d) { return d })
-      .call(wrap, this.viewModel.settings.textSettings.wrap)
+      // .call(wrap, this.viewModel.settings.textSettings.wrap)
       .attr("color", function (d) {
         //Irrelevant color. ".EACH" does not work on IE and we need to iterate over the elements after they have been appended to dom.
         let thisHeight = this.getBBox().height
@@ -980,6 +997,9 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
   let dataViews = options.dataViews;
 
   let defaultSettings = {
+    download:{
+      downloadCalendar: false
+    },
     textSettings: {
       stagger: true,
       spacing: 10,
@@ -1098,6 +1118,9 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
 
 
   let timelineSettings = {
+    download:{
+      downloadCalendar: getValue(objects, 'download', 'downloadCalendar', defaultSettings.download.downloadCalendar)
+    },
     textSettings: {
       stagger: getValue(objects, 'textSettings', 'stagger', defaultSettings.textSettings.stagger),
       separator: getValue(objects, 'textSettings', 'separator', defaultSettings.textSettings.separator),

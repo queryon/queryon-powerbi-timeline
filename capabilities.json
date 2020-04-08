@@ -27,6 +27,18 @@
         }
     ],
     "objects": {
+        "download":{
+            "displayName": "Download as calendar",
+            "description": "Not supported on PBI Desktop. Browser only.",
+            "properties": {
+                "downloadCalendar": {
+                    "displayName": "Click to download",
+                    "type": {
+                        "bool": true
+                    }
+                }
+            }
+        },
         "textSettings": {
             "displayName": "Text Settings",
             "properties": {
