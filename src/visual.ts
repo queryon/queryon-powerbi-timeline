@@ -27,6 +27,7 @@ import {
 } from "powerbi-visuals-utils-formattingutils";
 import * as d3 from "d3";
 import * as FileSaver from 'file-saver';
+import { image } from "d3";
 
 const ics = require('ics')
 type Selection<T extends d3.BaseType> = d3.Selection<T, any, any, any>;
@@ -197,7 +198,7 @@ export class Visual implements IVisual {
       if (this.viewModel.settings.textSettings.spacing < dataPoint["textHeight"]) {
         this.viewModel.settings.textSettings.spacing = dataPoint["textHeight"]
         if (dataPoint["top"]) {
-          marginTopStagger += dataPoint["textHeight"]
+          marginTopStagger = dataPoint["textHeight"]
         }
       }
 
@@ -214,22 +215,21 @@ export class Visual implements IVisual {
 
     })
 
-
-
     marginTopStagger += ((data.filter(element => element.top).length - 1) * this.viewModel.settings.textSettings.spacing) + 20
+    
     marginTopStagger = marginTopStagger < 0 ? this.marginTop : marginTopStagger
-    // if (this.viewModel.settings.imageSettings.style == "stagger") {
-    //   marginTopStagger += (data.filter(element => !element.top && element.image).length * imagesHeight)
-    // }
-
+    
     if (this.viewModel.settings.imageSettings.style !== "default" && data.filter(el => !el.top && el.image).length > 0) {
-
       marginTopStagger = Math.max(marginTopStagger, addToMargin)
     }
 
-    this.finalMarginTop = this.viewModel.settings.textSettings.stagger ? marginTopStagger : this.marginTop
-
-    if (this.viewModel.settings.download.downloadCalendar) {
+    if(this.viewModel.settings.imageSettings.style !== "image"){
+      this.finalMarginTop = this.viewModel.settings.textSettings.stagger ? marginTopStagger : this.marginTop
+    } else {
+      this.finalMarginTop = this.marginTop + imagesHeight/2
+    }
+  
+    if (this.viewModel.settings.download.downloadCalendar && this.viewModel.settings.download.position.split(",")[0] == "TOP") {
       this.finalMarginTop += 35
     }
 
@@ -241,6 +241,16 @@ export class Visual implements IVisual {
     //   .domain([this.minVal, this.maxVal]) //min and max data from input
     //   .range([0, this.width - (this.padding * 2)]); //min and max width in px           
 
+     //axis format
+     let axisFormat = this.viewModel.settings.axisSettings.dateFormat != "customJS" ? this.viewModel.settings.axisSettings.dateFormat : this.viewModel.settings.axisSettings.customJS
+     let axisValueFormatter = axisFormat == "same" ? valueFormatter : createFormatter(axisFormat);
+ 
+     if (this.viewModel.settings.axisSettings.axis === "Values") {
+       let dynamicPadding = Math.max(this.padding, imagesHeight/2)
+      //  let dynamicPadding = Math.max(this.getTextWidth(axisValueFormatter.format(this.minVal), this.viewModel.settings.axisSettings.fontSize, this.viewModel.settings.axisSettings.fontFamily), this.getTextWidth(valueFormatter.format(this.maxVal), this.viewModel.settings.axisSettings.fontSize, this.viewModel.settings.axisSettings.fontFamily)) / 2
+       this.padding = dynamicPadding
+     }
+
     let scale = d3.scaleTime()
       .domain([this.minVal, this.maxVal]) //min and max data from input
       .range([0, this.width - (this.padding * 2)]); //min and max width in px           
@@ -248,6 +258,7 @@ export class Visual implements IVisual {
     this.svg.attr("width", this.width);
     this.svg.attr("height", this.height);
 
+   
     if (this.viewModel.settings.imageSettings.style !== "image") {
       let bar
 
@@ -263,14 +274,8 @@ export class Visual implements IVisual {
       //   .attr('height', this.barHeight)
       // bar.exit().remove()
 
-      //axis settings
 
-
-
-      let axisFormat = this.viewModel.settings.axisSettings.dateFormat != "customJS" ? this.viewModel.settings.axisSettings.dateFormat : this.viewModel.settings.axisSettings.customJS
-
-      let axisValueFormatter = axisFormat == "same" ? valueFormatter : createFormatter(axisFormat);
-
+      //axis setup
       let x_axis
       x_axis = d3.axisBottom(scale)
         .tickFormat(d => {
@@ -326,47 +331,59 @@ export class Visual implements IVisual {
         element["dy"] = imagesHeight / 2 + 10
         orientation = "left"
 
+
         element["alignment"] = {
           "className": "custom",
           "connector": { "end": "dot" },
           "note": { "align": "dynamic" }
         }
-
-        dateStyle = svgAnnotations['annotationLabel']
-        dateType = new svgAnnotations.annotationCustomType(
-          dateStyle,
-          element.alignment
-        )
-
         element.alignment.note.align = orientation
-        datesData = [{
-          note: {
-            wrap: this.viewModel.settings.textSettings.wrap,
-            title: element.formatted,
-            bgPadding: 10
-          },
-          x: element["x"],
-          y: this.finalMarginTop,
-          dy: element["dy"] * -1,
-          color: element.textColor,
-          // id: element.selectionId
-        }]
 
-        makeDates = svgAnnotations.annotation()
-          .annotations(datesData)
-          .type(new svgAnnotations.annotationCustomType(dateType, element.alignment))
+        if (this.viewModel.settings.axisSettings.axis == "Values") {
+          dateStyle = svgAnnotations['annotationLabel']
+          dateType = new svgAnnotations.annotationCustomType(
+            dateStyle,
+            element.alignment
+          )
 
-        makeDates
-          .disable(["connector"])
 
-        this.container
-          .append("g")
-          .style('font-size', element.textSize + "px")
-          .style('font-family', element.fontFamily)
-          .style('background-color', 'transparent')
-          .style('font-weight', 'normal')
-          .call(makeDates)
+          datesData = [{
+            note: {
+              wrap: this.viewModel.settings.textSettings.wrap,
+              title: axisValueFormatter.format(element.date),
+              bgPadding: 0
+            },
+            x: element["x"],
+            y: this.finalMarginTop,
+            dy: element["dy"] * -1,
+            color: this.viewModel.settings.axisSettings.axisColor.solid.color
+            // id: element.selectionId
+          }]
 
+          makeDates = svgAnnotations.annotation()
+            .annotations(datesData)
+            .type(new svgAnnotations.annotationCustomType(dateType, element.alignment))
+
+          makeDates
+            .disable(["connector"])
+
+          let newAxis = this.container
+            .append("g")
+            .style('font-size', this.viewModel.settings.axisSettings.fontSize + "px")
+            .style('font-family', this.viewModel.settings.axisSettings.fontFamily)
+            .style('background-color', 'transparent')
+            .call(makeDates)
+
+
+          if (this.viewModel.settings.axisSettings.bold) {
+            newAxis.attr('class', 'bold')
+            newAxis.classed('notBold', false)
+          } else {
+            newAxis.attr('class', 'notBold')
+            newAxis.classed('bold', false)
+          }
+
+        }
       } else {
         element["x"] = this.padding + scale(element["date"])
 
@@ -407,7 +424,7 @@ export class Visual implements IVisual {
           wrap: this.viewModel.settings.textSettings.wrap,
           title: element.labelText,
           label: element.description,
-          bgPadding: 10
+          bgPadding: 0
         },
         x: element["x"],
         // scale(element.dateAsInt),
@@ -642,7 +659,7 @@ export class Visual implements IVisual {
     })
 
 
-    
+
     if (this.viewModel.settings.download.downloadCalendar) {
       let orientationVertical = this.viewModel.settings.download.position.split(",")[0]
       let orientationHorizontal = this.viewModel.settings.download.position.split(",")[1]
@@ -916,8 +933,8 @@ export class Visual implements IVisual {
           },
           selector: null
         });
-        
-        if(this.viewModel.settings.download.downloadCalendar){
+
+        if (this.viewModel.settings.download.downloadCalendar) {
           objectEnumeration.push({
             objectName: objectName,
             properties: {
@@ -1042,7 +1059,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
       top: false,
       dateFormat: "same",
       customJS: "mm/dd/yyyy",
-      wrap: 100
+      wrap: 150
     },
     axisSettings: {
       axis: "None",
@@ -1301,7 +1318,7 @@ function wrap(text, width) {
       word,
       line = [],
       lineNumber = 0,
-      lineHeight = 1.0,
+      lineHeight = 1,
       // lineHeight = 1.1, // ems
       x = text.attr("x"),
       y = text.attr("y"),
