@@ -32,7 +32,7 @@
             "description": "Not supported on PBI Desktop. Browser only.",
             "properties": {
                 "downloadCalendar": {
-                    "displayName": "Click to download",
+                    "displayName": "Add download button (browser only)",
                     "type": {
                         "bool": true
                     }

@@ -3,7 +3,7 @@
 import "core-js/stable";
 import "./../style/visual.less";
 import powerbi from "powerbi-visuals-api";
-import {BlobBuilder} from "blob"
+import { BlobBuilder } from "blob"
 import VisualConstructorOptions = powerbi.extensibility.visual.VisualConstructorOptions;
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import IVisual = powerbi.extensibility.visual.IVisual;
@@ -73,14 +73,18 @@ export class Visual implements IVisual {
     this.container.selectAll("line").remove();
     let data = this.viewModel.dataPoints
 
-    console.log(this.viewModel.settings.download.downloadCalendar)
-    //download calendar
-    if(this.viewModel.settings.download.downloadCalendar){
-      let events = []
+    if (this.viewModel.settings.download.downloadCalendar) {
+      //append download icon
+      let image = this.container.append('image')
+        .attr('xlink:href', "https://queryon.com/wp-content/uploads/2020/04/time-and-date.png")
+        .attr('width', 30)
+        .attr('height', 30)
+        .attr('x', 2)
+        .attr('y', 2)
+        .on("click", () => {
+          let events = []
           data.forEach(el => {
-            // cal.addEvent(el.label, el.description, false, el.date, el.date);
-          
-            let startTime = [ el.date.getFullYear(), el.date.getMonth()+1, el.date.getDate(), el.date.getHours(), el.date.getMinutes() ];
+           let startTime = [el.date.getFullYear(), el.date.getMonth() + 1, el.date.getDate(), el.date.getHours(), el.date.getMinutes()];
 
             events.push({
               title: el.label,
@@ -102,31 +106,21 @@ export class Visual implements IVisual {
             console.log(error)
             return
           }
-          
-     
+
+
           var blob;
           // if (navigator.userAgent.indexOf('MSIE 10') === -1) { // chrome or firefox
-            blob = new Blob([value]);
+          blob = new Blob([value]);
           // } else { // ie
-            // var bb = new BlobBuilder();
-            // bb.append(value);
-            // blob = bb.getBlob('text/x-vCalendar;charset=' + document.characterSet);
+          // var bb = new BlobBuilder();
+          // bb.append(value);
+          // blob = bb.getBlob('text/x-vCalendar;charset=' + document.characterSet);
           // }
           FileSaver.saveAs(blob, "calendar.ics");
-    
-          this.host.persistProperties({
-            merge: [
-              {
-                objectName: "download",
-                selector: null,
-                properties: {
-                    downloadCalendar: false
-                }
-              }
-            ]
         });
-      // this.viewModel.settings.download.downloadCalendar= false;
     }
+
+    //  }
 
 
     //min label width from annotation plugin
@@ -222,7 +216,7 @@ export class Visual implements IVisual {
 
     filteredData.forEach((dataPoint, i) => {
       dataPoint["formatted"] = valueFormatter.format(dataPoint["date"])
-      dataPoint["labelText"] = `${dataPoint["formatted"]}${this.viewModel.settings.textSettings.separator} ${dataPoint["label"]}`
+      dataPoint["labelText"] = this.viewModel.settings.imageSettings.style != "image" ? `${dataPoint["formatted"]}${this.viewModel.settings.textSettings.separator} ${dataPoint["label"]}` : dataPoint["label"]
       dataPoint["textColor"] = dataPoint.customFormat ? dataPoint.textColor : textColor
       dataPoint["fontFamily"] = dataPoint.customFormat ? dataPoint.fontFamily : fontFamily
       dataPoint["textSize"] = dataPoint.customFormat ? dataPoint.textSize : textSize
@@ -233,7 +227,7 @@ export class Visual implements IVisual {
 
 
       // let textHeight, 
-      dataPoint["textHeight"] = this.getTextHeight(dataPoint["labelText"], dataPoint["textSize"], fontFamily) + 10
+      dataPoint["textHeight"] = this.getTextHeight(dataPoint["labelText"], dataPoint["textSize"], fontFamily) + 3
 
       if (dataPoint.description) {
         dataPoint["textHeight"] += this.getTextHeight(dataPoint["description"], dataPoint["textSize"], fontFamily) + 2
@@ -281,6 +275,9 @@ export class Visual implements IVisual {
 
     this.finalMarginTop = this.viewModel.settings.textSettings.stagger ? marginTopStagger : this.marginTop
 
+    if (this.viewModel.settings.download.downloadCalendar) {
+      this.finalMarginTop += 35
+    }
 
     //  data.reduce(function (a, b) { return a.date < b.date ? a : b; }).date; 
 
@@ -408,6 +405,13 @@ export class Visual implements IVisual {
         makeDates
           .disable(["connector"])
 
+        this.container
+          .append("g")
+          .style('font-size', element.textSize + "px")
+          .style('font-family', element.fontFamily)
+          .style('background-color', 'transparent')
+          .style('font-weight', 'normal')
+          .call(makeDates)
 
       } else {
         element["x"] = this.padding + scale(element["date"])
@@ -465,7 +469,7 @@ export class Visual implements IVisual {
         .type(new svgAnnotations.annotationCustomType(element.type, element.alignment))
 
 
-      if (element.annotationStyle === 'textOnly') {
+      if (element.annotationStyle === 'textOnly' || this.viewModel.settings.imageSettings.style == "image") {
         makeAnnotations
           .disable(["connector"])
 
@@ -509,6 +513,9 @@ export class Visual implements IVisual {
 
           default:
             imageY = element.top ? this.finalMarginTop + 20 : 0
+            if (this.viewModel.settings.download.downloadCalendar) {
+              imageY += 35
+            }
             if (imgCounter % 2 == 0) {
               imageY += imagesHeight
             }
@@ -962,7 +969,7 @@ export class Visual implements IVisual {
       .attr("font-family", fontFamily)
       .attr("font-size", textSize)
       .text(function (d) { return d })
-      // .call(wrap, this.viewModel.settings.textSettings.wrap)
+      .call(wrap, this.viewModel.settings.textSettings.wrap)
       .attr("color", function (d) {
         //Irrelevant color. ".EACH" does not work on IE and we need to iterate over the elements after they have been appended to dom.
         let thisHeight = this.getBBox().height
@@ -997,7 +1004,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
   let dataViews = options.dataViews;
 
   let defaultSettings = {
-    download:{
+    download: {
       downloadCalendar: false
     },
     textSettings: {
@@ -1118,7 +1125,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
 
 
   let timelineSettings = {
-    download:{
+    download: {
       downloadCalendar: getValue(objects, 'download', 'downloadCalendar', defaultSettings.download.downloadCalendar)
     },
     textSettings: {
@@ -1262,6 +1269,7 @@ function createFormatter(format, precision?: any, value?: number) {
 
   return vf.create(valueFormatter)
 }
+
 function wrap(text, width) {
   text.each(function () {
 
