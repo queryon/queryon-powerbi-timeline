@@ -73,52 +73,6 @@ export class Visual implements IVisual {
     this.container.selectAll("line").remove();
     let data = this.viewModel.dataPoints
 
-    if (this.viewModel.settings.download.downloadCalendar) {
-      //append download icon
-      let image = this.container.append('image')
-        .attr('xlink:href', "https://queryon.com/wp-content/uploads/2020/04/time-and-date.png")
-        .attr('width', 30)
-        .attr('height', 30)
-        .attr('x', 2)
-        .attr('y', 2)
-        .on("click", () => {
-          let events = []
-          data.forEach(el => {
-           let startTime = [el.date.getFullYear(), el.date.getMonth() + 1, el.date.getDate(), el.date.getHours(), el.date.getMinutes()];
-
-            events.push({
-              title: el.label,
-              description: el.description,
-              startInputType: 'utc',
-              start: startTime,
-              duration: { minutes: 30 }
-            })
-
-            if (error) {
-              // console.log(error)
-              return
-            }
-          })
-
-          const { error, value } = ics.createEvents(events)
-
-          if (error) {
-            console.log(error)
-            return
-          }
-
-
-          var blob;
-          // if (navigator.userAgent.indexOf('MSIE 10') === -1) { // chrome or firefox
-          blob = new Blob([value]);
-          // } else { // ie
-          // var bb = new BlobBuilder();
-          // bb.append(value);
-          // blob = bb.getBlob('text/x-vCalendar;charset=' + document.characterSet);
-          // }
-          FileSaver.saveAs(blob, "calendar.ics");
-        });
-    }
 
     //  }
 
@@ -262,8 +216,8 @@ export class Visual implements IVisual {
 
 
 
-    marginTopStagger += (data.filter(element => element.top).length * this.viewModel.settings.textSettings.spacing)
-
+    marginTopStagger += ((data.filter(element => element.top).length - 1) * this.viewModel.settings.textSettings.spacing) + 20
+    marginTopStagger = marginTopStagger < 0 ? this.marginTop : marginTopStagger
     // if (this.viewModel.settings.imageSettings.style == "stagger") {
     //   marginTopStagger += (data.filter(element => !element.top && element.image).length * imagesHeight)
     // }
@@ -352,7 +306,7 @@ export class Visual implements IVisual {
     }
 
     let annotationsData, makeAnnotations, dateStyle, dateType, datesData, makeDates
-    let countTop = 0, countBottom = 0, counter
+    let countTop = -1, countBottom = -1, counter
     let imgCountTop = 0, imgCountBottom = 0, imgCounter
 
     let pixelWidth = (this.width - this.padding * 2) / data.length
@@ -418,7 +372,11 @@ export class Visual implements IVisual {
 
 
         if (this.viewModel.settings.textSettings.stagger) {
-          element["dy"] = element.top ? this.viewModel.settings.textSettings.spacing * (-1 * (counter)) : this.viewModel.settings.textSettings.spacing * (counter)
+          if (counter > 0) {
+            element["dy"] = element.top ? this.viewModel.settings.textSettings.spacing * (-1 * (counter)) : this.viewModel.settings.textSettings.spacing * (counter)
+          } else {
+            element["dy"] = element.top ? -20 : 20
+          }
         } else {
           element["dy"] = element.top ? -20 : 20
         }
@@ -683,6 +641,59 @@ export class Visual implements IVisual {
       }
     })
 
+
+    
+    if (this.viewModel.settings.download.downloadCalendar) {
+      let orientationVertical = this.viewModel.settings.download.position.split(",")[0]
+      let orientationHorizontal = this.viewModel.settings.download.position.split(",")[1]
+      let calX = orientationHorizontal == "LEFT" ? 2 : this.width - 35
+      let calY = orientationVertical == "TOP" ? 2 : this.height - 35
+
+      //append download icon
+      let image = this.container.append('image')
+        .attr('xlink:href', "https://queryon.com/wp-content/uploads/2020/04/time-and-date.png")
+        .attr('width', 30)
+        .attr('height', 30)
+        .attr('x', calX)
+        .attr('y', calY)
+        .on("click", () => {
+          let events = []
+          data.forEach(el => {
+            let startTime = [el.date.getFullYear(), el.date.getMonth() + 1, el.date.getDate(), el.date.getHours(), el.date.getMinutes()];
+
+            events.push({
+              title: el.label,
+              description: el.description,
+              startInputType: 'utc',
+              start: startTime,
+              duration: { minutes: 30 }
+            })
+
+            if (error) {
+              // console.log(error)
+              return
+            }
+          })
+
+          const { error, value } = ics.createEvents(events)
+
+          if (error) {
+            console.log(error)
+            return
+          }
+
+
+          var blob;
+          // if (navigator.userAgent.indexOf('MSIE 10') === -1) { // chrome or firefox
+          blob = new Blob([value]);
+          // } else { // ie
+          // var bb = new BlobBuilder();
+          // bb.append(value);
+          // blob = bb.getBlob('text/x-vCalendar;charset=' + document.characterSet);
+          // }
+          FileSaver.saveAs(blob, "calendar.ics");
+        });
+    }
   }
 
   /**
@@ -697,15 +708,6 @@ export class Visual implements IVisual {
 
 
     switch (objectName) {
-      case 'download':
-        objectEnumeration.push({
-          objectName: objectName,
-          properties: {
-            downloadCalendar: this.viewModel.settings.download.downloadCalendar
-          },
-          selector: null
-        });
-        break;
       case 'textSettings':
         objectEnumeration.push({
           objectName: objectName,
@@ -906,6 +908,25 @@ export class Visual implements IVisual {
           selector: null
         });
         break;
+      case 'download':
+        objectEnumeration.push({
+          objectName: objectName,
+          properties: {
+            downloadCalendar: this.viewModel.settings.download.downloadCalendar,
+          },
+          selector: null
+        });
+        
+        if(this.viewModel.settings.download.downloadCalendar){
+          objectEnumeration.push({
+            objectName: objectName,
+            properties: {
+              position: this.viewModel.settings.download.position,
+            },
+            selector: null
+          });
+        }
+        break;
     };
 
     return objectEnumeration;
@@ -1005,7 +1026,8 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
 
   let defaultSettings = {
     download: {
-      downloadCalendar: false
+      downloadCalendar: false,
+      position: "TOP,LEFT"
     },
     textSettings: {
       stagger: true,
@@ -1126,7 +1148,8 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
 
   let timelineSettings = {
     download: {
-      downloadCalendar: getValue(objects, 'download', 'downloadCalendar', defaultSettings.download.downloadCalendar)
+      downloadCalendar: getValue(objects, 'download', 'downloadCalendar', defaultSettings.download.downloadCalendar),
+      position: getValue(objects, 'download', 'position', defaultSettings.download.position)
     },
     textSettings: {
       stagger: getValue(objects, 'textSettings', 'stagger', defaultSettings.textSettings.stagger),

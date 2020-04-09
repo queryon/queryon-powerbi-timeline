@@ -27,18 +27,6 @@
         }
     ],
     "objects": {
-        "download":{
-            "displayName": "Download as calendar",
-            "description": "Not supported on PBI Desktop. Browser only.",
-            "properties": {
-                "downloadCalendar": {
-                    "displayName": "Add download button (browser only)",
-                    "type": {
-                        "bool": true
-                    }
-                }
-            }
-        },
         "textSettings": {
             "displayName": "Text Settings",
             "properties": {
@@ -718,6 +706,41 @@
                         "numeric": true
                     }
 
+                }
+            }
+        },
+        "download":{
+            "displayName": "Download as calendar",
+            "description": "Not supported on PBI Desktop. Browser only.",
+            "properties": {
+                "downloadCalendar": {
+                    "displayName": "Add download button (browser only)",
+                    "type": {
+                        "bool": true
+                    }
+                }, 
+                "position":{
+                    "displayName": "Button position",
+                    "type": {
+                        "enumeration": [
+                            {
+                                "displayName": "Top left",
+                                "value": "TOP,LEFT"
+                            },
+                            {
+                                "displayName": "Top right",
+                                "value": "TOP,RIGHT"
+                            },
+                            {
+                                "displayName": "Bottom left",
+                                "value": "BOTTOM,LEFT"
+                            },
+                            {
+                                "displayName": "Bottom right",
+                                "value": "BOTTOM,RIGHT"
+                            }
+                        ]
+                    }
                 }
             }
         }
