@@ -70,6 +70,7 @@ export class Visual implements IVisual {
     this.container.selectAll("g").remove();
     this.container.selectAll("rect").remove();
     this.container.selectAll("image").remove();
+    this.container.selectAll(".symbol").remove();
 
     this.container.selectAll("line").remove();
     let data = this.viewModel.dataPoints
@@ -123,14 +124,14 @@ export class Visual implements IVisual {
       this.viewModel.settings.axisSettings.barMax = false;
     }
     // let customColors = ["rgb(186,215,57)", "rgb(0, 188, 178)", "rgb(121, 118, 118)", "rgb(105,161,151)", "rgb(78,205,196)", "rgb(166,197,207)", "rgb(215,204,182)", "rgb(67,158,157)", "rgb(122,141,45)", "rgb(162,157,167)"]
-
-    if(this.viewModel.settings.style.today){
-      let today = new Date
-      if (today < this.minVal){
+    let today
+    if (this.viewModel.settings.style.today) {
+      today = new Date
+      if (today < this.minVal) {
         this.minVal = today
-      } 
+      }
 
-      if(today > this.maxVal){
+      if (today > this.maxVal) {
         this.maxVal = today
       }
     }
@@ -214,8 +215,8 @@ export class Visual implements IVisual {
       }
 
       if (this.viewModel.settings.textSettings.annotationStyle === 'annotationCallout' || this.viewModel.settings.textSettings.annotationStyle === 'annotationCalloutCurve') {
-      this.viewModel.settings.annotationSettings.spacing += 10
-    }
+        this.viewModel.settings.annotationSettings.spacing += 10
+      }
       if (dataPoint["top"]) {
         this.marginTop = Math.max(this.marginTop, dataPoint["textHeight"] + 30)
       } else {
@@ -230,25 +231,21 @@ export class Visual implements IVisual {
     })
 
     marginTopStagger += ((data.filter(element => element.top).length - 1) * this.viewModel.settings.textSettings.spacing) + 20
-    
+
     marginTopStagger = marginTopStagger < 0 ? this.marginTop : marginTopStagger
-    
+
     if (this.viewModel.settings.imageSettings.style !== "default" && data.filter(el => !el.top && el.image).length > 0) {
       marginTopStagger = Math.max(marginTopStagger, addToMargin)
     }
 
-    if(this.viewModel.settings.imageSettings.style !== "image"){
+    if (this.viewModel.settings.imageSettings.style !== "image") {
       this.finalMarginTop = this.viewModel.settings.textSettings.stagger ? marginTopStagger : this.marginTop
     } else {
-      this.finalMarginTop = this.marginTop + imagesHeight/2
-    }
-  
-    if (this.viewModel.settings.download.downloadCalendar && this.viewModel.settings.download.position.split(",")[0] == "TOP") {
-      this.finalMarginTop += 35
+      this.finalMarginTop = this.marginTop + imagesHeight / 2
     }
 
-    if(this.viewModel.settings.style.today){
-      this.finalMarginTop += 10
+    if (this.viewModel.settings.download.downloadCalendar && this.viewModel.settings.download.position.split(",")[0] == "TOP") {
+      this.finalMarginTop += 35
     }
 
     //  data.reduce(function (a, b) { return a.date < b.date ? a : b; }).date; 
@@ -259,15 +256,15 @@ export class Visual implements IVisual {
     //   .domain([this.minVal, this.maxVal]) //min and max data from input
     //   .range([0, this.width - (this.padding * 2)]); //min and max width in px           
 
-     //axis format
-     let axisFormat = this.viewModel.settings.axisSettings.dateFormat != "customJS" ? this.viewModel.settings.axisSettings.dateFormat : this.viewModel.settings.axisSettings.customJS
-     let axisValueFormatter = axisFormat == "same" ? valueFormatter : createFormatter(axisFormat);
- 
-     if (this.viewModel.settings.axisSettings.axis === "Values") {
-       let dynamicPadding = Math.max(this.padding, imagesHeight/2)
+    //axis format
+    let axisFormat = this.viewModel.settings.axisSettings.dateFormat != "customJS" ? this.viewModel.settings.axisSettings.dateFormat : this.viewModel.settings.axisSettings.customJS
+    let axisValueFormatter = axisFormat == "same" ? valueFormatter : createFormatter(axisFormat);
+
+    if (this.viewModel.settings.axisSettings.axis === "Values") {
+      let dynamicPadding = Math.max(this.padding, imagesHeight / 2)
       //  let dynamicPadding = Math.max(this.getTextWidth(axisValueFormatter.format(this.minVal), this.viewModel.settings.axisSettings.fontSize, this.viewModel.settings.axisSettings.fontFamily), this.getTextWidth(valueFormatter.format(this.maxVal), this.viewModel.settings.axisSettings.fontSize, this.viewModel.settings.axisSettings.fontFamily)) / 2
-       this.padding = dynamicPadding
-     }
+      this.padding = dynamicPadding
+    }
 
     let scale = d3.scaleTime()
       .domain([this.minVal, this.maxVal]) //min and max data from input
@@ -276,7 +273,7 @@ export class Visual implements IVisual {
     this.svg.attr("width", this.width);
     this.svg.attr("height", this.height);
 
-   
+
     if (this.viewModel.settings.imageSettings.style !== "image") {
       let bar
 
@@ -326,6 +323,25 @@ export class Visual implements IVisual {
         this.container.selectAll("text").style('font-family', this.viewModel.settings.axisSettings.fontFamily)
 
       }
+    }
+
+    if (this.viewModel.settings.style.today) {
+      var svg = this.container.append("svg")
+        .attr("width", window.innerWidth)
+        .attr("height", window.innerHeight)
+        .append('path')
+        .attr("d", d3.symbol().type(d3.symbolTriangle).size(150))
+        .attr("class", "symbol")
+        .attr("transform", (d) => {
+          let transformStr 
+          if(this.viewModel.settings.style.todayTop){
+            transformStr = "translate(" + (this.padding + scale(today)) + "," + (this.finalMarginTop - 12) + ") rotate(180)"
+          } else {
+            transformStr = "translate(" + (this.padding + scale(today)) + "," + (this.finalMarginTop + 12) + ")"
+          }
+          return transformStr
+        })
+        .style("fill", this.viewModel.settings.style.todayColor.solid.color);
     }
 
     let annotationsData, makeAnnotations, dateStyle, dateType, datesData, makeDates
@@ -407,14 +423,14 @@ export class Visual implements IVisual {
 
 
         if (this.viewModel.settings.textSettings.stagger) {
-          
+
           if (counter > 0) {
             element["dy"] = element.top ? this.viewModel.settings.textSettings.spacing * (-1 * (counter)) : this.viewModel.settings.textSettings.spacing * (counter)
           } else {
             element["dy"] = element.top ? -20 : 20
           }
-        
-        } 
+
+        }
         else {
           element["dy"] = element.top ? -20 : 20
         }
@@ -570,7 +586,7 @@ export class Visual implements IVisual {
               this.container.selectAll('.bar').style('fill-opacity', 0.1)
 
               // d3.select(`.selector_${element.label.replace(/\W/g, '')}_${element.dateAsInt}`).style('fill-opacity', 1)
-              
+
               d3.select(`.selector_${element.selectionId.key.replace(/\W/g, '')}`).style('fill-opacity', 1)
               this.container.selectAll('.annotationSelector').style('font-weight', "normal")
 
@@ -939,6 +955,17 @@ export class Visual implements IVisual {
           },
           selector: null
         });
+
+        if (this.viewModel.settings.style.today) {
+          objectEnumeration.push({
+            objectName: objectName,
+            properties: {
+             todayColor: this.viewModel.settings.style.todayColor,
+             todayTop: this.viewModel.settings.style.todayTop
+            },
+            selector: null
+          });
+        }
         break;
       case "imageSettings":
         objectEnumeration.push({
@@ -1103,7 +1130,9 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
     style: {
       lineColor: { solid: { color: 'black' } },
       lineThickness: 2,
-      today: false
+      today: false,
+      todayTop: true,
+      todayColor:  { solid: { color: 'red' } }
     },
     imageSettings: {
       imagesHeight: 100,
@@ -1227,7 +1256,9 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
     style: {
       lineColor: getValue(objects, 'style', 'lineColor', defaultSettings.style.lineColor),
       lineThickness: getValue(objects, 'style', 'lineThickness', defaultSettings.style.lineThickness),
-      today: getValue(objects, 'style', 'today', defaultSettings.style.today)
+      today: getValue(objects, 'style', 'today', defaultSettings.style.today),
+      todayTop: getValue(objects, 'style', 'todayTop', defaultSettings.style.todayTop),
+      todayColor: getValue(objects, 'style', 'todayColor', defaultSettings.style.todayColor)
     },
     imageSettings: {
       imagesHeight: getValue(objects, 'imageSettings', 'imagesHeight', defaultSettings.imageSettings.imagesHeight),

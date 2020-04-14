@@ -696,6 +696,22 @@
                         "bool": true
                     }
                 },
+                "todayColor":{
+                    "displayName": "Today icon color",
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
+                    }
+                },
+                "todayTop": {
+                    "displayName": "Today icon on top",
+                    "type": {
+                        "bool": true
+                    }
+                },
                 "lineColor": {
                     "displayName": "Line Color",
                     "type": {
