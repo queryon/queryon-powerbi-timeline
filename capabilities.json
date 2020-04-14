@@ -690,13 +690,36 @@
         "style": {
             "displayName": "Style",
             "properties": {
+                "timelineStyle": {
+                    "displayName": "Timeline Style",
+                    "type": {
+                        "enumeration": [
+                            {
+                                "displayName": "Line",
+                                "value": "line"
+                            },
+                            {
+                                "displayName": "Bar",
+                                "value": "bar"
+                            },
+                            {
+                                "displayName": "Vertical",
+                                "value": "vertical"
+                            },
+                            {
+                                "displayName": "Minimalist",
+                                "value": "minimalist"
+                            }
+                        ]
+                    }
+                },
                 "today": {
                     "displayName": "Show today",
                     "type": {
                         "bool": true
                     }
                 },
-                "todayColor":{
+                "todayColor": {
                     "displayName": "Today icon color",
                     "type": {
                         "fill": {
@@ -724,6 +747,22 @@
                 },
                 "lineThickness": {
                     "displayName": "Line Thickness",
+                    "type": {
+                        "numeric": true
+                    }
+                },
+                "barColor": {
+                    "displayName": "Bar Color",
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
+                    }
+                },
+                "barHeight": {
+                    "displayName": "Bar height",
                     "type": {
                         "numeric": true
                     }
