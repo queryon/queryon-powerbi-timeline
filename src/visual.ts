@@ -124,6 +124,17 @@ export class Visual implements IVisual {
     }
     // let customColors = ["rgb(186,215,57)", "rgb(0, 188, 178)", "rgb(121, 118, 118)", "rgb(105,161,151)", "rgb(78,205,196)", "rgb(166,197,207)", "rgb(215,204,182)", "rgb(67,158,157)", "rgb(122,141,45)", "rgb(162,157,167)"]
 
+    if(this.viewModel.settings.style.today){
+      let today = new Date
+      if (today < this.minVal){
+        this.minVal = today
+      } 
+
+      if(today > this.maxVal){
+        this.maxVal = today
+      }
+    }
+
     this.width = options.viewport.width;
     this.height = options.viewport.height;
     this.marginTop = 20
@@ -202,6 +213,9 @@ export class Visual implements IVisual {
         }
       }
 
+      if (this.viewModel.settings.textSettings.annotationStyle === 'annotationCallout' || this.viewModel.settings.textSettings.annotationStyle === 'annotationCalloutCurve') {
+      this.viewModel.settings.annotationSettings.spacing += 10
+    }
       if (dataPoint["top"]) {
         this.marginTop = Math.max(this.marginTop, dataPoint["textHeight"] + 30)
       } else {
@@ -231,6 +245,10 @@ export class Visual implements IVisual {
   
     if (this.viewModel.settings.download.downloadCalendar && this.viewModel.settings.download.position.split(",")[0] == "TOP") {
       this.finalMarginTop += 35
+    }
+
+    if(this.viewModel.settings.style.today){
+      this.finalMarginTop += 10
     }
 
     //  data.reduce(function (a, b) { return a.date < b.date ? a : b; }).date; 
@@ -311,7 +329,7 @@ export class Visual implements IVisual {
     }
 
     let annotationsData, makeAnnotations, dateStyle, dateType, datesData, makeDates
-    let countTop = -1, countBottom = -1, counter
+    let countTop = 0, countBottom = 0, counter
     let imgCountTop = 0, imgCountBottom = 0, imgCounter
 
     let pixelWidth = (this.width - this.padding * 2) / data.length
@@ -389,12 +407,15 @@ export class Visual implements IVisual {
 
 
         if (this.viewModel.settings.textSettings.stagger) {
+          
           if (counter > 0) {
             element["dy"] = element.top ? this.viewModel.settings.textSettings.spacing * (-1 * (counter)) : this.viewModel.settings.textSettings.spacing * (counter)
           } else {
             element["dy"] = element.top ? -20 : 20
           }
-        } else {
+        
+        } 
+        else {
           element["dy"] = element.top ? -20 : 20
         }
 
@@ -526,11 +547,11 @@ export class Visual implements IVisual {
           });
       }
 
-
       this.container
         .append("g")
         // .attr('class', 'annotations')
-        .attr('class', `annotation_selector_${element.label.replace(/\W/g, '')}_${element.dateAsInt} annotationSelector`)
+        // .attr('class', `annotation_selector_${element.label.replace(/\W/g, '')}_${element.dateAsInt} annotationSelector`)
+        .attr('class', `annotation_selector_${element.selectionId.key.replace(/\W/g, '')} annotationSelector`)
         //.style('stroke', 'transparent')
         .style('font-size', element.textSize + "px")
         .style('font-family', element.fontFamily)
@@ -548,16 +569,20 @@ export class Visual implements IVisual {
             if (ids.length > 0) {
               this.container.selectAll('.bar').style('fill-opacity', 0.1)
 
-              d3.select(`.selector_${element.label.replace(/\W/g, '')}_${element.dateAsInt}`).style('fill-opacity', 1)
+              // d3.select(`.selector_${element.label.replace(/\W/g, '')}_${element.dateAsInt}`).style('fill-opacity', 1)
+              
+              d3.select(`.selector_${element.selectionId.key.replace(/\W/g, '')}`).style('fill-opacity', 1)
               this.container.selectAll('.annotationSelector').style('font-weight', "normal")
 
               if (!this.viewModel.settings.textSettings.boldTitles) {
                 this.container.selectAll('.annotationSelector  .annotation-note-title ').style('font-weight', "normal")
               }
 
-              d3.selectAll(`.annotation_selector_${element.label.replace(/\W/g, '')}_${element.dateAsInt}`).style('font-weight', "bold")
-              d3.selectAll(`.annotation_selector_${element.label.replace(/\W/g, '')}_${element.dateAsInt}  .annotation-note-title `).style('font-weight', "bold")
+              // d3.selectAll(`.annotation_selector_${element.label.replace(/\W/g, '')}_${element.dateAsInt}`).style('font-weight', "bold")
+              // d3.selectAll(`.annotation_selector_${element.label.replace(/\W/g, '')}_${element.dateAsInt}  .annotation-note-title `).style('font-weight', "bold")
 
+              d3.selectAll(`.annotation_selector_${element.selectionId.key.replace(/\W/g, '')}`).style('font-weight', "bold")
+              d3.selectAll(`.annotation_selector_${element.selectionId.key.replace(/\W/g, '')}  .annotation-note-title `).style('font-weight', "bold")
 
 
               //Open link 
@@ -847,7 +872,7 @@ export class Visual implements IVisual {
 
             objectEnumeration.push({
               objectName: objectName,
-              displayName: dataElement.label + " Label on top",
+              displayName: dataElement.label + " Text on top",
               properties: {
                 top: dataElement.top
               },
@@ -856,7 +881,7 @@ export class Visual implements IVisual {
 
             objectEnumeration.push({
               objectName: objectName,
-              displayName: dataElement.label + " Label style",
+              displayName: dataElement.label + " Text style",
               properties: {
                 annotationStyle: dataElement.annotationStyle
               },
@@ -866,7 +891,7 @@ export class Visual implements IVisual {
 
             objectEnumeration.push({
               objectName: objectName,
-              displayName: dataElement.label + " Label orientation",
+              displayName: dataElement.label + " Text orientation",
               properties: {
                 labelOrientation: dataElement.labelOrientation
               },
@@ -909,7 +934,8 @@ export class Visual implements IVisual {
           objectName: objectName,
           properties: {
             lineColor: this.viewModel.settings.style.lineColor,
-            lineThickness: this.viewModel.settings.style.lineThickness
+            lineThickness: this.viewModel.settings.style.lineThickness,
+            today: this.viewModel.settings.style.today
           },
           selector: null
         });
@@ -1058,7 +1084,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
       textColor: { solid: { color: 'Black' } },
       top: false,
       dateFormat: "same",
-      customJS: "mm/dd/yyyy",
+      customJS: "MM/dd/yyyy",
       wrap: 150
     },
     axisSettings: {
@@ -1071,12 +1097,13 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
       bold: false,
       barMin: "",
       barMax: "",
-      customJS: "mm/dd/yyyy"
+      customJS: "MM/dd/yyyy"
 
     },
     style: {
       lineColor: { solid: { color: 'black' } },
-      lineThickness: 2
+      lineThickness: 2,
+      today: false
     },
     imageSettings: {
       imagesHeight: 100,
@@ -1199,7 +1226,8 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
     },
     style: {
       lineColor: getValue(objects, 'style', 'lineColor', defaultSettings.style.lineColor),
-      lineThickness: getValue(objects, 'style', 'lineThickness', defaultSettings.style.lineThickness)
+      lineThickness: getValue(objects, 'style', 'lineThickness', defaultSettings.style.lineThickness),
+      today: getValue(objects, 'style', 'today', defaultSettings.style.today)
     },
     imageSettings: {
       imagesHeight: getValue(objects, 'imageSettings', 'imagesHeight', defaultSettings.imageSettings.imagesHeight),

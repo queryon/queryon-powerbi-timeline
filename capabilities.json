@@ -1,7 +1,7 @@
 {
     "dataRoles": [
         {
-            "displayName": "Label",
+            "displayName": "Title",
             "name": "label",
             "kind": "Grouping"
         },
@@ -31,7 +31,7 @@
             "displayName": "Text Settings",
             "properties": {
                 "annotationStyle": {
-                    "displayName": "Labels Style",
+                    "displayName": "Titles Style",
                     "type": {
                         "enumeration": [
                             {
@@ -60,7 +60,7 @@
                     }
                 },
                 "wrap": {
-                    "displayName": "Label width",
+                    "displayName": "Text width",
                     "type": {
                         "numeric": true
                     }
@@ -84,13 +84,13 @@
                     }
                 },
                 "top": {
-                    "displayName": "Labels on top",
+                    "displayName": "Text on top",
                     "type": {
                         "bool": true
                     }
                 },
                 "labelOrientation": {
-                    "displayName": "Labels orientation",
+                    "displayName": "All text orientation",
                     "type": {
                         "enumeration": [
                             {
@@ -473,7 +473,7 @@
             }
         },
         "dataPoint": {
-            "displayName": "Single label properties",
+            "displayName": "Single element properties",
             "properties": {
                 "customFormat": {
                     "type": {
@@ -481,7 +481,7 @@
                     }
                 },
                 "annotationStyle": {
-                    "displayName": "Label Style",
+                    "displayName": "Text Style",
                     "type": {
                         "enumeration": [
                             {
@@ -504,13 +504,13 @@
                     }
                 },
                 "top": {
-                    "displayName": "Label on top",
+                    "displayName": "Text on top",
                     "type": {
                         "bool": true
                     }
                 },
                 "labelOrientation": {
-                    "displayName": "Labels orientation",
+                    "displayName": "Text orientation",
                     "type": {
                         "enumeration": [
                             {
@@ -690,6 +690,12 @@
         "style": {
             "displayName": "Style",
             "properties": {
+                "today": {
+                    "displayName": "Show today",
+                    "type": {
+                        "bool": true
+                    }
+                },
                 "lineColor": {
                     "displayName": "Line Color",
                     "type": {
@@ -702,14 +708,13 @@
                 },
                 "lineThickness": {
                     "displayName": "Line Thickness",
-                    "type":{
+                    "type": {
                         "numeric": true
                     }
-
                 }
             }
         },
-        "download":{
+        "download": {
             "displayName": "Download as calendar",
             "description": "Not supported on PBI Desktop. Browser only.",
             "properties": {
@@ -718,8 +723,8 @@
                     "type": {
                         "bool": true
                     }
-                }, 
-                "position":{
+                },
+                "position": {
                     "displayName": "Button position",
                     "type": {
                         "enumeration": [
