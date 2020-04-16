@@ -27,9 +27,9 @@ import {
 } from "powerbi-visuals-utils-formattingutils";
 import * as d3 from "d3";
 import * as FileSaver from 'file-saver';
+import { color } from "d3";
 // import { image } from "d3";
 
-const ics = require('ics')
 
 type Selection<T extends d3.BaseType> = d3.Selection<T, any, any, any>;
 
@@ -53,7 +53,11 @@ export class Visual implements IVisual {
 
   constructor(options: VisualConstructorOptions) {
     // options.element.style.overflow = 'auto';
-
+    // options.element.style["max-height"] = 100;
+    // if (!window['TextDecoder']) {
+    //   window['TextDecoder'] = TextDecoder;
+    // }
+    console.log("constructor")
     this.svg = d3.select(options.element)
       .append('svg')
     this.container = this.svg.append("g")
@@ -64,6 +68,8 @@ export class Visual implements IVisual {
     this.tooltipServiceWrapper = createTooltipServiceWrapper(
       options.host.tooltipService,
       options.element);
+
+
   }
 
   public update(options: VisualUpdateOptions) {
@@ -321,7 +327,7 @@ export class Visual implements IVisual {
         case "minimalist":
           enabledAnnotations = false;
           // axisMarginTop = this.finalMarginTop + this.barHeight
-          axisMarginTop = this.finalMarginTop + this.viewModel.settings.textSettings.spacing * filteredData.length
+          axisMarginTop = this.finalMarginTop + this.viewModel.settings.textSettings.spacing * (filteredData.length)
           strokeColor = this.viewModel.settings.axisSettings.axisColor.solid.color
 
           //split screen for minimalist view
@@ -362,13 +368,13 @@ export class Visual implements IVisual {
               .attr('font-family', element.fontFamily)
               .attr('font-size', element.textSize)
               .text(element.label)
-              .call(wrapAndCrop, this.width - this.padding - newWidth)
+              .call(wrapAndCrop, this.width - newWidth - (this.padding * 2))
             // tooltips.push(tooltip)
 
-            element["x"] = axisPadding + scale(element["date"]) - (circle / 2)
+            element["x"] = axisPadding + scale(element["date"]) - circle
             this.container.append("svg")
               .attr("x", element.x)
-              .attr("y", this.marginTop + this.viewModel.settings.textSettings.spacing * i)
+              .attr("y", (this.marginTop + this.viewModel.settings.textSettings.spacing * i) - circle)
               .attr("width", circle * 2)
               .attr("height", circle * 2)
               .append("circle")
@@ -902,6 +908,8 @@ export class Visual implements IVisual {
 
 
     if (this.viewModel.settings.download.downloadCalendar) {
+
+      const ics = require('ics')
       let orientationVertical = this.viewModel.settings.download.position.split(",")[0]
       let orientationHorizontal = this.viewModel.settings.download.position.split(",")[1]
       let calX = orientationHorizontal == "LEFT" ? 2 : this.width - 35
@@ -922,7 +930,7 @@ export class Visual implements IVisual {
             events.push({
               title: el.label,
               description: el.description,
-              startInputType: 'utc',
+              // startInputType: 'utc',
               start: startTime,
               duration: { minutes: 30 }
             })
@@ -940,16 +948,11 @@ export class Visual implements IVisual {
             return
           }
 
-
           var blob;
-          // if (navigator.userAgent.indexOf('MSIE 10') === -1) { // chrome or firefox
-          blob = new Blob([value]);
-          // } else { // ie
-          // var bb = new BlobBuilder();
-          // bb.append(value);
-          // blob = bb.getBlob('text/x-vCalendar;charset=' + document.characterSet);
-          // }
-          FileSaver.saveAs(blob, "calendar.ics");
+        
+            blob = new Blob([value]);
+          
+            FileSaver.saveAs(blob, "calendar.ics");
         });
     }
   }
@@ -1165,7 +1168,7 @@ export class Visual implements IVisual {
             selector: null
           });
 
-        } else if (this.viewModel.settings.style.timelineStyle == "bar" || this.viewModel.settings.style.timelineStyle == "minimalist") {
+        } else if (this.viewModel.settings.style.timelineStyle == "bar") {
           objectEnumeration.push({
             objectName: objectName,
             properties: {
@@ -1291,22 +1294,22 @@ export class Visual implements IVisual {
       .attr("font-size", textSize)
       .text(function (d) { return d })
 
-      if(wrappedText){
+    if (wrappedText) {
       txt.call(wrap, this.viewModel.settings.textSettings.wrap)
+    }
+    txt.attr("color", function (d) {
+      //Irrelevant color. ".EACH" does not work on IE and we need to iterate over the elements after they have been appended to dom.
+      let thisHeight = this.getBBox().height
+
+      textHeight = thisHeight
+      // this.remove()
+      if (this.parentNode) {
+        this.parentNode.removeChild(this);
       }
-      txt.attr("color", function (d) {
-        //Irrelevant color. ".EACH" does not work on IE and we need to iterate over the elements after they have been appended to dom.
-        let thisHeight = this.getBBox().height
-
-        textHeight = thisHeight
-        // this.remove()
-        if (this.parentNode) {
-          this.parentNode.removeChild(this);
-        }
 
 
-        return "white"
-      })
+      return "white"
+    })
 
 
     return textHeight
@@ -1558,43 +1561,7 @@ export function getCategoricalObjectValue(category, index, objectName, propertyN
 }
 
 
-
-// export function getCategoricalObjectValue(category: any, index: number, objectName: string, propertyName: string, defaultValue) {
-//   console.log(category)
-//   let categoryObjects
-//   if (!category.categories) {
-//     categoryObjects = category.values;
-//   }
-//   else {
-//     categoryObjects = category.categories[0].objects
-//   }
-//   if (categoryObjects) {
-//     let categoryObject
-//     categoryObject = categoryObjects[index];
-//     if (categoryObject) {
-//       let object
-//       if (category.categories) {
-//         object = categoryObject[objectName]
-//       } else {
-//         if (categoryObject.source.objects) {
-//           object = categoryObject.source.objects[objectName];
-
-//         }
-//       }
-//       if (object) {
-//         let property = object[propertyName];
-
-//         if (property !== undefined) {
-//           return property;
-//         }
-//       }
-
-//     }
-//   }
 declare function require(name: string);
-
-//   return defaultValue;
-// }
 
 function createFormatter(format, precision?: any, value?: number) {
   let valueFormatter = {}
