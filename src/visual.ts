@@ -52,7 +52,7 @@ export class Visual implements IVisual {
   private tooltipServiceWrapper: ITooltipServiceWrapper;
 
   constructor(options: VisualConstructorOptions) {
-    // options.element.style.overflow = 'auto';
+    options.element.style["overflow-y"] = 'auto';
     // options.element.style["max-height"] = 100;
     // if (!window['TextDecoder']) {
     //   window['TextDecoder'] = TextDecoder;
@@ -147,6 +147,8 @@ export class Visual implements IVisual {
     this.barHeight = this.viewModel.settings.style.barHeight;
     let marginTopStagger = 20;
 
+    let svgHeightTracking;
+
     //Parse global formats
     let textSize = this.viewModel.settings.textSettings.textSize,
       fontFamily = this.viewModel.settings.textSettings.fontFamily,
@@ -236,6 +238,11 @@ export class Visual implements IVisual {
 
       } else {
         //if minimalist, disconsider margin and spacing is default to one line 
+        if (i == 0) {
+          dataPoint["y"] = 0
+        } else {
+          dataPoint["y"] = filteredData[i - 1].y + this.getTextHeight(filteredData[i - 1]["labelText"], filteredData[i - 1]["textSize"], filteredData[i - 1]["fontFamily"], false) + 3
+        }
         this.viewModel.settings.textSettings.spacing = this.getTextHeight(dataPoint["labelText"], dataPoint["textSize"], fontFamily, false) + 3
       }
     })
@@ -255,9 +262,10 @@ export class Visual implements IVisual {
       this.finalMarginTop = this.marginTop + imagesHeight / 2
     }
 
+
     //download calendar icon is enabled and positioned at top
     if (this.viewModel.settings.download.downloadCalendar && this.viewModel.settings.download.position.split(",")[0] == "TOP") {
-      this.finalMarginTop += 35
+        this.finalMarginTop += 35
     }
 
     //axis format
@@ -280,8 +288,6 @@ export class Visual implements IVisual {
       .range([0, this.width - (this.padding * 2)]); //min and max width in px           
 
     this.svg.attr("width", this.width);
-    this.svg.attr("height", this.height);
-
 
     if (this.viewModel.settings.imageSettings.style !== "image") {
       //all styles, not image focus:
@@ -294,6 +300,10 @@ export class Visual implements IVisual {
           axisMarginTop = this.finalMarginTop;
           axisPadding = this.padding;
           strokeColor = this.viewModel.settings.axisSettings.axisColor.solid.color
+          
+          // svgHeightTracking = this.height
+          svgHeightTracking = this.finalMarginTop
+
           bar = this.container.append("line")
             .attr("x1", this.padding)
             .attr("y1", this.finalMarginTop)
@@ -309,6 +319,7 @@ export class Visual implements IVisual {
           axisMarginTop = this.finalMarginTop
           strokeColor = "transparent"
           axisPadding = this.padding;
+          svgHeightTracking = this.finalMarginTop + this.barHeight;
 
           bar = this.container.selectAll('rect')
             .data(filteredData)
@@ -328,6 +339,8 @@ export class Visual implements IVisual {
           enabledAnnotations = false;
           // axisMarginTop = this.finalMarginTop + this.barHeight
           axisMarginTop = this.finalMarginTop + this.viewModel.settings.textSettings.spacing * (filteredData.length)
+          svgHeightTracking = axisMarginTop + 20
+
           strokeColor = this.viewModel.settings.axisSettings.axisColor.solid.color
 
           //split screen for minimalist view
@@ -357,19 +370,74 @@ export class Visual implements IVisual {
           let circle = 8
           // <text id="tooltip" x="10" y="190" visibility="hidden">Tooltip</text>
 
-          //append points
+          //append points and annotations
           filteredData.forEach((element, i) => {
 
-            this.container.append("text")
-              .attr("x", 0)
-              .attr("y", this.marginTop + this.viewModel.settings.textSettings.spacing * i)
-              // .attr('text-anchor', 'middle')
-              // .attr("class", "tooltip")
-              .attr('font-family', element.fontFamily)
-              .attr('font-size', element.textSize)
-              .text(element.label)
-              .call(wrapAndCrop, this.width - newWidth - (this.padding * 2))
+            // this.container.append("text")
+            //   .attr("x", 0)
+            //   .attr("y", this.marginTop + this.viewModel.settings.textSettings.spacing * i)
+            //   // .attr('text-anchor', 'middle')
+            //   // .attr("class", "tooltip")
+            //   .attr('font-family', element.fontFamily)
+            //   .attr('font-size', element.textSize)
+            //   .text(element.label)
+            //   .call(wrapAndCrop, this.width - newWidth - (this.padding * 2))
             // tooltips.push(tooltip)
+
+
+
+
+            element["alignment"] = {
+              "className": "custom",
+              // "connector": { "end": "dot" },
+              "note": { "align": "left" }
+            }
+
+            let leftAnnotationsData = [{
+              note: {
+                wrap: 4000,
+                // wrap: this.width - newWidth - (this.padding * 2),
+                title: element.label,
+                bgPadding: 0
+              },
+              x: 1,
+              // y: this.marginTop + this.viewModel.settings.textSettings.spacing * i,
+              y: this.marginTop + element.y,
+              dy: 0,
+              color: "gray", //element.textColor,
+              id: element.selectionId
+            }]
+
+            element["style"] = svgAnnotations['annotationLabel']
+
+            element["type"] = new svgAnnotations.annotationCustomType(
+              element.style,
+              element.alignment
+            )
+
+
+            let leftMakeAnnotations: any = svgAnnotations.annotation()
+              .annotations(leftAnnotationsData)
+              .type(new svgAnnotations.annotationCustomType(element.type, element.alignment))
+
+            leftMakeAnnotations
+              .disable(["connector"])
+
+
+            let crop = this.container
+              .append("g")
+              .style("overflow", "hidden")
+              .style("height", "100%")
+              .style("width", this.width - newWidth - (this.padding * 2))
+
+            crop
+              .append("g")
+              .attr('class', `annotation_selector_${element.selectionId.key.replace(/\W/g, '')} annotationSelector`)
+              .style('font-size', element.textSize + "px")
+              .style('font-family', element.fontFamily)
+              .style('background-color', 'transparent')
+              .call(leftMakeAnnotations)
+
 
             element["x"] = axisPadding + scale(element["date"]) - circle
             this.container.append("svg")
@@ -394,7 +462,8 @@ export class Visual implements IVisual {
 
           break;
       }
-
+      
+      this.svg.attr("height", Math.max(this.height -4, svgHeightTracking));
       //axis setup
       let x_axis
       x_axis = d3.axisBottom(scale)
@@ -496,6 +565,8 @@ export class Visual implements IVisual {
           } else {
             orientation = this.getAnnotationOrientation(element)
           }
+
+          svgHeightTracking = Math.max(svgHeightTracking, element["y"] + element["dy"])
 
           element["alignment"] = {
             "className": "custom",
@@ -655,6 +726,7 @@ export class Visual implements IVisual {
       let imgCountTop = 0, imgCountBottom = 0, imgCounter
 
       let pixelWidth = (this.width - this.padding * 2) / data.length
+      this.svg.attr("height", this.finalMarginTop + imagesHeight + this.viewModel.settings.textSettings.spacing);
 
       filteredData.forEach((element, i) => {
         let orientation
@@ -949,10 +1021,10 @@ export class Visual implements IVisual {
           }
 
           var blob;
-        
-            blob = new Blob([value]);
-          
-            FileSaver.saveAs(blob, "calendar.ics");
+
+          blob = new Blob([value]);
+
+          FileSaver.saveAs(blob, "calendar.ics");
         });
     }
   }
