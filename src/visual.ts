@@ -265,7 +265,7 @@ export class Visual implements IVisual {
 
     //download calendar icon is enabled and positioned at top
     if (this.viewModel.settings.download.downloadCalendar && this.viewModel.settings.download.position.split(",")[0] == "TOP") {
-        this.finalMarginTop += 35
+      this.finalMarginTop += 35
     }
 
     //axis format
@@ -278,7 +278,7 @@ export class Visual implements IVisual {
       this.padding = dynamicPadding
     }
     //increment padding based on values on axis
-    if (this.viewModel.settings.axisSettings.axis === "Values") {
+    if (this.viewModel.settings.axisSettings.axis === "Values" || this.viewModel.settings.style.timelineStyle == "minimalist") {
       let dynamicPadding = Math.max(this.padding, 30)
       this.padding = dynamicPadding
     }
@@ -300,7 +300,7 @@ export class Visual implements IVisual {
           axisMarginTop = this.finalMarginTop;
           axisPadding = this.padding;
           strokeColor = this.viewModel.settings.axisSettings.axisColor.solid.color
-          
+
           // svgHeightTracking = this.height
           svgHeightTracking = this.finalMarginTop
 
@@ -373,70 +373,125 @@ export class Visual implements IVisual {
           //append points and annotations
           filteredData.forEach((element, i) => {
 
-            // this.container.append("text")
-            //   .attr("x", 0)
-            //   .attr("y", this.marginTop + this.viewModel.settings.textSettings.spacing * i)
-            //   // .attr('text-anchor', 'middle')
-            //   // .attr("class", "tooltip")
-            //   .attr('font-family', element.fontFamily)
-            //   .attr('font-size', element.textSize)
-            //   .text(element.label)
-            //   .call(wrapAndCrop, this.width - newWidth - (this.padding * 2))
+            this.container.append("text")
+              .attr("x", 0)
+              .attr("y", this.marginTop + this.viewModel.settings.textSettings.spacing * i)
+              // .attr('text-anchor', 'middle')
+              // .attr("class", "tooltip")
+              .attr('font-family', element.fontFamily)
+              .attr('font-size', element.textSize)
+              // .attr("id", function(d) { return element.selectionId })
+              .text(element.label)
+              .call(wrapAndCrop, this.width - newWidth - (this.padding * 2))
+              .attr('class', `annotation_selector_${element.selectionId.key.replace(/\W/g, '')} annotationSelector`)
+              .on('click', el => {
+               
+                    //manage highlighted formating and open links
+                    this.selectionManager.select(element.selectionId).then((ids: ISelectionId[]) => {                     
+                      if (ids.length > 0) {
+                        d3.selectAll('.annotationSelector').style('opacity', "0.1")
+                        d3.selectAll('.circleSelector').style('opacity', "0.1")
+
+                        d3.selectAll(`.annotation_selector_${element.selectionId.key.replace(/\W/g, '')}`).style('opacity', "1")
+                        d3.selectAll(`.circle_selector_${element.selectionId.key.replace(/\W/g, '')}`).style('opacity', "1")
+
+                        //Open link 
+                        if (element.URL) {
+                          this.host.launchUrl(element.URL)
+                        }
+    
+                      }
+                      //  else {
+                        // d3.selectAll('.annotationSelector').style('opacity', "1")
+                        // d3.selectAll('.circleSelector').style('opacity', "1")
+                      // }
+    
+                    })
+                  })
             // tooltips.push(tooltip)
 
 
 
 
-            element["alignment"] = {
-              "className": "custom",
-              // "connector": { "end": "dot" },
-              "note": { "align": "left" }
-            }
+            // element["alignment"] = {
+            //   "className": "custom",
+            //   // "connector": { "end": "dot" },
+            //   "note": { "align": "left" }
+            // }
 
-            let leftAnnotationsData = [{
-              note: {
-                wrap: 4000,
-                // wrap: this.width - newWidth - (this.padding * 2),
-                title: element.label,
-                bgPadding: 0
-              },
-              x: 1,
-              // y: this.marginTop + this.viewModel.settings.textSettings.spacing * i,
-              y: this.marginTop + element.y,
-              dy: 0,
-              color: "gray", //element.textColor,
-              id: element.selectionId
-            }]
+            // let leftAnnotationsData = [{
+            //   note: {
+            //     wrap: 4000,
+            //     // wrap: this.width - newWidth - (this.padding * 2),
+            //     title: element.label,
+            //     bgPadding: 0
+            //   },
+            //   x: 1,
+            //   // y: this.marginTop + this.viewModel.settings.textSettings.spacing * i,
+            //   y: this.marginTop + element.y,
+            //   dy: 0,
+            //   color: "gray", //element.textColor,
+            //   id: element.selectionId
+            // }]
 
-            element["style"] = svgAnnotations['annotationLabel']
+            // element["style"] = svgAnnotations['annotationLabel']
 
-            element["type"] = new svgAnnotations.annotationCustomType(
-              element.style,
-              element.alignment
-            )
-
-
-            let leftMakeAnnotations: any = svgAnnotations.annotation()
-              .annotations(leftAnnotationsData)
-              .type(new svgAnnotations.annotationCustomType(element.type, element.alignment))
-
-            leftMakeAnnotations
-              .disable(["connector"])
+            // element["type"] = new svgAnnotations.annotationCustomType(
+            //   element.style,
+            //   element.alignment
+            // )
 
 
-            let crop = this.container
-              .append("g")
-              .style("overflow", "hidden")
-              .style("height", "100%")
-              .style("width", this.width - newWidth - (this.padding * 2))
+            // let leftMakeAnnotations: any = svgAnnotations.annotation()
+            //   .annotations(leftAnnotationsData)
+            //   .type(new svgAnnotations.annotationCustomType(element.type, element.alignment))
 
-            crop
-              .append("g")
-              .attr('class', `annotation_selector_${element.selectionId.key.replace(/\W/g, '')} annotationSelector`)
-              .style('font-size', element.textSize + "px")
-              .style('font-family', element.fontFamily)
-              .style('background-color', 'transparent')
-              .call(leftMakeAnnotations)
+
+            // leftMakeAnnotations
+            //   .disable(["connector"])
+
+
+            // this.container
+            //   .append("g")
+            //   .attr('class', `annotation_selector_${element.selectionId.key.replace(/\W/g, '')} annotationSelector`)
+            //   .style('font-size', element.textSize + "px")
+            //   .style('font-family', element.fontFamily)
+            //   .style('background-color', 'transparent')
+            //   .call(leftMakeAnnotations)
+            //   .on('click', el => {
+            //     //manage highlighted formating and open links
+            //     this.selectionManager.select(element.selectionId).then((ids: ISelectionId[]) => {
+            //       if (ids.length > 0) {
+            //         // this.container.selectAll('.bar').style('fill-opacity', 0.1)
+
+            //         d3.select(`.selector_${element.selectionId.key.replace(/\W/g, '')}`).style('fill-opacity', 1)
+            //         this.container.selectAll('.annotationSelector').style('font-weight', "normal")
+
+            //         if (!this.viewModel.settings.textSettings.boldTitles) {
+            //           this.container.selectAll('.annotationSelector  .annotation-note-title ').style('font-weight', "normal")
+            //         }
+
+            //         d3.selectAll(`.annotation_selector_${element.selectionId.key.replace(/\W/g, '')}`).style('font-weight', "bold")
+            //         d3.selectAll(`.annotation_selector_${element.selectionId.key.replace(/\W/g, '')}  .annotation-note-title `).style('font-weight', "bold")
+
+
+            //         //Open link 
+            //         if (element.URL) {
+            //           this.host.launchUrl(element.URL)
+            //         }
+
+            //       } else {
+            //         // this.container.selectAll('.bar').style('fill-opacity', 1)
+            //         this.container.selectAll('.annotationSelector').style('font-weight', "normal")
+
+            //         if (!this.viewModel.settings.textSettings.boldTitles) {
+            //           this.container.selectAll('.annotationSelector .annotation-note-title').style('font-weight', "normal")
+            //         }
+            //       }
+
+            //     })
+            //   })
+
 
 
             element["x"] = axisPadding + scale(element["date"]) - circle
@@ -449,10 +504,30 @@ export class Visual implements IVisual {
               .attr("cx", circle)
               .attr("cy", circle)
               .attr("r", circle)
+              .attr("class", `circleSelector circle_selector_${element.selectionId.key.replace(/\W/g, '')}`)
               .attr("id", element.selectionId)
               .style("fill", element.textColor)
               .on("click", () => {
-                console.log("click")
+                this.selectionManager.select(element.selectionId).then((ids: ISelectionId[]) => {                     
+                  if (ids.length > 0) {
+                    d3.selectAll('.annotationSelector').style('opacity', "0.1")
+                    d3.selectAll('.circleSelector').style('opacity', "0.1")
+
+                    d3.selectAll(`.annotation_selector_${element.selectionId.key.replace(/\W/g, '')}`).style('opacity', "1")
+                    d3.selectAll(`.circle_selector_${element.selectionId.key.replace(/\W/g, '')}`).style('opacity', "1")
+
+                    //Open link 
+                    if (element.URL) {
+                      this.host.launchUrl(element.URL)
+                    }
+
+                  } 
+                  // else {
+                  //   d3.selectAll('.annotationSelector').style('opacity', "1")
+                  //   d3.selectAll('.circleSelector').style('opacity', "1")
+                  // }
+
+                })
               })
               .on("mouseover", () => {
                 console.log("hi")
@@ -462,8 +537,8 @@ export class Visual implements IVisual {
 
           break;
       }
-      
-      this.svg.attr("height", Math.max(this.height -4, svgHeightTracking));
+
+      this.svg.attr("height", Math.max(this.height - 4, svgHeightTracking));
       //axis setup
       let x_axis
       x_axis = d3.axisBottom(scale)
@@ -490,12 +565,12 @@ export class Visual implements IVisual {
       }
 
       if (this.viewModel.settings.axisSettings.axis === "None") {
-        this.container.selectAll("text").remove()
+        this.container.selectAll(".axis text").remove()
       }
       else {
-        this.container.selectAll("text").style('font-size', this.viewModel.settings.axisSettings.fontSize)
-        this.container.selectAll("text").style('fill', this.viewModel.settings.axisSettings.axisColor.solid.color)
-        this.container.selectAll("text").style('font-family', this.viewModel.settings.axisSettings.fontFamily)
+        this.container.selectAll(".axis text").style('font-size', this.viewModel.settings.axisSettings.fontSize)
+        this.container.selectAll(".axis text").style('fill', this.viewModel.settings.axisSettings.axisColor.solid.color)
+        this.container.selectAll(".axis text").style('font-family', this.viewModel.settings.axisSettings.fontFamily)
 
       }
 
@@ -566,7 +641,7 @@ export class Visual implements IVisual {
             orientation = this.getAnnotationOrientation(element)
           }
 
-          svgHeightTracking = Math.max(svgHeightTracking, element["y"] + element["dy"])
+          // svgHeightTracking = Math.max(svgHeightTracking, element["y"] + element["dy"])
 
           element["alignment"] = {
             "className": "custom",
@@ -941,6 +1016,8 @@ export class Visual implements IVisual {
 
           // this.container.selectAll('.bar').style('fill-opacity', 1)
           this.container.selectAll('.annotationSelector').style('font-weight', "normal")
+          // d3.selectAll('.annotationSelector').style('opacity', 1)
+          // d3.selectAll('.circleSelector').style('opacity', 1)
 
 
           if (!this.viewModel.settings.textSettings.boldTitles) {
