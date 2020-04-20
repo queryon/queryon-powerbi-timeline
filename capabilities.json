@@ -713,6 +713,29 @@
                         ]
                     }
                 },
+                "minimalistStyle": {
+                    "displayName": "Minimalist Style",
+                    "type": {
+                        "enumeration": [
+                            {
+                                "displayName": "Circle",
+                                "value": "circle"
+                            },
+                            {
+                                "displayName": "Dot",
+                                "value": "dot"
+                            },
+                            {
+                                "displayName": "Square",
+                                "value": "square"
+                            },
+                            {
+                                "displayName": "Diamond",
+                                "value": "diamond"
+                            }
+                        ]
+                    }
+                },
                 "today": {
                     "displayName": "Show today",
                     "type": {

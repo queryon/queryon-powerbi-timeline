@@ -58,12 +58,11 @@ export class Visual implements IVisual {
     this.container = this.svg.append("g")
     this.padding = 15;
     this.host = options.host
-    this.selectionIdBuilder = this.host.createSelectionIdBuilder();
+    // this.selectionIdBuilder = this.host.createSelectionIdBuilder();
     this.selectionManager = this.host.createSelectionManager();
     this.tooltipServiceWrapper = createTooltipServiceWrapper(
       options.host.tooltipService,
       options.element);
-
 
   }
 
@@ -410,8 +409,14 @@ export class Visual implements IVisual {
           textLateral = textLateral.merge(enter);
 
           //Add dots
-          let circle = 8
+          let shapeSize = 8,
+            shapeOptions = {
+              "diamond": d3.symbol().type(d3.symbolDiamond).size(150),
+              "circle": d3.symbol().type(d3.symbolCircle).size(150),
+              "square": d3.symbol().type(d3.symbolSquare).size(150),
+              "dot": d3.symbol().type(d3.symbolCircle).size(10)
 
+            }
 
           let minIcons = this.container.selectAll(".min-icons")
             .data(filteredData)
@@ -420,18 +425,15 @@ export class Visual implements IVisual {
 
           let enterIcons = minIcons.enter()
             .append("g").attr("class", "min-icons");
-          enterIcons.append("svg")
-            .attr("x", element => axisPadding + scale(element["date"]) - circle)
-            .attr("y", (element, i) => (this.marginTop + this.viewModel.settings.textSettings.spacing * i) - circle)
-            .attr("width", circle * 2)
-            .attr("height", circle * 2)
-            .append("circle")
-            .attr("cx", circle)
-            .attr("cy", circle)
-            .attr("r", circle)
+          enterIcons.append('path')
+            .attr("d", shapeOptions[this.viewModel.settings.style.minimalistStyle])
+            .attr("transform", (element, i) => {
+             return "translate(" + (axisPadding + scale(element["date"]) - shapeSize) + "," + ((this.marginTop + this.viewModel.settings.textSettings.spacing * i) - shapeSize) + ") rotate(180)"
+            })
+
             .attr("class", element => `circleSelector circle_selector_${element["selectionId"].key.replace(/\W/g, '')}`)
             .attr("id", element => element["selectionId"])
-            .style("fill", element => element["textColor"])
+          
             .on("click", (element) => {
               this.selectionManager.select(element["selectionId"]).then((ids: ISelectionId[]) => {
                 if (ids.length > 0) {
@@ -449,13 +451,15 @@ export class Visual implements IVisual {
                 }
               })
             })
-          minIcons = minIcons.merge(enterIcons);
+
+          minIcons = minIcons.merge(enterIcons)
+          .style("fill", element => element["textColor"]);
 
           break;
       }
 
       this.svg.attr("height", Math.max(this.height - 4, svgHeightTracking));
-      
+
       //axis setup
 
       if (axisMarginTop) {
@@ -499,11 +503,11 @@ export class Visual implements IVisual {
           .attr("d", d3.symbol().type(d3.symbolTriangle).size(150))
           .attr("class", "symbol today-symbol")
           .attr("transform", (d) => {
-            let transformStr, todayIconY, 
-            todayMarginTop = axisMarginTop ? axisMarginTop : this.finalMarginTop,
-            todayPadding = axisPadding? axisPadding : this.padding
+            let transformStr, todayIconY,
+              todayMarginTop = axisMarginTop ? axisMarginTop : this.finalMarginTop,
+              todayPadding = axisPadding ? axisPadding : this.padding
 
-           if (this.viewModel.settings.style.todayTop) {
+            if (this.viewModel.settings.style.todayTop) {
               todayIconY = todayMarginTop - 12
               transformStr = "translate(" + (todayPadding + scale(today)) + "," + (todayIconY) + ") rotate(180)"
             } else {
@@ -668,7 +672,7 @@ export class Visual implements IVisual {
               });
           }
 
-          
+
           this.container
             .append("g")
             .attr('class', `annotation_selector_${element.selectionId.key.replace(/\W/g, '')} annotationSelector`)
@@ -933,7 +937,7 @@ export class Visual implements IVisual {
             d3.selectAll('.circleSelector').style('opacity', 1)
           } else {
             this.container.selectAll('.annotationSelector').style('font-weight', "normal")
-           
+
             if (!this.viewModel.settings.textSettings.boldTitles) {
               this.container.selectAll('.annotationSelector  .annotation-note-title ').style('font-weight', "normal")
             }
@@ -961,8 +965,9 @@ export class Visual implements IVisual {
           value: dataPoint.label
         }]
 
-        if(dataPoint.description){
-          args.push({displayName: dataPoint.descriptionColumn, 
+        if (dataPoint.description) {
+          args.push({
+            displayName: dataPoint.descriptionColumn,
             value: dataPoint.description
           })
         }
@@ -1244,6 +1249,14 @@ export class Visual implements IVisual {
             },
             selector: null
           });
+        } else if (this.viewModel.settings.style.timelineStyle == "minimalist") {
+          objectEnumeration.push({
+            objectName: objectName,
+            properties: {
+              minimalistStyle: this.viewModel.settings.style.minimalistStyle
+            },
+            selector: null
+          });
         }
 
 
@@ -1434,6 +1447,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
       timelineStyle: "line",
       lineColor: { solid: { color: 'black' } },
       lineThickness: 2,
+      minimalistStyle: "circle",
       barColor: { solid: { color: 'rgb(186,215,57)' } },
       barHeight: 30,
       today: false,
@@ -1564,6 +1578,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
       timelineStyle: getValue(objects, 'style', 'timelineStyle', defaultSettings.style.timelineStyle),
       lineColor: getValue(objects, 'style', 'lineColor', defaultSettings.style.lineColor),
       lineThickness: getValue(objects, 'style', 'lineThickness', defaultSettings.style.lineThickness),
+      minimalistStyle: getValue(objects, 'style', 'minimalistStyle', defaultSettings.style.minimalistStyle),
       barColor: getValue(objects, 'style', 'barColor', defaultSettings.style.barColor),
       barHeight: getValue(objects, 'style', 'barHeight', defaultSettings.style.barHeight),
       today: getValue(objects, 'style', 'today', defaultSettings.style.today),
