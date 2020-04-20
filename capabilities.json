@@ -667,7 +667,7 @@
                     "type": {
                         "enumeration": [
                             {
-                                "displayName": "Default",
+                                "displayName": "Staggered",
                                 "value": "default"
                             },
                             {

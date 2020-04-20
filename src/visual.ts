@@ -53,11 +53,6 @@ export class Visual implements IVisual {
 
   constructor(options: VisualConstructorOptions) {
     options.element.style["overflow-y"] = 'auto';
-    // options.element.style["max-height"] = 100;
-    // if (!window['TextDecoder']) {
-    //   window['TextDecoder'] = TextDecoder;
-    // }
-    console.log("constructor")
     this.svg = d3.select(options.element)
       .append('svg')
     this.container = this.svg.append("g")
@@ -460,7 +455,7 @@ export class Visual implements IVisual {
       }
 
       this.svg.attr("height", Math.max(this.height - 4, svgHeightTracking));
-
+      
       //axis setup
 
       if (axisMarginTop) {
@@ -499,23 +494,24 @@ export class Visual implements IVisual {
       }
       //append today icon
       if (this.viewModel.settings.style.today) {
-        var svg = this.container.append("svg")
-          .attr("width", window.innerWidth)
-          .attr("height", window.innerHeight)
+        let todayIcon = this.container
           .append('path')
           .attr("d", d3.symbol().type(d3.symbolTriangle).size(150))
-          .attr("class", "symbol")
+          .attr("class", "symbol today-symbol")
           .attr("transform", (d) => {
-            let transformStr, todayIconY
+            let transformStr, todayIconY, 
+            todayMarginTop = axisMarginTop ? axisMarginTop : this.finalMarginTop,
+            todayPadding = axisPadding? axisPadding : this.padding
 
-            if (this.viewModel.settings.style.todayTop) {
-              todayIconY = this.finalMarginTop - 12
-              transformStr = "translate(" + (this.padding + scale(today)) + "," + (todayIconY) + ") rotate(180)"
+           if (this.viewModel.settings.style.todayTop) {
+              todayIconY = todayMarginTop - 12
+              transformStr = "translate(" + (todayPadding + scale(today)) + "," + (todayIconY) + ") rotate(180)"
             } else {
-              todayIconY = this.viewModel.settings.style.timelineStyle == "bar" ? this.finalMarginTop + 12 + this.barHeight : this.finalMarginTop + 12
+              todayIconY = this.viewModel.settings.style.timelineStyle == "bar" ? todayMarginTop + 12 + this.barHeight : todayMarginTop + 12
 
-              transformStr = "translate(" + (this.padding + scale(today)) + "," + (todayIconY) + ")"
+              transformStr = "translate(" + (todayPadding + scale(today)) + "," + (todayIconY) + ")"
             }
+
             return transformStr
           })
           .style("fill", this.viewModel.settings.style.todayColor.solid.color);
@@ -660,9 +656,6 @@ export class Visual implements IVisual {
                 .attr("stroke", element.textColor);
             }
 
-
-
-
             let image = this.container.append('image')
               .attr('xlink:href', element.image)
               .attr('width', imagesWidth)
@@ -675,6 +668,7 @@ export class Visual implements IVisual {
               });
           }
 
+          
           this.container
             .append("g")
             .attr('class', `annotation_selector_${element.selectionId.key.replace(/\W/g, '')} annotationSelector`)
@@ -923,22 +917,17 @@ export class Visual implements IVisual {
         this.selectionManager.select(dataPoint.selectionId).then((ids: ISelectionId[]) => {
           if (ids.length > 0) {
 
-            d3.select(<Element>eventTarget).style('fill-opacity', 1)
+            // d3.select(<Element>eventTarget).style('fill-opacity', 1)
             this.container.selectAll('.annotationSelector').style('font-weight', "normal")
             d3.select(` annotation_selector_${dataPoint.selectionId.key.replace(/\W/g, '')}`).style('font-weight', "bold")
             // d3.select(`.annotation_selector_${dataPoint.label.replace(/\W/g, '')}_${dataPoint.dateAsInt}`).style('font-weight', "bold")
 
           } else {
-            console.log("else")
             this.container.selectAll('.annotationSelector').style('font-weight', "normal")
           }
         })
       } else {
-        console.log("no datapoint")
-
         this.selectionManager.clear().then(() => {
-
-          // this.container.selectAll('.bar').style('fill-opacity', 1)
           if (this.viewModel.settings.style.timelineStyle == "minimalist") {
             d3.selectAll('.annotationSelector').style('opacity', 1)
             d3.selectAll('.circleSelector').style('opacity', 1)
@@ -958,22 +947,25 @@ export class Visual implements IVisual {
 
       const mouseEvent: MouseEvent = d3.event as MouseEvent;
       const eventTarget: EventTarget = mouseEvent.target;
-
-      //to-do grab data element based on annotation css class so hover works on annotation
-
       let args = []
       let dataPoint: any = d3.select(<Element>eventTarget).datum();
-      // console.log(dataPoint)
+
       if (dataPoint && dataPoint.labelColumn) {
 
         args = [{
           displayName: dataPoint.dateColumn,
-          value: dataPoint.date
+          value: dataPoint.formatted
         },
         {
           displayName: dataPoint.labelColumn,
           value: dataPoint.label
         }]
+
+        if(dataPoint.description){
+          args.push({displayName: dataPoint.descriptionColumn, 
+            value: dataPoint.description
+          })
+        }
         this.tooltipServiceWrapper.addTooltip(d3.select(<Element>eventTarget),
           (tooltipEvent: TooltipEventArgs<number>) => args,
           (tooltipEvent: TooltipEventArgs<number>) => null);
@@ -1451,7 +1443,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
     imageSettings: {
       imagesHeight: 100,
       imagesWidth: 100,
-      style: 'default'
+      style: 'straight'
     }
   };
 
@@ -1511,6 +1503,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
     element["description"] = descriptionData[i]
     element["labelColumn"] = labelColumn
     element["dateColumn"] = dateColumn
+    element["descriptionColumn"] = descriptionColumn
 
     element["selectionId"] = host.createSelectionIdBuilder()
       .withCategory(category, i)
