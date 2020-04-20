@@ -140,8 +140,7 @@ export class Visual implements IVisual {
     this.marginTop = 20;
     this.barHeight = this.viewModel.settings.style.barHeight;
     let marginTopStagger = 20;
-
-    let svgHeightTracking;
+    let svgHeightTracking, finalHeight;
 
     //Parse global formats
     let textSize = this.viewModel.settings.textSettings.textSize,
@@ -354,6 +353,10 @@ export class Visual implements IVisual {
           axisMarginTop = this.finalMarginTop + this.viewModel.settings.textSettings.spacing * (filteredData.length)
           svgHeightTracking = axisMarginTop + 20
 
+          if(this.viewModel.settings.download.downloadCalendar && this.viewModel.settings.download.position.split(",")[0] == "TOP"){
+            axisMarginTop += 35
+            svgHeightTracking += 35
+          }
           strokeColor = this.viewModel.settings.axisSettings.axisColor.solid.color
 
           //split screen for minimalist view
@@ -378,7 +381,13 @@ export class Visual implements IVisual {
 
           enter.append("text")
             .attr("x", 0)
-            .attr("y", (element, i) => this.marginTop + this.viewModel.settings.textSettings.spacing * i)
+            .attr("y", (element, i) => {
+              let result = this.marginTop + this.viewModel.settings.textSettings.spacing * i
+              if(this.viewModel.settings.download.downloadCalendar && this.viewModel.settings.download.position.split(",")[0] == "TOP"){
+                result += 35
+              }
+              return result
+            })
             .attr('font-family', element => element["fontFamily"])
             .attr('font-size', element => element["textSize"])
 
@@ -392,10 +401,10 @@ export class Visual implements IVisual {
               this.selectionManager.select(element["selectionId"]).then((ids: ISelectionId[]) => {
                 if (ids.length > 0) {
                   d3.selectAll('.annotationSelector').style('opacity', "0.1")
-                  d3.selectAll('.circleSelector').style('opacity', "0.1")
+                  d3.selectAll('.minIconSelector').style('opacity', "0.1")
 
                   d3.selectAll(`.annotation_selector_${element["selectionId"].key.replace(/\W/g, '')}`).style('opacity', "1")
-                  d3.selectAll(`.circle_selector_${element["selectionId"].key.replace(/\W/g, '')}`).style('opacity', "1")
+                  d3.selectAll(`.min_icon_selector_${element["selectionId"].key.replace(/\W/g, '')}`).style('opacity', "1")
 
                   //Open link 
                   if (element["URL"]) {
@@ -428,20 +437,24 @@ export class Visual implements IVisual {
           enterIcons.append('path')
             .attr("d", shapeOptions[this.viewModel.settings.style.minimalistStyle])
             .attr("transform", (element, i) => {
-             return "translate(" + (axisPadding + scale(element["date"]) - shapeSize) + "," + ((this.marginTop + this.viewModel.settings.textSettings.spacing * i) - shapeSize) + ") rotate(180)"
+              let pointY = (this.marginTop + this.viewModel.settings.textSettings.spacing * i) - shapeSize
+              if (this.viewModel.settings.download.downloadCalendar && this.viewModel.settings.download.position.split(",")[0] == "TOP") {
+                pointY += 35
+              }
+             return "translate(" + (axisPadding + scale(element["date"]) - shapeSize) + "," + pointY + ") rotate(180)"
             })
 
-            .attr("class", element => `circleSelector circle_selector_${element["selectionId"].key.replace(/\W/g, '')}`)
+            .attr("class", element => `minIconSelector min_icon_selector_${element["selectionId"].key.replace(/\W/g, '')}`)
             .attr("id", element => element["selectionId"])
           
             .on("click", (element) => {
               this.selectionManager.select(element["selectionId"]).then((ids: ISelectionId[]) => {
                 if (ids.length > 0) {
                   d3.selectAll('.annotationSelector').style('opacity', "0.1")
-                  d3.selectAll('.circleSelector').style('opacity', "0.1")
+                  d3.selectAll('.minIconSelector').style('opacity', "0.1")
 
                   d3.selectAll(`.annotation_selector_${element["selectionId"].key.replace(/\W/g, '')}`).style('opacity', "1")
-                  d3.selectAll(`.circle_selector_${element["selectionId"].key.replace(/\W/g, '')}`).style('opacity', "1")
+                  d3.selectAll(`.min_icon_selector_${element["selectionId"].key.replace(/\W/g, '')}`).style('opacity', "1")
 
                   //Open link 
                   if (element["URL"]) {
@@ -458,7 +471,9 @@ export class Visual implements IVisual {
           break;
       }
 
-      this.svg.attr("height", Math.max(this.height - 4, svgHeightTracking));
+      finalHeight =  Math.max(this.height - 4, svgHeightTracking)
+
+      this.svg.attr("height", finalHeight);
 
       //axis setup
 
@@ -722,7 +737,8 @@ export class Visual implements IVisual {
       let imgCountTop = 0, imgCountBottom = 0, imgCounter
 
       let pixelWidth = (this.width - this.padding * 2) / data.length
-      this.svg.attr("height", this.finalMarginTop + imagesHeight + this.viewModel.settings.textSettings.spacing);
+      finalHeight = this.finalMarginTop + imagesHeight + this.viewModel.settings.textSettings.spacing
+      this.svg.attr("height",finalHeight);
 
       filteredData.forEach((element, i) => {
         let orientation
@@ -934,7 +950,7 @@ export class Visual implements IVisual {
         this.selectionManager.clear().then(() => {
           if (this.viewModel.settings.style.timelineStyle == "minimalist") {
             d3.selectAll('.annotationSelector').style('opacity', 1)
-            d3.selectAll('.circleSelector').style('opacity', 1)
+            d3.selectAll('.minIconSelector').style('opacity', 1)
           } else {
             this.container.selectAll('.annotationSelector').style('font-weight', "normal")
 
@@ -984,8 +1000,16 @@ export class Visual implements IVisual {
       const ics = require('ics')
       let orientationVertical = this.viewModel.settings.download.position.split(",")[0]
       let orientationHorizontal = this.viewModel.settings.download.position.split(",")[1]
-      let calX = orientationHorizontal == "LEFT" ? 2 : this.width - 35
-      let calY = orientationVertical == "TOP" ? 2 : this.height - 35
+      let calX 
+      if(orientationHorizontal == "LEFT") {
+        calX = 2 
+       } else {
+         calX = this.width - 35
+      if(this.viewModel.settings.style.timelineStyle == "minimalist"){
+        calX -= 20
+      }
+    }
+      let calY = orientationVertical == "TOP" ? 2 : finalHeight - 35
 
       //append download icon
       let image = this.container.append('image')
