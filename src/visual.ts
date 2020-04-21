@@ -58,7 +58,7 @@ export class Visual implements IVisual {
     this.container = this.svg.append("g")
     this.padding = 15;
     this.host = options.host
-    // this.selectionIdBuilder = this.host.createSelectionIdBuilder();
+    this.selectionIdBuilder = this.host.createSelectionIdBuilder();
     this.selectionManager = this.host.createSelectionManager();
     this.tooltipServiceWrapper = createTooltipServiceWrapper(
       options.host.tooltipService,
@@ -68,7 +68,6 @@ export class Visual implements IVisual {
 
   public update(options: VisualUpdateOptions) {
     this.viewModel = visualTransform(options, this.host)
-    console.log(options)
     //set empty canva
     this.container.selectAll("g").remove();
     this.container.selectAll("rect").remove();
@@ -250,7 +249,7 @@ export class Visual implements IVisual {
 
     //define "official" margin top to start drawing graph
     if (this.viewModel.settings.imageSettings.style !== "image") {
-      this.finalMarginTop = this.viewModel.settings.textSettings.stagger ? marginTopStagger : this.marginTop
+      this.finalMarginTop = !this.viewModel.settings.textSettings.stagger || this.viewModel.settings.style.timelineStyle == "minimalist" ?  this.marginTop : marginTopStagger
     } else {
       this.finalMarginTop = this.marginTop + imagesHeight / 2
     }
@@ -391,7 +390,7 @@ export class Visual implements IVisual {
             .attr('font-family', element => element["fontFamily"])
             .attr('font-size', element => element["textSize"])
 
-            // .attr("id", function(d) { return element.selectionId })
+            .attr("id", (element) =>  element["selectionId"])
             .text(element => element["label"])
             .call(wrapAndCrop, this.width - newWidth - (this.padding * 2))
             .attr('class', element => `annotation_selector_${element["selectionId"].key.replace(/\W/g, '')} annotationSelector`)
@@ -700,7 +699,6 @@ export class Visual implements IVisual {
               this.selectionManager.select(element.selectionId).then((ids: ISelectionId[]) => {
                 if (ids.length > 0) {
                   // this.container.selectAll('.bar').style('fill-opacity', 0.1)
-
                   d3.select(`.selector_${element.selectionId.key.replace(/\W/g, '')}`).style('fill-opacity', 1)
                   this.container.selectAll('.annotationSelector').style('font-weight', "normal")
 
@@ -929,24 +927,32 @@ export class Visual implements IVisual {
 
     //Handles click on/out bar
     this.svg.on('click', () => {
-
+      console.log("test")
       const mouseEvent: MouseEvent = d3.event as MouseEvent;
       const eventTarget: EventTarget = mouseEvent.target;
       let dataPoint: any = d3.select(<Element>eventTarget).datum();
       if (dataPoint) {
-        this.selectionManager.select(dataPoint.selectionId).then((ids: ISelectionId[]) => {
-          if (ids.length > 0) {
 
-            // d3.select(<Element>eventTarget).style('fill-opacity', 1)
-            this.container.selectAll('.annotationSelector').style('font-weight', "normal")
-            d3.select(` annotation_selector_${dataPoint.selectionId.key.replace(/\W/g, '')}`).style('font-weight', "bold")
-            // d3.select(`.annotation_selector_${dataPoint.label.replace(/\W/g, '')}_${dataPoint.dateAsInt}`).style('font-weight', "bold")
+        // this.selectionManager.select(dataPoint.selectionId).then((ids: ISelectionId[]) => {
+        //   if (ids.length > 0) {
+        //     console.log(dataPoint)
+        //     // d3.select(<Element>eventTarget).style('fill-opacity', 1)
+        //     this.container.selectAll('.annotationSelector').style('font-weight', "normal")
+        //     d3.select(` annotation_selector_${dataPoint.selectionId.key.replace(/\W/g, '')}`).style('font-weight', "bold")
+        //     // d3.select(`.annotation_selector_${dataPoint.label.replace(/\W/g, '')}_${dataPoint.dateAsInt}`).style('font-weight', "bold")
 
-          } else {
-            this.container.selectAll('.annotationSelector').style('font-weight', "normal")
-          }
-        })
-      } else {
+        //   } else {
+            
+        //     console.log("no ids", dataPoint)
+        
+        //     this.container.selectAll('.annotationSelector').style('font-weight', "normal")
+        //     this.container.selectAll('.minIconSelector').style('opacity', 1)
+        //     this.container.selectAll('.annotationSelector').style('opacity', 1)
+
+
+        //   }
+        // })
+      } else {console.log("no datapoint")
         this.selectionManager.clear().then(() => {
           if (this.viewModel.settings.style.timelineStyle == "minimalist") {
             d3.selectAll('.annotationSelector').style('opacity', 1)
@@ -1065,9 +1071,6 @@ export class Visual implements IVisual {
 
 
     switch (objectName) {
-      case 'title':
-        console.log("titleeee")
-        break
       case 'textSettings':
         objectEnumeration.push({
           objectName: objectName,
