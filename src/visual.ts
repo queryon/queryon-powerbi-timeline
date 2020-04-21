@@ -68,7 +68,7 @@ export class Visual implements IVisual {
 
   public update(options: VisualUpdateOptions) {
     this.viewModel = visualTransform(options, this.host)
-
+    console.log(options)
     //set empty canva
     this.container.selectAll("g").remove();
     this.container.selectAll("rect").remove();
@@ -165,7 +165,7 @@ export class Visual implements IVisual {
     valueFormatter = createFormatter(format);
 
     //sort so staggering works in right order
-    data = data.sort((a, b) => (a.date > b.date) ? 1 : -1)
+    // data = data.sort((a, b) => (a.date > b.date) ? 1 : -1)
 
     let filteredData
 
@@ -287,25 +287,25 @@ export class Visual implements IVisual {
       let bar, axisMarginTop, enabledAnnotations, strokeColor, width, axisPadding
 
       switch (this.viewModel.settings.style.timelineStyle) {
-        case "vertical":
-          // width = this.width
-          enabledAnnotations = false;
-          // axisMarginTop = this.finalMarginTop;
-          // axisPadding = this.padding;
-          strokeColor = this.viewModel.settings.axisSettings.axisColor.solid.color
+        // case "vertical":
+        //   // width = this.width
+        //   enabledAnnotations = false;
+        //   // axisMarginTop = this.finalMarginTop;
+        //   // axisPadding = this.padding;
+        //   strokeColor = this.viewModel.settings.axisSettings.axisColor.solid.color
 
-          svgHeightTracking = this.height - this.padding
+        //   svgHeightTracking = this.height - this.padding
 
-          bar = this.container.append("line")
-            .attr("x1", this.width / 2)
-            .attr("y1", this.padding)
-            .attr("x2", this.width / 2)
-            .attr("y2", this.height - this.padding)
-            .attr("stroke-width", this.viewModel.settings.style.lineThickness)
-            .attr("stroke", this.viewModel.settings.style.lineColor.solid.color);
-          break;
+        //   bar = this.container.append("line")
+        //     .attr("x1", this.width / 2)
+        //     .attr("y1", this.padding)
+        //     .attr("x2", this.width / 2)
+        //     .attr("y2", this.height - this.padding)
+        //     .attr("stroke-width", this.viewModel.settings.style.lineThickness)
+        //     .attr("stroke", this.viewModel.settings.style.lineColor.solid.color);
+        //   break;
 
-          break;
+        //   break;
         case "line":
           width = this.width
           enabledAnnotations = true;
@@ -1048,7 +1048,7 @@ export class Visual implements IVisual {
 
           blob = new Blob([value]);
 
-          FileSaver.saveAs(blob, "calendar.ics");
+          FileSaver.saveAs(blob, `${this.viewModel.settings.download.calendarName != "" ?this.viewModel.settings.download.calendarName : 'calendar' }.ics`);
         });
     }
   }
@@ -1065,6 +1065,9 @@ export class Visual implements IVisual {
 
 
     switch (objectName) {
+      case 'title':
+        console.log("titleeee")
+        break
       case 'textSettings':
         objectEnumeration.push({
           objectName: objectName,
@@ -1328,7 +1331,8 @@ export class Visual implements IVisual {
           objectEnumeration.push({
             objectName: objectName,
             properties: {
-              position: this.viewModel.settings.download.position,
+              calendarName: this.viewModel.settings.download.calendarName,
+              position: this.viewModel.settings.download.position
             },
             selector: null
           });
@@ -1437,7 +1441,8 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
   let defaultSettings = {
     download: {
       downloadCalendar: false,
-      position: "TOP,LEFT"
+      position: "TOP,LEFT",
+      calendarName: ""
     },
     textSettings: {
       stagger: true,
@@ -1567,7 +1572,8 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
   let timelineSettings = {
     download: {
       downloadCalendar: getValue(objects, 'download', 'downloadCalendar', defaultSettings.download.downloadCalendar),
-      position: getValue(objects, 'download', 'position', defaultSettings.download.position)
+      position: getValue(objects, 'download', 'position', defaultSettings.download.position),
+      calendarName: getValue(objects, 'download', 'calendarName', defaultSettings.download.calendarName)
     },
     textSettings: {
       stagger: getValue(objects, 'textSettings', 'stagger', defaultSettings.textSettings.stagger),

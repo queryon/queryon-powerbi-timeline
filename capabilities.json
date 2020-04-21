@@ -703,10 +703,6 @@
                                 "value": "bar"
                             },
                             {
-                                "displayName": "Vertical",
-                                "value": "vertical"
-                            },
-                            {
                                 "displayName": "Minimalist",
                                 "value": "minimalist"
                             }
@@ -802,6 +798,12 @@
                         "bool": true
                     }
                 },
+                "calendarName":{
+                    "displayName": "Enter calendar name",
+                    "type": {
+                        "text": true
+                    }
+                },
                 "position": {
                     "displayName": "Button position",
                     "type": {
@@ -827,6 +829,9 @@
                 }
             }
         }
+    },
+    "sorting": {
+        "default": {   }
     },
     "dataViewMappings": [
         {
