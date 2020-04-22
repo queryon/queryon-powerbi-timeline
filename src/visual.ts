@@ -249,7 +249,7 @@ export class Visual implements IVisual {
 
     //define "official" margin top to start drawing graph
     if (this.viewModel.settings.imageSettings.style !== "image") {
-      this.finalMarginTop = !this.viewModel.settings.textSettings.stagger || this.viewModel.settings.style.timelineStyle == "minimalist" ?  this.marginTop : marginTopStagger
+      this.finalMarginTop = !this.viewModel.settings.textSettings.stagger || this.viewModel.settings.style.timelineStyle == "minimalist" ? this.marginTop : marginTopStagger
     } else {
       this.finalMarginTop = this.marginTop + imagesHeight / 2
     }
@@ -352,7 +352,7 @@ export class Visual implements IVisual {
           axisMarginTop = this.finalMarginTop + this.viewModel.settings.textSettings.spacing * (filteredData.length)
           svgHeightTracking = axisMarginTop + 20
 
-          if(this.viewModel.settings.download.downloadCalendar && this.viewModel.settings.download.position.split(",")[0] == "TOP"){
+          if (this.viewModel.settings.download.downloadCalendar && this.viewModel.settings.download.position.split(",")[0] == "TOP") {
             axisMarginTop += 35
             svgHeightTracking += 35
           }
@@ -382,7 +382,7 @@ export class Visual implements IVisual {
             .attr("x", 0)
             .attr("y", (element, i) => {
               let result = this.marginTop + this.viewModel.settings.textSettings.spacing * i
-              if(this.viewModel.settings.download.downloadCalendar && this.viewModel.settings.download.position.split(",")[0] == "TOP"){
+              if (this.viewModel.settings.download.downloadCalendar && this.viewModel.settings.download.position.split(",")[0] == "TOP") {
                 result += 35
               }
               return result
@@ -390,7 +390,7 @@ export class Visual implements IVisual {
             .attr('font-family', element => element["fontFamily"])
             .attr('font-size', element => element["textSize"])
 
-            .attr("id", (element) =>  element["selectionId"])
+            .attr("id", (element) => element["selectionId"])
             .text(element => element["label"])
             .call(wrapAndCrop, this.width - newWidth - (this.padding * 2))
             .attr('class', element => `annotation_selector_${element["selectionId"].key.replace(/\W/g, '')} annotationSelector`)
@@ -416,61 +416,98 @@ export class Visual implements IVisual {
 
           textLateral = textLateral.merge(enter);
 
-          //Add dots
-          let shapeSize = 8,
-            shapeOptions = {
-              "diamond": d3.symbol().type(d3.symbolDiamond).size(150),
-              "circle": d3.symbol().type(d3.symbolCircle).size(150),
-              "square": d3.symbol().type(d3.symbolSquare).size(150),
-              "dot": d3.symbol().type(d3.symbolCircle).size(10)
-
-            }
-
           let minIcons = this.container.selectAll(".min-icons")
             .data(filteredData)
-
           minIcons.exit().remove();
 
-          let enterIcons = minIcons.enter()
-            .append("g").attr("class", "min-icons");
-          enterIcons.append('path')
-            .attr("d", shapeOptions[this.viewModel.settings.style.minimalistStyle])
-            .attr("transform", (element, i) => {
-              let pointY = (this.marginTop + this.viewModel.settings.textSettings.spacing * i) - shapeSize
-              if (this.viewModel.settings.download.downloadCalendar && this.viewModel.settings.download.position.split(",")[0] == "TOP") {
-                pointY += 35
+          let enterIcons, shapeSize = 8
+
+          //Add dots
+          if (this.viewModel.settings.style.minimalistStyle !== "thinBar") {
+            let size = 150/this.viewModel.settings.style.minimalistSize
+             let shapeOptions = {
+                "diamond": d3.symbol().type(d3.symbolDiamond).size(size),
+                "circle": d3.symbol().type(d3.symbolCircle).size(size),
+                "square": d3.symbol().type(d3.symbolSquare).size(size),
+                "dot": d3.symbol().type(d3.symbolCircle).size(10),
               }
-             return "translate(" + (axisPadding + scale(element["date"]) - shapeSize) + "," + pointY + ") rotate(180)"
-            })
 
-            .attr("class", element => `minIconSelector min_icon_selector_${element["selectionId"].key.replace(/\W/g, '')}`)
-            .attr("id", element => element["selectionId"])
-          
-            .on("click", (element) => {
-              this.selectionManager.select(element["selectionId"]).then((ids: ISelectionId[]) => {
-                if (ids.length > 0) {
-                  d3.selectAll('.annotationSelector').style('opacity', "0.1")
-                  d3.selectAll('.minIconSelector').style('opacity', "0.1")
 
-                  d3.selectAll(`.annotation_selector_${element["selectionId"].key.replace(/\W/g, '')}`).style('opacity', "1")
-                  d3.selectAll(`.min_icon_selector_${element["selectionId"].key.replace(/\W/g, '')}`).style('opacity', "1")
-
-                  //Open link 
-                  if (element["URL"]) {
-                    this.host.launchUrl(element["URL"])
-                  }
-
+            enterIcons = minIcons.enter()
+              .append("g").attr("class", "min-icons");
+            enterIcons.append('path')
+              .attr("d", shapeOptions[this.viewModel.settings.style.minimalistStyle])
+              .attr("transform", (element, i) => {
+                let pointY = (this.marginTop + this.viewModel.settings.textSettings.spacing * i) - shapeSize
+                if (this.viewModel.settings.download.downloadCalendar && this.viewModel.settings.download.position.split(",")[0] == "TOP") {
+                  pointY += 35
                 }
+                return "translate(" + (axisPadding + scale(element["date"]) - shapeSize) + "," + pointY + ") rotate(180)"
               })
-            })
 
+              .attr("class", element => `minIconSelector min_icon_selector_${element["selectionId"].key.replace(/\W/g, '')}`)
+              .attr("id", element => element["selectionId"])
+
+              .on("click", (element) => {
+                this.selectionManager.select(element["selectionId"]).then((ids: ISelectionId[]) => {
+                  if (ids.length > 0) {
+                    d3.selectAll('.annotationSelector').style('opacity', "0.1")
+                    d3.selectAll('.minIconSelector').style('opacity', "0.1")
+
+                    d3.selectAll(`.annotation_selector_${element["selectionId"].key.replace(/\W/g, '')}`).style('opacity', "1")
+                    d3.selectAll(`.min_icon_selector_${element["selectionId"].key.replace(/\W/g, '')}`).style('opacity', "1")
+
+                    //Open link 
+                    if (element["URL"]) {
+                      this.host.launchUrl(element["URL"])
+                    }
+
+                  }
+                })
+              })
+
+
+          } else {
+            enterIcons = minIcons.enter()
+              .append("g").attr("class", "min-icons");
+            enterIcons.append('rect')
+              .attr("x", element => axisPadding + scale(element["date"]) - shapeSize)
+              .attr("y", (element, i) => {
+                let y = (this.marginTop + this.viewModel.settings.textSettings.spacing * i) - shapeSize
+                if (this.viewModel.settings.download.downloadCalendar && this.viewModel.settings.download.position.split(",")[0] == "TOP") {
+                  y += 35
+                }
+                return y
+              })
+              .attr("width", 2)
+              .attr("height", this.viewModel.settings.textSettings.spacing)
+              .attr("class", element => `minIconSelector min_icon_selector_${element["selectionId"].key.replace(/\W/g, '')}`)
+              .attr("id", element => element["selectionId"])
+              .on("click", (element) => {
+                this.selectionManager.select(element["selectionId"]).then((ids: ISelectionId[]) => {
+                  if (ids.length > 0) {
+                    d3.selectAll('.annotationSelector').style('opacity', "0.1")
+                    d3.selectAll('.minIconSelector').style('opacity', "0.1")
+
+                    d3.selectAll(`.annotation_selector_${element["selectionId"].key.replace(/\W/g, '')}`).style('opacity', "1")
+                    d3.selectAll(`.min_icon_selector_${element["selectionId"].key.replace(/\W/g, '')}`).style('opacity', "1")
+
+                    //Open link 
+                    if (element["URL"]) {
+                      this.host.launchUrl(element["URL"])
+                    }
+
+                  }
+                })
+              })
+
+          }
           minIcons = minIcons.merge(enterIcons)
-          .style("fill", element => element["textColor"]);
-
+            .style("fill", element => element["textColor"]);
           break;
       }
 
-      finalHeight =  Math.max(this.height - 4, svgHeightTracking)
+      finalHeight = Math.max(this.height - 4, svgHeightTracking)
 
       this.svg.attr("height", finalHeight);
 
@@ -682,7 +719,10 @@ export class Visual implements IVisual {
               .attr('y', imageY)
 
               .on("click", () => {
-                this.host.launchUrl(element.URL)
+                if (element.URL) {
+                  this.host.launchUrl(element.URL)
+                }
+
               });
           }
 
@@ -736,7 +776,7 @@ export class Visual implements IVisual {
 
       let pixelWidth = (this.width - this.padding * 2) / data.length
       finalHeight = this.finalMarginTop + imagesHeight + this.viewModel.settings.textSettings.spacing
-      this.svg.attr("height",finalHeight);
+      this.svg.attr("height", finalHeight);
 
       filteredData.forEach((element, i) => {
         let orientation
@@ -863,7 +903,9 @@ export class Visual implements IVisual {
             .attr('y', imageY)
 
             .on("click", () => {
-              this.host.launchUrl(element.URL)
+              if (element.URL) {
+                this.host.launchUrl(element.URL)
+              }
             });
         }
 
@@ -942,9 +984,9 @@ export class Visual implements IVisual {
         //     // d3.select(`.annotation_selector_${dataPoint.label.replace(/\W/g, '')}_${dataPoint.dateAsInt}`).style('font-weight', "bold")
 
         //   } else {
-            
+
         //     console.log("no ids", dataPoint)
-        
+
         //     this.container.selectAll('.annotationSelector').style('font-weight', "normal")
         //     this.container.selectAll('.minIconSelector').style('opacity', 1)
         //     this.container.selectAll('.annotationSelector').style('opacity', 1)
@@ -952,7 +994,8 @@ export class Visual implements IVisual {
 
         //   }
         // })
-      } else {console.log("no datapoint")
+      } else {
+        console.log("no datapoint")
         this.selectionManager.clear().then(() => {
           if (this.viewModel.settings.style.timelineStyle == "minimalist") {
             d3.selectAll('.annotationSelector').style('opacity', 1)
@@ -1006,15 +1049,15 @@ export class Visual implements IVisual {
       const ics = require('ics')
       let orientationVertical = this.viewModel.settings.download.position.split(",")[0]
       let orientationHorizontal = this.viewModel.settings.download.position.split(",")[1]
-      let calX 
-      if(orientationHorizontal == "LEFT") {
-        calX = 2 
-       } else {
-         calX = this.width - 35
-      if(this.viewModel.settings.style.timelineStyle == "minimalist"){
-        calX -= 20
+      let calX
+      if (orientationHorizontal == "LEFT") {
+        calX = 2
+      } else {
+        calX = this.width - 35
+        if (this.viewModel.settings.style.timelineStyle == "minimalist") {
+          calX -= 20
+        }
       }
-    }
       let calY = orientationVertical == "TOP" ? 2 : finalHeight - 35
 
       //append download icon
@@ -1054,7 +1097,7 @@ export class Visual implements IVisual {
 
           blob = new Blob([value]);
 
-          FileSaver.saveAs(blob, `${this.viewModel.settings.download.calendarName != "" ?this.viewModel.settings.download.calendarName : 'calendar' }.ics`);
+          FileSaver.saveAs(blob, `${this.viewModel.settings.download.calendarName != "" ? this.viewModel.settings.download.calendarName : 'calendar'}.ics`);
         });
     }
   }
@@ -1072,6 +1115,8 @@ export class Visual implements IVisual {
 
     switch (objectName) {
       case 'textSettings':
+
+        if(this.viewModel.settings.style.timelineStyle !== "minimalist"){
         objectEnumeration.push({
           objectName: objectName,
           properties: {
@@ -1090,7 +1135,7 @@ export class Visual implements IVisual {
           });
 
         }
-
+      
         objectEnumeration.push({
           objectName: objectName,
           properties: {
@@ -1107,6 +1152,19 @@ export class Visual implements IVisual {
           },
           selector: null
         });
+      } else {
+        objectEnumeration.push({
+          objectName: objectName,
+          properties: {
+            boldTitles: this.viewModel.settings.textSettings.boldTitles,
+            fontFamily: this.viewModel.settings.textSettings.fontFamily,
+            textSize: this.viewModel.settings.textSettings.textSize,
+            textColor: this.viewModel.settings.textSettings.textColor,
+            dateFormat: this.viewModel.settings.textSettings.dateFormat
+          },
+          selector: null
+        });
+      }
 
         if (this.viewModel.settings.textSettings.dateFormat == "customJS") {
           objectEnumeration.push({
@@ -1190,7 +1248,7 @@ export class Visual implements IVisual {
 
 
           if (dataElement.customFormat) {
-
+            if(this.viewModel.settings.style.timelineStyle !== "minimalist"){
             objectEnumeration.push({
               objectName: objectName,
               displayName: dataElement.label + " Text on top",
@@ -1218,7 +1276,7 @@ export class Visual implements IVisual {
               },
               selector: dataElement.selectionId.getSelector()
             });
-
+          }
             objectEnumeration.push({
               objectName: objectName,
               displayName: dataElement.label + " Font Family",
@@ -1287,6 +1345,16 @@ export class Visual implements IVisual {
             },
             selector: null
           });
+          
+          if(this.viewModel.settings.style.minimalistStyle !== "thinBar" && this.viewModel.settings.style.minimalistStyle !== "dot"){
+            objectEnumeration.push({
+              objectName: objectName,
+              properties: {
+                minimalistSize: this.viewModel.settings.style.minimalistSize
+              },
+              selector: null
+            });
+          }
         }
 
 
@@ -1480,6 +1548,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
       lineColor: { solid: { color: 'black' } },
       lineThickness: 2,
       minimalistStyle: "circle",
+      minimalistSize: 2,
       barColor: { solid: { color: 'rgb(186,215,57)' } },
       barHeight: 30,
       today: false,
@@ -1612,6 +1681,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
       lineColor: getValue(objects, 'style', 'lineColor', defaultSettings.style.lineColor),
       lineThickness: getValue(objects, 'style', 'lineThickness', defaultSettings.style.lineThickness),
       minimalistStyle: getValue(objects, 'style', 'minimalistStyle', defaultSettings.style.minimalistStyle),
+      minimalistSize: getValue(objects, 'style', 'minimalistSize', defaultSettings.style.minimalistSize),
       barColor: getValue(objects, 'style', 'barColor', defaultSettings.style.barColor),
       barHeight: getValue(objects, 'style', 'barHeight', defaultSettings.style.barHeight),
       today: getValue(objects, 'style', 'today', defaultSettings.style.today),

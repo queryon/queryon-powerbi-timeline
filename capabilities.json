@@ -250,6 +250,14 @@
                                 "value": "%M/%d/yyyy"
                             },
                             {
+                                "displayName": "d/m/yy",
+                                "value": "dd/MM/yyyy"
+                            },
+                            {
+                                "displayName": "d/m",
+                                "value": "dd/MM/yyyy"
+                            },
+                            {
                                 "displayName": "Time (h:mm:ss)",
                                 "value": "%h:mm:ss"
                             },
@@ -301,6 +309,14 @@
                             {
                                 "displayName": "m/d/yyyy",
                                 "value": "%M/%d/yyyy"
+                            },
+                            {
+                                "displayName": "d/m/yy",
+                                "value": "dd/MM/yyyy"
+                            },
+                            {
+                                "displayName": "d/m",
+                                "value": "dd/MM/yyyy"
                             },
                             {
                                 "displayName": "Time (h:mm:ss)",
@@ -710,7 +726,7 @@
                     }
                 },
                 "minimalistStyle": {
-                    "displayName": "Minimalist Style",
+                    "displayName": "Minimalist Icon Style",
                     "type": {
                         "enumeration": [
                             {
@@ -728,6 +744,29 @@
                             {
                                 "displayName": "Diamond",
                                 "value": "diamond"
+                            },
+                            {
+                                "displayName": "Thin bar",
+                                "value": "thinBar"
+                            }
+                        ]
+                    }
+                },
+                "minimalistSize": {
+                    "displayName": "Minimalist Icon Size",
+                    "type": {
+                        "enumeration": [
+                            {
+                                "displayName": "Small",
+                                "value": "3"
+                            },
+                            {
+                                "displayName": "Medium",
+                                "value": "2"
+                            },
+                            {
+                                "displayName": "Large",
+                                "value": "1"
                             }
                         ]
                     }
@@ -798,7 +837,7 @@
                         "bool": true
                     }
                 },
-                "calendarName":{
+                "calendarName": {
                     "displayName": "Enter calendar name",
                     "type": {
                         "text": true
@@ -831,7 +870,7 @@
         }
     },
     "sorting": {
-        "default": {   }
+        "default": {}
     },
     "dataViewMappings": [
         {
