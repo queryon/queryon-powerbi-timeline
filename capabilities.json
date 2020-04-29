@@ -355,6 +355,16 @@
                         }
                     }
                 },
+                "axisColor": {
+                    "displayName": "Axis stroke and font color",
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
+                    }
+                },
                 "bold": {
                     "displayName": "Bold text",
                     "type": {
@@ -474,16 +484,6 @@
                                 "value": "Verdana"
                             }
                         ]
-                    }
-                },
-                "axisColor": {
-                    "displayName": "Axis color",
-                    "type": {
-                        "fill": {
-                            "solid": {
-                                "color": true
-                            }
-                        }
                     }
                 }
             }

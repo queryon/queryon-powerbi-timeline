@@ -27,7 +27,7 @@ import {
 } from "powerbi-visuals-utils-formattingutils";
 import * as d3 from "d3";
 import * as FileSaver from 'file-saver';
-import { color, text } from "d3";
+import { color, text, timeThursday } from "d3";
 // import { image } from "d3";
 
 
@@ -52,7 +52,7 @@ export class Visual implements IVisual {
   private tooltipServiceWrapper: ITooltipServiceWrapper;
 
   constructor(options: VisualConstructorOptions) {
-    options.element.style["overflow-y"] = 'auto';
+    options.element.style["overflow"] = 'auto';
     this.svg = d3.select(options.element)
       .append('svg')
     this.container = this.svg.append("g")
@@ -198,7 +198,7 @@ export class Visual implements IVisual {
         dataPoint["textHeight"] += this.getTextHeight(dataPoint["description"], dataPoint["textSize"], fontFamily, true) + 2
       }
 
-      //increment image height
+      //increment image height, image spacing
       if (dataPoint.image && this.viewModel.settings.imageSettings.style == "default") {
         dataPoint["textHeight"] += imagesHeight
         if (!dataPoint["top"]) {
@@ -209,6 +209,9 @@ export class Visual implements IVisual {
       //add heights to margin conditionally:
 
       if (this.viewModel.settings.style.timelineStyle !== "minimalist") {
+
+        console.log("spacing: ",this.viewModel.settings.textSettings.spacing)
+        console.log("textHeight: ", dataPoint["textHeight"])
         if (this.viewModel.settings.textSettings.spacing < dataPoint["textHeight"]) {
           this.viewModel.settings.textSettings.spacing = dataPoint["textHeight"]
           if (dataPoint["top"]) {
@@ -216,32 +219,37 @@ export class Visual implements IVisual {
           }
         }
 
-        // if (this.viewModel.settings.textSettings.annotationStyle === 'annotationCallout' || this.viewModel.settings.textSettings.annotationStyle === 'annotationCalloutCurve') {
-        //   // this.viewModel.settings.textSettings.spacing += 2
-        // }
-
         if (dataPoint["top"]) {
           this.marginTop = Math.max(this.marginTop, dataPoint["textHeight"] + 30)
         } else {
           if (dataPoint.image) {
-            this.marginTop = Math.max(this.marginTop, addToMargin)
+            // this.marginTop = Math.max(this.marginTop, addToMargin)
           }
         }
 
       } else {
         //if minimalist, disconsider margin and spacing is default to one line 
-        if (i == 0) {
-          dataPoint["y"] = 0
-        } else {
-          dataPoint["y"] = filteredData[i - 1].y + this.getTextHeight(filteredData[i - 1]["labelText"], filteredData[i - 1]["textSize"], filteredData[i - 1]["fontFamily"], false) + 3
-        }
+        // if (i == 0) {
+        //   dataPoint["y"] = 0
+        // } else {
+        //   dataPoint["y"] = filteredData[i - 1].y + this.getTextHeight(filteredData[i - 1]["labelText"], filteredData[i - 1]["textSize"], filteredData[i - 1]["fontFamily"], false) + 3
+        // }
         this.viewModel.settings.textSettings.spacing = this.getTextHeight(dataPoint["labelText"], dataPoint["textSize"], fontFamily, false) + 3
       }
     })
 
-    marginTopStagger += ((data.filter(element => element.top).length - 1) * this.viewModel.settings.textSettings.spacing) + 20
+    
+    if (this.viewModel.settings.textSettings.annotationStyle === 'annotationCallout' || this.viewModel.settings.textSettings.annotationStyle === 'annotationCalloutCurve') {
+      this.viewModel.settings.textSettings.spacing += 2
+    }
 
+    // marginTopStagger += ((data.filter(element => element.top).length - 1) * this.viewModel.settings.textSettings.spacing) + 20
+
+    marginTopStagger += ((data.filter(element => element.top).length) * this.viewModel.settings.textSettings.spacing) + 20
+
+    //case margintopstagger wasn't incremented - no top staggered items:
     marginTopStagger = Math.max(this.marginTop, marginTopStagger)
+
 
     if (this.viewModel.settings.imageSettings.style !== "default" && data.filter(el => !el.top && el.image).length > 0) {
       marginTopStagger = Math.max(marginTopStagger, addToMargin)
@@ -250,11 +258,13 @@ export class Visual implements IVisual {
     //define "official" margin top to start drawing graph
     if (this.viewModel.settings.imageSettings.style !== "image") {
       this.finalMarginTop = !this.viewModel.settings.textSettings.stagger || this.viewModel.settings.style.timelineStyle == "minimalist" ? this.marginTop : marginTopStagger
+   
     } else {
-      this.finalMarginTop = this.marginTop + imagesHeight / 2
+      this.finalMarginTop = 50 + imagesHeight / 2
     }
 
 
+   
     //download calendar icon is enabled and positioned at top
     if (this.viewModel.settings.download.downloadCalendar && this.viewModel.settings.download.position.split(",")[0] == "TOP") {
       this.finalMarginTop += 35
@@ -266,45 +276,31 @@ export class Visual implements IVisual {
 
     //increment padding based on image
     if (filteredData.filter(el => el.image).length > 0) {
-      let dynamicPadding = Math.max(this.padding, imagesHeight / 2)
+      let dynamicPadding = Math.max(this.padding, imagesWidth / 2)
       this.padding = dynamicPadding
     }
     //increment padding based on values on axis
     if (this.viewModel.settings.axisSettings.axis === "Values" || this.viewModel.settings.style.timelineStyle == "minimalist") {
       let dynamicPadding = Math.max(this.padding, 30)
       this.padding = dynamicPadding
+    } 
+    //increment padding in case scroll bar 
+    if(this.finalMarginTop > this.height){
+     this.padding = Math.max(this.padding, 30)
     }
 
     let scale = d3.scaleTime()
       .domain([this.minVal, this.maxVal]) //min and max data 
       .range([0, this.width - (this.padding * 2)]); //min and max width in px           
 
-    this.svg.attr("width", this.width);
 
     if (this.viewModel.settings.imageSettings.style !== "image") {
       //all styles, not image focus:
       let bar, axisMarginTop, enabledAnnotations, strokeColor, width, axisPadding
 
+      
+      this.svg.attr("width", this.width -4);
       switch (this.viewModel.settings.style.timelineStyle) {
-        // case "vertical":
-        //   // width = this.width
-        //   enabledAnnotations = false;
-        //   // axisMarginTop = this.finalMarginTop;
-        //   // axisPadding = this.padding;
-        //   strokeColor = this.viewModel.settings.axisSettings.axisColor.solid.color
-
-        //   svgHeightTracking = this.height - this.padding
-
-        //   bar = this.container.append("line")
-        //     .attr("x1", this.width / 2)
-        //     .attr("y1", this.padding)
-        //     .attr("x2", this.width / 2)
-        //     .attr("y2", this.height - this.padding)
-        //     .attr("stroke-width", this.viewModel.settings.style.lineThickness)
-        //     .attr("stroke", this.viewModel.settings.style.lineColor.solid.color);
-        //   break;
-
-        //   break;
         case "line":
           width = this.width
           enabledAnnotations = true;
@@ -313,7 +309,7 @@ export class Visual implements IVisual {
           strokeColor = this.viewModel.settings.axisSettings.axisColor.solid.color
 
           // svgHeightTracking = this.height
-          svgHeightTracking = this.finalMarginTop
+          svgHeightTracking = this.finalMarginTop + 20
 
           bar = this.container.append("line")
             .attr("x1", this.padding)
@@ -330,9 +326,9 @@ export class Visual implements IVisual {
           axisMarginTop = this.finalMarginTop
           strokeColor = "transparent"
           axisPadding = this.padding;
-          svgHeightTracking = this.finalMarginTop + this.barHeight;
+          svgHeightTracking = this.finalMarginTop + this.barHeight + 20;
 
-          // bar = this.container.selectAll('rect')
+          // bar = svghis.container.selectAll('rect')
           //   .data(filteredData)
 
           // bar.enter()
@@ -508,7 +504,7 @@ export class Visual implements IVisual {
       }
 
       finalHeight = Math.max(this.height - 4, svgHeightTracking)
-
+      
       this.svg.attr("height", finalHeight);
 
       //axis setup
@@ -577,6 +573,7 @@ export class Visual implements IVisual {
         //annotations config
         let annotationsData, makeAnnotations
         let countTop = 0, countBottom = 0, counter
+        // let countTop = 1, countBottom = 1, counter
         let imgCountTop = 0, imgCountBottom = 0, imgCounter
 
         // let pixelWidth = (this.width - this.padding * 2) / data.length
@@ -595,12 +592,12 @@ export class Visual implements IVisual {
 
           if (this.viewModel.settings.textSettings.stagger) {
 
-            if (counter > 0) {
-              element["dy"] = element.top ? this.viewModel.settings.textSettings.spacing * (-1 * (counter)) : this.viewModel.settings.textSettings.spacing * (counter)
-            } else {
-              element["dy"] = element.top ? -20 : 20
-            }
-
+            // if (counter > 0) {
+            //   element["dy"] = element.top ? this.viewModel.settings.textSettings.spacing * (-1 * (counter)) : this.viewModel.settings.textSettings.spacing * (counter)
+            // } else {
+            //   element["dy"] = element.top ? -20 : 20
+            // }
+            element["dy"] = element.top ? this.viewModel.settings.textSettings.spacing * (-1 * countTop) : this.viewModel.settings.axisSettings.axis === "None" ? this.viewModel.settings.textSettings.spacing * countBottom : this.viewModel.settings.textSettings.spacing * countBottom + 20;
           }
           else {
             element["dy"] = element.top ? -20 : 20
@@ -770,13 +767,16 @@ export class Visual implements IVisual {
       }
     }
     else { //image focus config:    
+      this.padding = 15
       let annotationsData, makeAnnotations, dateStyle, dateType, datesData, makeDates
       let countTop = 0, countBottom = 0, counter
       let imgCountTop = 0, imgCountBottom = 0, imgCounter
 
       let pixelWidth = (this.width - this.padding * 2) / data.length
-      finalHeight = this.finalMarginTop + imagesHeight + this.viewModel.settings.textSettings.spacing
-      this.svg.attr("height", finalHeight);
+      // finalHeight = this.finalMarginTop + imagesHeight + this.viewModel.settings.textSettings.spacing
+      finalHeight = this.viewModel.finalMarginTop + imagesHeight
+      this.svg.attr("height", this.height -4);
+      this.svg.attr("width", Math.max(filteredData.filter(el =>el.image).length * (imagesWidth + 10), this.width -4));
 
       filteredData.forEach((element, i) => {
         let orientation
@@ -789,7 +789,7 @@ export class Visual implements IVisual {
         }
 
 
-        element["x"] = this.padding + pixelWidth * i
+        element["x"] = i == 0? this.padding : this.padding + ((imagesWidth + 10) * i)
         element["dy"] = imagesHeight / 2 + 10
         orientation = "left"
 
@@ -1058,7 +1058,7 @@ export class Visual implements IVisual {
           calX -= 20
         }
       }
-      let calY = orientationVertical == "TOP" ? 2 : finalHeight - 35
+      let calY = orientationVertical == "TOP" ? 2 : this.height - 35
 
       //append download icon
       let image = this.container.append('image')
@@ -1182,13 +1182,33 @@ export class Visual implements IVisual {
           objectName: objectName,
           properties: {
             axis: this.viewModel.settings.axisSettings.axis,
-            axisColor: this.viewModel.settings.axisSettings.axisColor,
-            manualScale: this.viewModel.settings.axisSettings.manualScale
+            axisColor: this.viewModel.settings.axisSettings.axisColor
 
           },
           selector: null
         });
 
+        if (this.viewModel.settings.axisSettings.axis !== "None") {
+          objectEnumeration.push({
+            objectName: objectName,
+            properties: {
+
+              fontSize: this.viewModel.settings.axisSettings.fontSize,
+              fontFamily: this.viewModel.settings.axisSettings.fontFamily,
+              bold: this.viewModel.settings.axisSettings.bold,
+              dateFormat: this.viewModel.settings.axisSettings.dateFormat
+            },
+            selector: null
+          });
+
+          objectEnumeration.push({
+            objectName: objectName,
+            properties: {
+              manualScale: this.viewModel.settings.axisSettings.manualScale
+  
+            },
+            selector: null
+          });
 
         if (this.viewModel.settings.axisSettings.manualScale) {
 
@@ -1204,18 +1224,7 @@ export class Visual implements IVisual {
 
         }
 
-        if (this.viewModel.settings.axisSettings.axis !== "None") {
-          objectEnumeration.push({
-            objectName: objectName,
-            properties: {
-
-              fontSize: this.viewModel.settings.axisSettings.fontSize,
-              fontFamily: this.viewModel.settings.axisSettings.fontFamily,
-              bold: this.viewModel.settings.axisSettings.bold,
-              dateFormat: this.viewModel.settings.axisSettings.dateFormat
-            },
-            selector: null
-          });
+        
 
           if (this.viewModel.settings.axisSettings.dateFormat == "customJS") {
             objectEnumeration.push({
@@ -1528,7 +1537,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
       top: false,
       dateFormat: "same",
       customJS: "MM/dd/yyyy",
-      wrap: 150
+      wrap: 400
     },
     axisSettings: {
       axis: "None",
