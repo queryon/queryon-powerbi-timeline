@@ -251,6 +251,13 @@ export class Visual implements IVisual {
 
     if (!this.viewModel.settings.textSettings.spacing) {
       this.viewModel.settings.textSettings.spacing = spacing
+      this.host.persistProperties({
+        merge: [{
+            objectName: 'textSettings',
+            selector: null,
+            properties: {spacing: spacing}
+        }]
+    });
     }
     
   
@@ -1548,7 +1555,8 @@ if (this.viewModel.settings.download.downloadCalendar) {
     .attr("font-family", fontFamily)
     .attr("font-size", textSize)
     .text(function (d) { return d })
-
+    .attr("y", 1)
+    .attr("x", 1)
   if (wrappedText) {
     txt.call(wrap, this.viewModel.settings.textSettings.wrap)
   }
@@ -1689,7 +1697,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
   for (let i = 0; i < Math.min(dateData.length, labelData.length); i++) {
 
     let element = {}
-    element["label"] = labelData[i]
+    element["label"] = labelData[i] ? labelData[i].replace(/(\r\n|\n|\r)/gm," ") : ""
     element["date"] = new Date(dateData[i])
     element["URL"] = linkData[i]
     element["image"] = imageData[i]
