@@ -280,8 +280,15 @@
             "displayName": "X Axis",
             "properties": {
                 "manualScale": {
-                    "displayName": "Manual Scale",
-                    "description": "Manual Scale",
+                    "displayName": "Manual Scale Date",
+                    "description": "Manual Scale Date",
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "manualScalePixel": {
+                    "displayName": "Manual Scale Pixels",
+                    "description": "Manual Scale Pixels",
                     "type": {
                         "bool": true
                     }
@@ -331,6 +338,12 @@
                 },
                 "customJS": {
                     "displayName": "Enter Jasvascript Date string",
+                    "type": {
+                        "text": true
+                    }
+                },
+                "customPixel": {
+                    "displayName": "Manual Scale Pixels Width",
                     "type": {
                         "text": true
                     }

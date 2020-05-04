@@ -134,7 +134,11 @@ export class Visual implements IVisual {
       }
     }
 
-    this.width = options.viewport.width;
+    if(!this.viewModel.settings.axisSettings.manualScalePixel || !this.viewModel.settings.axisSettings.customPixel || isNaN(this.viewModel.settings.axisSettings.customPixel)){
+      this.width = options.viewport.width;
+    } else {
+      this.width = this.viewModel.settings.axisSettings.customPixel
+    }
     this.height = options.viewport.height;
     this.marginTop = 20;
     this.barHeight = this.viewModel.settings.style.barHeight;
@@ -1269,7 +1273,6 @@ if (this.viewModel.settings.download.downloadCalendar) {
         }
 
 
-
         if (this.viewModel.settings.axisSettings.dateFormat == "customJS") {
           objectEnumeration.push({
             objectName: objectName,
@@ -1282,6 +1285,26 @@ if (this.viewModel.settings.download.downloadCalendar) {
         }
       }
 
+      objectEnumeration.push({
+        objectName: objectName,
+        properties: {
+          manualScalePixel: this.viewModel.settings.axisSettings.manualScalePixel
+
+        },
+        selector: null
+      });
+
+      if(this.viewModel.settings.axisSettings.manualScalePixel){
+        
+      objectEnumeration.push({
+        objectName: objectName,
+        properties: {
+          customPixel: this.viewModel.settings.axisSettings.customPixel
+
+        },
+        selector: null
+      });
+      }
 
 
       break
@@ -1587,12 +1610,14 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
       axis: "None",
       dateFormat: "same",
       manualScale: false,
+      manualScalePixel: false,
       axisColor: { solid: { color: 'gray' } },
       fontSize: 12,
       fontFamily: 'Arial',
       bold: false,
       barMin: "",
       barMax: "",
+      customPixel: "",
       customJS: "MM/dd/yyyy"
 
     },
@@ -1726,7 +1751,9 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
       manualScale: getValue(objects, 'axisSettings', 'manualScale', defaultSettings.axisSettings.manualScale),
       barMin: getValue(objects, 'axisSettings', 'barMin', defaultSettings.axisSettings.barMin),
       barMax: getValue(objects, 'axisSettings', 'barMax', defaultSettings.axisSettings.barMax),
-      customJS: getValue(objects, 'axisSettings', 'customJS', defaultSettings.axisSettings.customJS)
+      customJS: getValue(objects, 'axisSettings', 'customJS', defaultSettings.axisSettings.customJS),
+      manualScalePixel: getValue(objects, 'axisSettings', 'manualScalePixel', defaultSettings.axisSettings.manualScalePixel),
+      customPixel: getValue(objects, 'axisSettings', 'customPixel', defaultSettings.axisSettings.customPixel)
 
     },
     style: {
