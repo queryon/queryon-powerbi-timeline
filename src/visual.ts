@@ -448,6 +448,10 @@ export class Visual implements IVisual {
               })
             })
 
+            if(this.viewModel.settings.textSettings.boldTitles){
+              enter.attr("font-weight", "bold")
+            }
+
           textLateral = textLateral.merge(enter);
 
           let minIcons = this.container.selectAll(".min-icons")
