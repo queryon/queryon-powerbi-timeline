@@ -141,7 +141,7 @@ export class Visual implements IVisual {
     }
 
     this.height = options.viewport.height;
-    this.marginTop = 20;
+    this.marginTop = 10;
     this.barHeight = this.viewModel.settings.style.barHeight;
     let marginTopStagger = 20;
     let svgHeightTracking, finalHeight, needScroll = false;
@@ -201,7 +201,7 @@ export class Visual implements IVisual {
       dataPoint["textWidth"] = this.getTextWidth(dataPoint["labelText"], dataPoint["textSize"], fontFamily)
 
       // let textHeight, 
-      dataPoint["textHeight"] = this.getTextHeight(dataPoint["labelText"], dataPoint["textSize"], fontFamily, true) + 3
+      dataPoint["textHeight"] = this.getTextHeight(dataPoint["labelText"], dataPoint["textSize"], fontFamily, true) //+ 3
 
 
       //increment text height (for calculation) with description height
@@ -211,7 +211,7 @@ export class Visual implements IVisual {
 
       //increment image height on staggered image view
       if (dataPoint.image && this.viewModel.settings.imageSettings.style == "default") {
-        dataPoint["textHeight"] += imagesHeight
+        dataPoint["textHeight"] += imagesHeight 
         if (!dataPoint["top"]) {
           dataPoint["textHeight"] += 10
         }
@@ -221,9 +221,9 @@ export class Visual implements IVisual {
       if (this.viewModel.settings.style.timelineStyle !== "minimalist" && this.viewModel.settings.imageSettings.style !== "image") {
         if (!spacing || spacing < dataPoint["textHeight"]) {
           spacing = dataPoint["textHeight"]
-          if (dataPoint["top"]) {
-            marginTopStagger = dataPoint["textHeight"]
-          }
+          // if (dataPoint["top"]) {
+            // marginTopStagger = dataPoint["textHeight"]
+          // }
         }
 
         if (dataPoint["top"]) {
@@ -736,7 +736,8 @@ export class Visual implements IVisual {
 
             switch (this.viewModel.settings.imageSettings.style) {
               case "default":
-                imageY = !element.top ? (this.finalMarginTop + element.dy) - 10 + (element.textHeight - imagesHeight) : (this.finalMarginTop + element.dy) - element.textHeight - 10
+                //10 of spacing + 20 of first spacing
+                imageY = !element.top ? (this.finalMarginTop + element.dy) + 30 + (element.textHeight - imagesHeight) : (this.finalMarginTop + element.dy) - element.textHeight - 10
 
                 if (orientation == "middle") { imageX = element.x - (imagesWidth / 2) }
                 else if (orientation == "left") { imageX = element.x }
