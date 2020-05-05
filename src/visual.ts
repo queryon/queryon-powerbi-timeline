@@ -634,7 +634,8 @@ export class Visual implements IVisual {
       if (enabledAnnotations) {
         //annotations config
         let annotationsData, makeAnnotations
-        let countTop = 0, countBottom = 0, counter
+        let countTop = -1, countBottom = -1, counter
+
         // let countTop = 1, countBottom = 1, counter
         let imgCountTop = 0, imgCountBottom = 0, imgCounter
 
@@ -653,26 +654,30 @@ export class Visual implements IVisual {
           element["x"] = this.padding + scale(element["date"])
 
           if (this.viewModel.settings.textSettings.stagger) {
-
-            // if (counter > 0) {
-            //   element["dy"] = element.top ? this.viewModel.settings.textSettings.spacing * (-1 * (counter)) : this.viewModel.settings.textSettings.spacing * (counter)
-            // } else {
-            //   element["dy"] = element.top ? -20 : 20
-            // }
-            element["dy"] = element.top ? this.viewModel.settings.textSettings.spacing * (-1 * countTop) : this.viewModel.settings.axisSettings.axis === "None" ? this.viewModel.settings.textSettings.spacing * countBottom : this.viewModel.settings.textSettings.spacing * countBottom + 20;
+            console.log("stagger", counter)
+            if (counter > 0) {
+              element["dy"] = element.top ? this.viewModel.settings.textSettings.spacing * (-1 * (counter)) -20: this.viewModel.settings.textSettings.spacing * (counter)+20
+            
+            } else {
+              element["dy"] = element.top ? -20 : 20
+            }
+            // element["dy"] = element.top ? this.viewModel.settings.textSettings.spacing * (-1 * countTop) : this.viewModel.settings.axisSettings.axis === "None" ? this.viewModel.settings.textSettings.spacing * countBottom : this.viewModel.settings.textSettings.spacing * countBottom + 20;
           }
           else {
             element["dy"] = element.top ? -20 : 20
           }
 
-          if (this.viewModel.settings.axisSettings.axis != "None" && !element.top) {
+          if (this.viewModel.settings.axisSettings.axis != "None" && this.viewModel.settings.style.timelineStyle !== "bar" && !element.top) {
             element["dy"] += 20
           }
+
           if (element.labelOrientation !== "Auto") {
             orientation = element.labelOrientation
           } else {
             orientation = this.getAnnotationOrientation(element)
           }
+
+      
 
           // svgHeightTracking = Math.max(svgHeightTracking, element["y"] + element["dy"])
 
