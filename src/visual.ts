@@ -328,6 +328,12 @@ if (this.viewModel.settings.imageSettings.style !== "image") {
 
       // svgHeightTracking = this.height
       svgHeightTracking = this.finalMarginTop + 20
+  
+      if(this.viewModel.settings.textSettings.stagger){
+        svgHeightTracking += (filteredData.filter(el => !el.top).length +1)* this.viewModel.settings.textSettings.spacing
+      } else {
+        svgHeightTracking += this.viewModel.settings.textSettings.spacing
+      }
 
       bar = this.container.append("line")
         .attr("x1", this.padding)
@@ -346,6 +352,11 @@ if (this.viewModel.settings.imageSettings.style !== "image") {
       axisPadding = this.padding;
       svgHeightTracking = this.finalMarginTop + this.barHeight + 20;
 
+      if(this.viewModel.settings.textSettings.stagger){
+        svgHeightTracking += (filteredData.filter(el => !el.top).length +1)* this.viewModel.settings.textSettings.spacing
+      } else {
+        svgHeightTracking += this.viewModel.settings.textSettings.spacing
+      }
       // bar = svghis.container.selectAll('rect')
       //   .data(filteredData)
 
@@ -1695,13 +1706,12 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
   imageColumn = categoricalData["image_url"] ? categoricalData["image_url"].source.displayName : false
 
   for (let i = 0; i < Math.min(dateData.length, labelData.length); i++) {
-
     let element = {}
     element["label"] = labelData[i] ? labelData[i].replace(/(\r\n|\n|\r)/gm," ") : ""
     element["date"] = new Date(dateData[i])
-    element["URL"] = linkData[i]
-    element["image"] = imageData[i]
-    element["description"] = descriptionData[i]
+    element["URL"] = linkData[i] ? linkData[i] : false
+    element["image"] = imageData[i] ? imageData[i] : false
+    element["description"] = descriptionData[i] ? descriptionData[i].replace(/(\r\n|\n|\r)/gm," ") : ""
     element["labelColumn"] = labelColumn
     element["dateColumn"] = dateColumn
     element["descriptionColumn"] = descriptionColumn
