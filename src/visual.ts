@@ -249,7 +249,7 @@ export class Visual implements IVisual {
     }
 
     //work around not limiting minimum spacing
-    if (!this.viewModel.settings.textSettings.spacing) {
+    if (this.viewModel.settings.textSettings.autoStagger || !this.viewModel.settings.textSettings.spacing) {
       this.viewModel.settings.textSettings.spacing = spacing
       this.host.persistProperties({
         merge: [{
@@ -332,7 +332,7 @@ export class Visual implements IVisual {
           svgHeightTracking = this.finalMarginTop + 20
 
           if (this.viewModel.settings.textSettings.stagger) {
-            svgHeightTracking += (filteredData.filter(el => !el.top).length + 1) * this.viewModel.settings.textSettings.spacing
+            svgHeightTracking += (filteredData.filter(el => !el.top).length) * this.viewModel.settings.textSettings.spacing +20
           } else {
             svgHeightTracking += this.viewModel.settings.textSettings.spacing
           }
@@ -1132,7 +1132,7 @@ export class Visual implements IVisual {
       }
       let calY = orientationVertical == "TOP" ? 2 : finalHeight - 35
 
-      // let calY = orientationVertical == "TOP" ? 2 : this.height - 35
+      // let calY = orientationVertical == "TOP" ? 2 : this.height - 55 //increased case there's a scrollbar
 
       //append download icon
       let image = this.container.append('image')
@@ -1203,13 +1203,27 @@ export class Visual implements IVisual {
           });
 
           if (this.viewModel.settings.textSettings.stagger) {
+            
             objectEnumeration.push({
               objectName: objectName,
               properties: {
-                spacing: this.viewModel.settings.textSettings.spacing
+                autoStagger: this.viewModel.settings.textSettings.autoStagger
               },
               selector: null
             });
+
+            if (!this.viewModel.settings.textSettings.autoStagger) {
+            
+              objectEnumeration.push({
+                objectName: objectName,
+                properties: {
+                  spacing: this.viewModel.settings.textSettings.spacing
+                },
+                selector: null
+              });
+  
+            }
+  
 
           }
 
@@ -1623,6 +1637,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
     },
     textSettings: {
       stagger: true,
+      autoStagger: true,
       spacing: false,
       separator: ":",
       boldTitles: false,
@@ -1756,6 +1771,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
     },
     textSettings: {
       stagger: getValue(objects, 'textSettings', 'stagger', defaultSettings.textSettings.stagger),
+      autoStagger: getValue(objects, 'textSettings', 'autoStagger', defaultSettings.textSettings.autoStagger),
       separator: getValue(objects, 'textSettings', 'separator', defaultSettings.textSettings.separator),
       spacing: getValue(objects, 'textSettings', 'spacing', defaultSettings.textSettings.spacing),
       top: getValue(objects, 'textSettings', 'top', defaultSettings.textSettings.top),

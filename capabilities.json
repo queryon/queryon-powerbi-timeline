@@ -59,6 +59,12 @@
                         "bool": true
                     }
                 },
+                "autoStagger": {
+                    "displayName": "Auto Calculation",
+                    "type": {
+                        "bool": true
+                    }
+                },
                 "wrap": {
                     "displayName": "Text width",
                     "type": {
@@ -841,7 +847,7 @@
             }
         },
         "download": {
-            "displayName": "Download as calendar",
+            "displayName": "Download as calendar (Not supported on PBI Desktop. Browser only)",
             "description": "Not supported on PBI Desktop. Browser only.",
             "properties": {
                 "downloadCalendar": {
