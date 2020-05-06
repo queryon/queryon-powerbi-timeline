@@ -213,7 +213,7 @@ export class Visual implements IVisual {
       if (dataPoint.image && (this.viewModel.settings.imageSettings.style == "default" || this.viewModel.settings.imageSettings.style == "image")) {
         dataPoint["textHeight"] += (imagesHeight + 2)
         // if (!dataPoint["top"]) {
-          // dataPoint["textHeight"] += 10
+        // dataPoint["textHeight"] += 10
         // }
       }
 
@@ -675,7 +675,7 @@ export class Visual implements IVisual {
               element["dy"] += 20
             }
           } else {
-            element["dy"] = element.top? element.verticalOffset * -1 : element.verticalOffset
+            element["dy"] = element.top ? element.verticalOffset * -1 : element.verticalOffset
           }
 
 
@@ -847,15 +847,11 @@ export class Visual implements IVisual {
       let countTop = 0, countBottom = 0, counter
       let imgCountTop = 0, imgCountBottom = 0, imgCounter
 
-      // let pixelWidth = (this.width - this.padding * 2) / data.length
-      // finalHeight = this.finalMarginTop + spacing + imagesHeight/2 + 100
-
-      // finalHeight = (this.finalMarginTop - imagesHeight / 2) + imagesHeight + spacing + ( imagesHeight / 2 + 10)
       finalHeight = this.finalMarginTop + (imagesHeight / 2 + 20) + spacing //+ 100
-    
+      this.width = Math.max(filteredData.filter(el => el.image).length * (imagesWidth + 10), this.width - 4)
 
       this.svg.attr("height", finalHeight);
-      this.svg.attr("width", Math.max(filteredData.filter(el => el.image).length * (imagesWidth + 10), this.width - 4));
+      this.svg.attr("width", this.width);
 
       filteredData.forEach((element, i) => {
         let orientation
@@ -1138,7 +1134,7 @@ export class Visual implements IVisual {
           calX -= 20
         }
       }
-      let calY = orientationVertical == "TOP" ? 2 : Math.max(this.height,finalHeight) - 35
+      let calY = orientationVertical == "TOP" ? 2 : Math.max(this.height, finalHeight) - 35
 
       // let calY = orientationVertical == "TOP" ? 2 : this.height - 55 //increased case there's a scrollbar
 
