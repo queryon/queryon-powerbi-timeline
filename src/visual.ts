@@ -222,7 +222,7 @@ export class Visual implements IVisual {
         if (!spacing || spacing < dataPoint["textHeight"]) {
           spacing = dataPoint["textHeight"]
           // if (dataPoint["top"]) {
-            // marginTopStagger = dataPoint["textHeight"]
+          // marginTopStagger = dataPoint["textHeight"]
           // }
         }
 
@@ -234,7 +234,7 @@ export class Visual implements IVisual {
             this.marginTop = Math.max(this.marginTop, addToMargin)
           }
         }
-        
+
       } else {
         //if minimalist, disconsider margin and spacing is default to one line 
         spacing = this.getTextHeight(dataPoint["labelText"], dataPoint["textSize"], fontFamily, false) + 3
@@ -244,7 +244,7 @@ export class Visual implements IVisual {
 
 
     if (this.viewModel.settings.textSettings.annotationStyle === 'annotationCallout' || this.viewModel.settings.textSettings.annotationStyle === 'annotationCalloutCurve') {
-     //annotation styles that add to text height, increment spacing
+      //annotation styles that add to text height, increment spacing
       spacing += 10
     }
 
@@ -303,7 +303,7 @@ export class Visual implements IVisual {
       let dynamicPadding = Math.max(this.padding, 30)
       this.padding = dynamicPadding
     }
-    
+
     //increment padding in case scroll bar 
     if (this.finalMarginTop > this.height) {
       this.padding = Math.max(this.padding, 30)
@@ -332,7 +332,7 @@ export class Visual implements IVisual {
           svgHeightTracking = this.finalMarginTop + 20
 
           if (this.viewModel.settings.textSettings.stagger) {
-            svgHeightTracking += (filteredData.filter(el => !el.top).length) * this.viewModel.settings.textSettings.spacing +20
+            svgHeightTracking += (filteredData.filter(el => !el.top).length) * this.viewModel.settings.textSettings.spacing + 20
           } else {
             svgHeightTracking += this.viewModel.settings.textSettings.spacing
           }
@@ -448,9 +448,9 @@ export class Visual implements IVisual {
               })
             })
 
-            if(this.viewModel.settings.textSettings.boldTitles){
-              enter.attr("font-weight", "bold")
-            }
+          if (this.viewModel.settings.textSettings.boldTitles) {
+            enter.attr("font-weight", "bold")
+          }
 
           textLateral = textLateral.merge(enter);
 
@@ -657,23 +657,27 @@ export class Visual implements IVisual {
 
           element["x"] = this.padding + scale(element["date"])
 
-          if (this.viewModel.settings.textSettings.stagger) {
-            console.log("stagger", counter)
-            if (counter > 0) {
-              element["dy"] = element.top ? this.viewModel.settings.textSettings.spacing * (-1 * (counter)) -20: this.viewModel.settings.textSettings.spacing * (counter)+20
-            
-            } else {
+          if (!element.customVertical) {
+            if (this.viewModel.settings.textSettings.stagger) {
+              if (counter > 0) {
+                element["dy"] = element.top ? this.viewModel.settings.textSettings.spacing * (-1 * (counter)) - 20 : this.viewModel.settings.textSettings.spacing * (counter) + 20
+
+              } else {
+                element["dy"] = element.top ? -20 : 20
+              }
+              // element["dy"] = element.top ? this.viewModel.settings.textSettings.spacing * (-1 * countTop) : this.viewModel.settings.axisSettings.axis === "None" ? this.viewModel.settings.textSettings.spacing * countBottom : this.viewModel.settings.textSettings.spacing * countBottom + 20;
+            }
+            else {
               element["dy"] = element.top ? -20 : 20
             }
-            // element["dy"] = element.top ? this.viewModel.settings.textSettings.spacing * (-1 * countTop) : this.viewModel.settings.axisSettings.axis === "None" ? this.viewModel.settings.textSettings.spacing * countBottom : this.viewModel.settings.textSettings.spacing * countBottom + 20;
-          }
-          else {
-            element["dy"] = element.top ? -20 : 20
+
+            if (this.viewModel.settings.axisSettings.axis != "None" && this.viewModel.settings.style.timelineStyle !== "bar" && !element.top) {
+              element["dy"] += 20
+            }
+          } else {
+            element["dy"] = element.top? element.verticalOffset * -1 : element.verticalOffset
           }
 
-          if (this.viewModel.settings.axisSettings.axis != "None" && this.viewModel.settings.style.timelineStyle !== "bar" && !element.top) {
-            element["dy"] += 20
-          }
 
           if (element.labelOrientation !== "Auto") {
             orientation = element.labelOrientation
@@ -681,7 +685,7 @@ export class Visual implements IVisual {
             orientation = this.getAnnotationOrientation(element)
           }
 
-      
+
 
           // svgHeightTracking = Math.max(svgHeightTracking, element["y"] + element["dy"])
 
@@ -1203,7 +1207,7 @@ export class Visual implements IVisual {
           });
 
           if (this.viewModel.settings.textSettings.stagger) {
-            
+
             objectEnumeration.push({
               objectName: objectName,
               properties: {
@@ -1213,7 +1217,7 @@ export class Visual implements IVisual {
             });
 
             if (!this.viewModel.settings.textSettings.autoStagger) {
-            
+
               objectEnumeration.push({
                 objectName: objectName,
                 properties: {
@@ -1221,9 +1225,9 @@ export class Visual implements IVisual {
                 },
                 selector: null
               });
-  
+
             }
-  
+
 
           }
 
@@ -1423,6 +1427,25 @@ export class Visual implements IVisual {
               selector: dataElement.selectionId.getSelector()
             });
 
+            objectEnumeration.push({
+              objectName: objectName,
+              displayName: dataElement.label + " Custom Vertical Offset",
+              properties: {
+                customVertical: dataElement.customVertical
+              },
+              selector: dataElement.selectionId.getSelector()
+            });
+
+            if (dataElement.customVertical) {
+              objectEnumeration.push({
+                objectName: objectName,
+                displayName: dataElement.label + " Vertical Offset in px",
+                properties: {
+                  verticalOffset: dataElement.verticalOffset
+                },
+                selector: dataElement.selectionId.getSelector()
+              });
+            }
           }
         }
         break;
@@ -1753,6 +1776,9 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
     element["textSize"] = getCategoricalObjectValue(category, i, 'dataPoint', 'textSize', 12)
     element["textColor"] = getCategoricalObjectValue(category, i, 'dataPoint', 'textColor', { "solid": { "color": "black" } }).solid.color
     element["top"] = getCategoricalObjectValue(category, i, 'dataPoint', 'top', false)
+
+    element["customVertical"] = getCategoricalObjectValue(category, i, 'dataPoint', 'customVertical', false)
+    element["verticalOffset"] = getCategoricalObjectValue(category, i, 'dataPoint', 'verticalOffset', 20)
 
     element["annotationStyle"] = getCategoricalObjectValue(category, i, 'dataPoint', 'annotationStyle', 'annotationLabel')
     element["labelOrientation"] = getCategoricalObjectValue(category, i, 'dataPoint', 'labelOrientation', 'Auto')

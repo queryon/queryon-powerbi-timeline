@@ -679,7 +679,20 @@
                             }
                         }
                     }
+                },
+                "customVertical": {
+                    "displayName": "Custom Vertical Offset",
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "verticalOffset": {
+                    "displayName": "Vertical Offset in px",
+                    "type": {
+                        "numeric": true
+                    }
                 }
+
             }
         },
         "imageSettings": {
