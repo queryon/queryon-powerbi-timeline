@@ -210,15 +210,15 @@ export class Visual implements IVisual {
       }
 
       //increment image height on staggered image view
-      if (dataPoint.image && this.viewModel.settings.imageSettings.style == "default") {
+      if (dataPoint.image && (this.viewModel.settings.imageSettings.style == "default" || this.viewModel.settings.imageSettings.style == "image")) {
         dataPoint["textHeight"] += (imagesHeight + 2)
-        if (!dataPoint["top"]) {
+        // if (!dataPoint["top"]) {
           // dataPoint["textHeight"] += 10
-        }
+        // }
       }
 
       //add heights to margin conditionally:
-      if (this.viewModel.settings.style.timelineStyle !== "minimalist" && this.viewModel.settings.imageSettings.style !== "image") {
+      if (this.viewModel.settings.style.timelineStyle !== "minimalist" || this.viewModel.settings.imageSettings.style == "image") {
         if (!spacing || spacing < dataPoint["textHeight"]) {
           spacing = dataPoint["textHeight"]
           // if (dataPoint["top"]) {
@@ -848,9 +848,13 @@ export class Visual implements IVisual {
       let imgCountTop = 0, imgCountBottom = 0, imgCounter
 
       // let pixelWidth = (this.width - this.padding * 2) / data.length
-      // finalHeight = this.finalMarginTop + imagesHeight + this.viewModel.settings.textSettings.spacing
-      finalHeight = this.viewModel.finalMarginTop + imagesHeight
-      this.svg.attr("height", this.height - 4);
+      // finalHeight = this.finalMarginTop + spacing + imagesHeight/2 + 100
+
+      // finalHeight = (this.finalMarginTop - imagesHeight / 2) + imagesHeight + spacing + ( imagesHeight / 2 + 10)
+      finalHeight = this.finalMarginTop + (imagesHeight / 2 + 20) + spacing //+ 100
+    
+
+      this.svg.attr("height", finalHeight);
       this.svg.attr("width", Math.max(filteredData.filter(el => el.image).length * (imagesWidth + 10), this.width - 4));
 
       filteredData.forEach((element, i) => {
@@ -1134,7 +1138,7 @@ export class Visual implements IVisual {
           calX -= 20
         }
       }
-      let calY = orientationVertical == "TOP" ? 2 : finalHeight - 35
+      let calY = orientationVertical == "TOP" ? 2 : Math.max(this.height,finalHeight) - 35
 
       // let calY = orientationVertical == "TOP" ? 2 : this.height - 55 //increased case there's a scrollbar
 
