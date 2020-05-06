@@ -201,7 +201,7 @@ export class Visual implements IVisual {
       dataPoint["textWidth"] = this.getTextWidth(dataPoint["labelText"], dataPoint["textSize"], fontFamily)
 
       // let textHeight, 
-      dataPoint["textHeight"] = this.getTextHeight(dataPoint["labelText"], dataPoint["textSize"], fontFamily, true) //+ 3
+      dataPoint["textHeight"] = this.getTextHeight(dataPoint["labelText"], dataPoint["textSize"], fontFamily, true) + 3
 
 
       //increment text height (for calculation) with description height
@@ -211,9 +211,9 @@ export class Visual implements IVisual {
 
       //increment image height on staggered image view
       if (dataPoint.image && this.viewModel.settings.imageSettings.style == "default") {
-        dataPoint["textHeight"] += imagesHeight 
+        dataPoint["textHeight"] += (imagesHeight + 2)
         if (!dataPoint["top"]) {
-          dataPoint["textHeight"] += 10
+          // dataPoint["textHeight"] += 10
         }
       }
 
@@ -736,8 +736,7 @@ export class Visual implements IVisual {
 
             switch (this.viewModel.settings.imageSettings.style) {
               case "default":
-                //10 of spacing + 20 of first spacing
-                imageY = !element.top ? (this.finalMarginTop + element.dy) + 30 + (element.textHeight - imagesHeight) : (this.finalMarginTop + element.dy) - element.textHeight - 10
+                imageY = !element.top ? (this.finalMarginTop + element.dy) + (element.textHeight - imagesHeight) : (this.finalMarginTop + element.dy) - element.textHeight - 5
 
                 if (orientation == "middle") { imageX = element.x - (imagesWidth / 2) }
                 else if (orientation == "left") { imageX = element.x }
