@@ -199,10 +199,7 @@ export class Visual implements IVisual {
       dataPoint["labelOrientation"] = dataPoint.customFormat ? dataPoint.labelOrientation : labelOrientation
       dataPoint["annotationStyle"] = dataPoint.customFormat ? dataPoint.annotationStyle : annotationStyle
       dataPoint["textWidth"] = this.getTextWidth(dataPoint["labelText"], dataPoint["textSize"], fontFamily)
-
-      // let textHeight, 
       dataPoint["textHeight"] = this.getTextHeight(dataPoint["labelText"], dataPoint["textSize"], fontFamily, true) + 3
-
 
       //increment text height (for calculation) with description height
       if (dataPoint.description) {
@@ -212,18 +209,13 @@ export class Visual implements IVisual {
       //increment image height on staggered image view
       if (dataPoint.image && (this.viewModel.settings.imageSettings.style == "default" || this.viewModel.settings.imageSettings.style == "image")) {
         dataPoint["textHeight"] += (imagesHeight + 2)
-        // if (!dataPoint["top"]) {
-        // dataPoint["textHeight"] += 10
-        // }
+
       }
 
       //add heights to margin conditionally:
       if (this.viewModel.settings.style.timelineStyle !== "minimalist" || this.viewModel.settings.imageSettings.style == "image") {
         if (!spacing || spacing < dataPoint["textHeight"]) {
           spacing = dataPoint["textHeight"]
-          // if (dataPoint["top"]) {
-          // marginTopStagger = dataPoint["textHeight"]
-          // }
         }
 
         if (dataPoint["top"]) {
@@ -260,10 +252,7 @@ export class Visual implements IVisual {
       });
     }
 
-
-    // marginTopStagger += ((data.filter(element => element.top).length - 1) * this.viewModel.settings.textSettings.spacing) + 20
-
-    marginTopStagger += ((data.filter(element => element.top).length) * this.viewModel.settings.textSettings.spacing) + 20
+    marginTopStagger += ((filteredData.filter(element => element.top).length) * this.viewModel.settings.textSettings.spacing) + 20
 
     //case margintopstagger wasn't incremented - no top staggered items:
     marginTopStagger = Math.max(this.marginTop, marginTopStagger)
@@ -359,12 +348,8 @@ export class Visual implements IVisual {
           } else {
             svgHeightTracking += this.viewModel.settings.textSettings.spacing
           }
-          // bar = svghis.container.selectAll('rect')
-          //   .data(filteredData)
 
-          // bar.enter()
           bar = this.container.append('rect')
-            // .merge(bar)
             .attr('width', this.width)
             .attr('x', 0)//this.padding)
             .attr('fill', this.viewModel.settings.style.barColor.solid.color)
@@ -376,15 +361,14 @@ export class Visual implements IVisual {
         case "minimalist":
           enabledAnnotations = false;
 
-          axisMarginTop = this.finalMarginTop + this.viewModel.settings.textSettings.spacing * (filteredData.length)
+          axisMarginTop = 10 + this.finalMarginTop + this.viewModel.settings.textSettings.spacing * (filteredData.length)
           svgHeightTracking = axisMarginTop + 20
 
 
-          // if (axisMarginTop > this.height) {
-          //   console.log(this.finalMarginTop, this.height)
-          //   needScroll = true
-          //   axisMarginTop = this.height - 50
-          // }
+          if (axisMarginTop > this.height) {
+            needScroll = true
+            axisMarginTop = this.height - 50
+          }
 
           if (this.viewModel.settings.download.downloadCalendar && this.viewModel.settings.download.position.split(",")[0] == "TOP") {
             axisMarginTop += 35
@@ -415,7 +399,7 @@ export class Visual implements IVisual {
           enter.append("text")
             .attr("x", 0)
             .attr("y", (element, i) => {
-              let result = this.marginTop + this.viewModel.settings.textSettings.spacing * i
+              let result = 10 + this.marginTop + this.viewModel.settings.textSettings.spacing * i
               if (this.viewModel.settings.download.downloadCalendar && this.viewModel.settings.download.position.split(",")[0] == "TOP") {
                 result += 35
               }
@@ -476,7 +460,7 @@ export class Visual implements IVisual {
             enterIcons.append('path')
               .attr("d", shapeOptions[this.viewModel.settings.style.minimalistStyle])
               .attr("transform", (element, i) => {
-                let pointY = (this.marginTop + this.viewModel.settings.textSettings.spacing * i) - shapeSize
+                let pointY = 10+ (this.marginTop + this.viewModel.settings.textSettings.spacing * i) - shapeSize
                 if (this.viewModel.settings.download.downloadCalendar && this.viewModel.settings.download.position.split(",")[0] == "TOP") {
                   pointY += 35
                 }
@@ -511,7 +495,7 @@ export class Visual implements IVisual {
             enterIcons.append('rect')
               .attr("x", element => axisPadding + scale(element["date"]) - shapeSize)
               .attr("y", (element, i) => {
-                let y = (this.marginTop + this.viewModel.settings.textSettings.spacing * i) - shapeSize
+                let y = 10 + (this.marginTop + this.viewModel.settings.textSettings.spacing * i) - shapeSize
                 if (this.viewModel.settings.download.downloadCalendar && this.viewModel.settings.download.position.split(",")[0] == "TOP") {
                   y += 35
                 }
@@ -560,9 +544,11 @@ export class Visual implements IVisual {
             return axisValueFormatter.format(new Date(<any>d))
           })
 
+          
+        let sandBox: any = d3.select('#sandbox-host')
         //Append group and insert axis
         let axisSVG = this.container.append("g")
-          .attr("transform", "translate(" + axisPadding + "," + (axisMarginTop) + ")")
+          .attr("transform", "translate(" + axisPadding + "," + (needScroll ? axisMarginTop + sandBox.property("scrollTop") : axisMarginTop) + ")")
           .call(x_axis)
           .attr('class', 'axis')
 
@@ -588,25 +574,47 @@ export class Visual implements IVisual {
 
         }
 
-        // if (needScroll) {
-        //   let sandBox: any = d3.select('#sandbox-host')
-        //   sandBox.on("scroll", (e) => {
-        //     let firstXForm = axisSVG.property("transform").baseVal.getItem(0)
-        //     // if (firstXForm.type == SVGTransform.SVG_TRANSFORM_TRANSLATE) {
-        //       // var firstX = firstXForm.matrix.e//,
-        //       let firstY = firstXForm.matrix.f;
+        if (needScroll) {
+          //on scroll event delete and re-write axis on better position
+          
+          sandBox.on("scroll", (e) => {
+            let firstXForm = axisSVG.property("transform").baseVal.getItem(0)
+            axisSVG.remove()
+            //Append group and insert axis
+            axisSVG = this.container.append("g")
+              .attr("transform", "translate(" + axisPadding + "," + (axisMarginTop + sandBox.property("scrollTop")) + ")")
+              .call(x_axis)
+              .attr('class', 'axis')
 
-        //       console.log("firsty: ", firstY, ", height:  ", this.height, ", scroll: ", sandBox.property("scrollTop") )
-        //       axisSVG.attr("transform", "translate(" + axisPadding + "," + ( sandBox.property("scrollTop") - firstY) + ")")
+              .attr('style', `color :${this.viewModel.settings.axisSettings.axisColor.solid.color}`)
+              .attr('style', `stroke :${this.viewModel.settings.axisSettings.axisColor.solid.color}`)
 
-        //     // }
+            this.container.selectAll('path, line')
+              .attr('style', `color :${strokeColor}`)
 
-        //     // Setting
-        //     // axisSVG.attr("transform", "translate(" + axisPadding + "," + (this.height - sandBox.property("scrollTop")) + ")")
+            if (this.viewModel.settings.axisSettings.bold) {
+              this.container.classed("xAxis", false);
+            } else {
+              this.container.attr('class', 'xAxis')
+            }
+
+            if (this.viewModel.settings.axisSettings.axis === "None") {
+              this.container.selectAll(".axis text").remove()
+            }
+            else {
+              this.container.selectAll(".axis text").style('font-size', this.viewModel.settings.axisSettings.fontSize)
+              this.container.selectAll(".axis text").style('fill', this.viewModel.settings.axisSettings.axisColor.solid.color)
+              this.container.selectAll(".axis text").style('font-family', this.viewModel.settings.axisSettings.fontFamily)
+
+            }
+            // }
+
+            // Setting
+            // axisSVG.attr("transform", "translate(" + axisPadding + "," + (this.height - sandBox.property("scrollTop")) + ")")
 
 
-        //   })
-        // }
+          })
+        }
 
       }
       //append today icon
