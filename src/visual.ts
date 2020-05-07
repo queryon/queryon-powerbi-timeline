@@ -355,7 +355,7 @@ export class Visual implements IVisual {
           }
 
           if (filteredData.filter(el => el.top).length > 0) {
-            svgHeightTracking = Math.max(svgHeightTracking, axisMarginTop + addToMargin)
+            svgHeightTracking = Math.max(svgHeightTracking, axisMarginTop + this.barHeight + addToMargin)
           }
           
           bar = this.container.append('rect')
@@ -767,7 +767,7 @@ export class Visual implements IVisual {
               case "straight":
                 imageY = element.top ? this.finalMarginTop + 20 : this.finalMarginTop - 20 - imagesHeight
                 
-                if(this.viewModel.settings.style.timelineStyle == "bar"){ imageY += this.barHeight}
+                if(this.viewModel.settings.style.timelineStyle == "bar" && element.top){ imageY += this.barHeight}
                 break;
 
               // case "image":
@@ -785,8 +785,8 @@ export class Visual implements IVisual {
                   imageY += imagesHeight
                 }
 
-                if(this.viewModel.settings.style.timelineStyle == "bar"){ imageY += this.barHeight}
-                
+                if(this.viewModel.settings.style.timelineStyle == "bar"  && element.top){ imageY += this.barHeight}
+
                 break;
 
             }
