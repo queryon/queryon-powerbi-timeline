@@ -76,7 +76,8 @@ export class Visual implements IVisual {
     this.container.selectAll("line").remove();
     this.container.selectAll("text").remove();
     this.container.selectAll("circle").remove();
-
+    this.padding = 15;
+    
     let data = this.viewModel.dataPoints
 
     //min label width from annotation plugin
@@ -326,6 +327,10 @@ export class Visual implements IVisual {
             svgHeightTracking += this.viewModel.settings.textSettings.spacing
           }
 
+          if (filteredData.filter(el => el.top).length > 0) {
+            svgHeightTracking = Math.max(svgHeightTracking, axisMarginTop + addToMargin)
+          }
+
           bar = this.container.append("line")
             .attr("x1", this.padding)
             .attr("y1", this.finalMarginTop)
@@ -349,6 +354,10 @@ export class Visual implements IVisual {
             svgHeightTracking += this.viewModel.settings.textSettings.spacing
           }
 
+          if (filteredData.filter(el => el.top).length > 0) {
+            svgHeightTracking = Math.max(svgHeightTracking, axisMarginTop + addToMargin)
+          }
+          
           bar = this.container.append('rect')
             .attr('width', this.width)
             .attr('x', 0)//this.padding)
@@ -362,12 +371,12 @@ export class Visual implements IVisual {
           enabledAnnotations = false;
 
           axisMarginTop = 10 + this.finalMarginTop + this.viewModel.settings.textSettings.spacing * (filteredData.length)
-          svgHeightTracking = axisMarginTop + 20
+          svgHeightTracking = axisMarginTop + 30
 
 
           if (axisMarginTop > this.height) {
             needScroll = true
-            axisMarginTop = this.height - 50
+            axisMarginTop = this.height - 40
           }
 
           if (this.viewModel.settings.download.downloadCalendar && this.viewModel.settings.download.position.split(",")[0] == "TOP") {
@@ -757,6 +766,8 @@ export class Visual implements IVisual {
 
               case "straight":
                 imageY = element.top ? this.finalMarginTop + 20 : this.finalMarginTop - 20 - imagesHeight
+                
+                if(this.viewModel.settings.style.timelineStyle == "bar"){ imageY += this.barHeight}
                 break;
 
               // case "image":
@@ -774,10 +785,13 @@ export class Visual implements IVisual {
                   imageY += imagesHeight
                 }
 
+                if(this.viewModel.settings.style.timelineStyle == "bar"){ imageY += this.barHeight}
+                
                 break;
 
             }
 
+            
             imageX = !imageX ? element.x - (imagesWidth / 2) : imageX
 
 
