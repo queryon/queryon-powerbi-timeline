@@ -77,7 +77,7 @@ export class Visual implements IVisual {
     this.container.selectAll("text").remove();
     this.container.selectAll("circle").remove();
     this.padding = 15;
-    
+
     let data = this.viewModel.dataPoints
 
     //min label width from annotation plugin
@@ -188,7 +188,7 @@ export class Visual implements IVisual {
       addToMargin = imagesHeight + 20
     }
 
-    let maxOffsetTop = 0, maxOffsetBottom =0
+    let maxOffsetTop = 0, maxOffsetBottom = 0
 
     filteredData.forEach((dataPoint, i) => {
       dataPoint["formatted"] = valueFormatter.format(dataPoint["date"])
@@ -208,35 +208,39 @@ export class Visual implements IVisual {
       }
 
       //increment image height on staggered image view
-      if (dataPoint.image && (this.viewModel.settings.imageSettings.style == "default" || this.viewModel.settings.imageSettings.style == "image")) {
+      if (dataPoint.image && (this.viewModel.settings.imageSettings.style == "default")){// || this.viewModel.settings.imageSettings.style == "image")) {
         dataPoint["textHeight"] += (imagesHeight + 2)
 
       }
 
       //add heights to margin conditionally:
-      if (this.viewModel.settings.style.timelineStyle !== "minimalist" || this.viewModel.settings.imageSettings.style == "image") {
+      if (this.viewModel.settings.style.timelineStyle !== "minimalist") {
+
+
         if (!spacing || spacing < dataPoint["textHeight"]) {
           spacing = dataPoint["textHeight"]
         }
 
-        if (dataPoint["top"]) {
-          this.marginTop = Math.max(this.marginTop, dataPoint["textHeight"] + 30)
+        if (this.viewModel.settings.imageSettings.style !== "image") {
+          if (dataPoint["top"]) {
+            this.marginTop = Math.max(this.marginTop, dataPoint["textHeight"] + 30)
 
-          if (dataPoint.customVertical) {
-            maxOffsetTop = Math.max(maxOffsetTop, dataPoint.verticalOffset)
+            if (dataPoint.customVertical) {
+              maxOffsetTop = Math.max(maxOffsetTop, dataPoint.verticalOffset)
+            }
+          } else {
+            if (dataPoint.customVertical) {
+              maxOffsetBottom = Math.max(maxOffsetBottom, dataPoint.verticalOffset)
+            }
+            //add to margin case text is bottom and image is on top (alternate and straight styles)
+            if (dataPoint.image) {
+              this.marginTop = Math.max(this.marginTop, addToMargin)
+            }
           }
-        } else {
-          if (dataPoint.customVertical) {
-            maxOffsetBottom = Math.max(maxOffsetBottom, dataPoint.verticalOffset)
-          }
-          //add to margin case text is bottom and image is on top (alternate and straight styles)
-          if (dataPoint.image) {
-            this.marginTop = Math.max(this.marginTop, addToMargin)
-          }
+
         }
-
-        
-      } else {
+      }
+      else {
         //if minimalist, disconsider margin and spacing is default to one line 
         spacing = this.getTextHeight(dataPoint["labelText"], dataPoint["textSize"], fontFamily, false) + 3
       }
@@ -267,7 +271,7 @@ export class Visual implements IVisual {
     marginTopStagger = Math.max(this.marginTop, marginTopStagger)
 
 
-    if (this.viewModel.settings.imageSettings.style !== "default" && data.filter(el => !el.top && el.image).length > 0) {
+    if (this.viewModel.settings.imageSettings.style !== "default" && filteredData.filter(el => !el.top && el.image).length > 0) {
       marginTopStagger = Math.max(marginTopStagger, addToMargin)
     }
 
@@ -275,9 +279,9 @@ export class Visual implements IVisual {
     if (this.viewModel.settings.imageSettings.style !== "image") {
       this.finalMarginTop = !this.viewModel.settings.textSettings.stagger || this.viewModel.settings.style.timelineStyle == "minimalist" ? this.marginTop : marginTopStagger
 
-      if(this.viewModel.settings.style.timelineStyle != "minimalist"){
+      if (this.viewModel.settings.style.timelineStyle != "minimalist" && filteredData.filter(el => el.top & el.customVertical).length > 0) {
         //case user input offset is > than margin
-      this.finalMarginTop = Math.max(this.finalMarginTop, maxOffsetTop + this.viewModel.settings.textSettings.spacing)
+        this.finalMarginTop = Math.max(this.finalMarginTop, maxOffsetTop + this.viewModel.settings.textSettings.spacing)
       }
 
 
@@ -292,8 +296,8 @@ export class Visual implements IVisual {
       this.finalMarginTop += 35
     }
 
-    
-  
+
+
     //axis format
     let axisFormat = this.viewModel.settings.axisSettings.dateFormat != "customJS" ? this.viewModel.settings.axisSettings.dateFormat : this.viewModel.settings.axisSettings.customJS
     let axisValueFormatter = axisFormat == "same" ? valueFormatter : createFormatter(axisFormat);
@@ -348,8 +352,8 @@ export class Visual implements IVisual {
           }
 
 
-         svgHeightTracking = Math.max(svgHeightTracking, axisMarginTop + maxOffsetBottom + this.viewModel.settings.textSettings.spacing)
-          
+          svgHeightTracking = Math.max(svgHeightTracking, axisMarginTop + maxOffsetBottom + this.viewModel.settings.textSettings.spacing)
+
 
           bar = this.container.append("line")
             .attr("x1", this.padding)
@@ -377,7 +381,7 @@ export class Visual implements IVisual {
           if (filteredData.filter(el => el.top && el.image).length > 0) {
             svgHeightTracking = Math.max(svgHeightTracking, axisMarginTop + this.barHeight + addToMargin)
           }
-          
+
           svgHeightTracking = Math.max(svgHeightTracking, axisMarginTop + this.barHeight + maxOffsetBottom + this.viewModel.settings.textSettings.spacing)
 
           bar = this.container.append('rect')
@@ -491,7 +495,7 @@ export class Visual implements IVisual {
             enterIcons.append('path')
               .attr("d", shapeOptions[this.viewModel.settings.style.minimalistStyle])
               .attr("transform", (element, i) => {
-                let pointY = 10+ (this.marginTop + this.viewModel.settings.textSettings.spacing * i) - shapeSize
+                let pointY = 10 + (this.marginTop + this.viewModel.settings.textSettings.spacing * i) - shapeSize
                 if (this.viewModel.settings.download.downloadCalendar && this.viewModel.settings.download.position.split(",")[0] == "TOP") {
                   pointY += 35
                 }
@@ -563,7 +567,7 @@ export class Visual implements IVisual {
       finalHeight = Math.max(this.height - 4, svgHeightTracking)
 
       if (this.viewModel.settings.download.downloadCalendar) {
-        finalHeight += 35
+        // finalHeight += 35
       }
       this.svg.attr("height", finalHeight);
 
@@ -575,7 +579,7 @@ export class Visual implements IVisual {
             return axisValueFormatter.format(new Date(<any>d))
           })
 
-          
+
         let sandBox: any = d3.select('#sandbox-host')
         //Append group and insert axis
         let axisSVG = this.container.append("g")
@@ -607,7 +611,7 @@ export class Visual implements IVisual {
 
         if (needScroll) {
           //on scroll event delete and re-write axis on better position
-          
+
           sandBox.on("scroll", (e) => {
             let firstXForm = axisSVG.property("transform").baseVal.getItem(0)
             axisSVG.remove()
@@ -779,10 +783,10 @@ export class Visual implements IVisual {
 
             switch (this.viewModel.settings.imageSettings.style) {
               case "default":
-               imageY = !element.top ? (this.finalMarginTop + element.dy) + element.textHeight - imagesHeight : (this.finalMarginTop + element.dy) - element.textHeight - 5
+                imageY = !element.top ? (this.finalMarginTop + element.dy) + element.textHeight - imagesHeight : (this.finalMarginTop + element.dy) - element.textHeight - 5
 
-  
-               if(this.viewModel.settings.style.timelineStyle == "bar" && !element.top){ imageY += this.barHeight}
+
+                if (this.viewModel.settings.style.timelineStyle == "bar" && !element.top) { imageY += this.barHeight }
 
                 if (orientation == "middle") { imageX = element.x - (imagesWidth / 2) }
                 else if (orientation == "left") { imageX = element.x }
@@ -791,8 +795,8 @@ export class Visual implements IVisual {
 
               case "straight":
                 imageY = element.top ? this.finalMarginTop + 20 : this.finalMarginTop - 20 - imagesHeight
-                
-                if(this.viewModel.settings.style.timelineStyle == "bar" && element.top){ imageY += this.barHeight}
+
+                if (this.viewModel.settings.style.timelineStyle == "bar" && element.top) { imageY += this.barHeight }
                 break;
 
               // case "image":
@@ -810,13 +814,13 @@ export class Visual implements IVisual {
                   imageY += imagesHeight
                 }
 
-                if(this.viewModel.settings.style.timelineStyle == "bar"  && element.top){ imageY += this.barHeight}
+                if (this.viewModel.settings.style.timelineStyle == "bar" && element.top) { imageY += this.barHeight }
 
                 break;
 
             }
 
-            
+
             imageX = !imageX ? element.x - (imagesWidth / 2) : imageX
 
 
@@ -895,6 +899,9 @@ export class Visual implements IVisual {
       let imgCountTop = 0, imgCountBottom = 0, imgCounter
 
       finalHeight = this.finalMarginTop + (imagesHeight / 2 + 20) + spacing //+ 100
+      if (this.viewModel.settings.download.downloadCalendar && this.viewModel.settings.download.position.split(",")[0] !== "TOP") {
+        finalHeight += 35
+      }
       this.width = Math.max(filteredData.filter(el => el.image).length * (imagesWidth + 10), this.width - 4)
 
       this.svg.attr("height", finalHeight);
@@ -1181,7 +1188,7 @@ export class Visual implements IVisual {
           calX -= 20
         }
       }
-      let calY = orientationVertical == "TOP" ? 2 : Math.max(this.height, finalHeight) - 35
+      let calY = orientationVertical == "TOP" ? 2 : finalHeight - 35
 
       // let calY = orientationVertical == "TOP" ? 2 : this.height - 55 //increased case there's a scrollbar
 
@@ -1824,7 +1831,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
     element["textColor"] = getCategoricalObjectValue(category, i, 'dataPoint', 'textColor', { "solid": { "color": "black" } }).solid.color
     element["top"] = getCategoricalObjectValue(category, i, 'dataPoint', 'top', false)
 
-    element["customVertical"] = getCategoricalObjectValue(category, i, 'dataPoint', 'customVertical', false)
+    element["customVertical"] = element["customFormat"] ? getCategoricalObjectValue(category, i, 'dataPoint', 'customVertical', false) : false
     element["verticalOffset"] = getCategoricalObjectValue(category, i, 'dataPoint', 'verticalOffset', 20)
 
     element["annotationStyle"] = getCategoricalObjectValue(category, i, 'dataPoint', 'annotationStyle', 'annotationLabel')
