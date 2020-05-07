@@ -757,7 +757,10 @@ export class Visual implements IVisual {
 
             switch (this.viewModel.settings.imageSettings.style) {
               case "default":
-                imageY = !element.top ? (this.finalMarginTop + element.dy) + (element.textHeight - imagesHeight) : (this.finalMarginTop + element.dy) - element.textHeight - 5
+               imageY = !element.top ? (this.finalMarginTop + element.dy) + element.textHeight - imagesHeight : (this.finalMarginTop + element.dy) - element.textHeight - 5
+
+  
+               if(this.viewModel.settings.style.timelineStyle == "bar" && !element.top){ imageY += this.barHeight}
 
                 if (orientation == "middle") { imageX = element.x - (imagesWidth / 2) }
                 else if (orientation == "left") { imageX = element.x }
