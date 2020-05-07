@@ -121,8 +121,6 @@ export class Visual implements IVisual {
       this.viewModel.settings.axisSettings.barMax = false;
     }
 
-    // let customColors = ["rgb(186,215,57)", "rgb(0, 188, 178)", "rgb(121, 118, 118)", "rgb(105,161,151)", "rgb(78,205,196)", "rgb(166,197,207)", "rgb(215,204,182)", "rgb(67,158,157)", "rgb(122,141,45)", "rgb(162,157,167)"]
-
     let today
     if (this.viewModel.settings.style.today) {
       today = new Date
@@ -190,6 +188,8 @@ export class Visual implements IVisual {
       addToMargin = imagesHeight + 20
     }
 
+    let maxOffsetTop = 0, maxOffsetBottom =0
+
     filteredData.forEach((dataPoint, i) => {
       dataPoint["formatted"] = valueFormatter.format(dataPoint["date"])
       dataPoint["labelText"] = this.viewModel.settings.imageSettings.style != "image" ? `${dataPoint["formatted"]}${this.viewModel.settings.textSettings.separator} ${dataPoint["label"]}` : dataPoint["label"]
@@ -221,13 +221,21 @@ export class Visual implements IVisual {
 
         if (dataPoint["top"]) {
           this.marginTop = Math.max(this.marginTop, dataPoint["textHeight"] + 30)
+
+          if (dataPoint.customVertical) {
+            maxOffsetTop = Math.max(maxOffsetTop, dataPoint.verticalOffset)
+          }
         } else {
+          if (dataPoint.customVertical) {
+            maxOffsetBottom = Math.max(maxOffsetBottom, dataPoint.verticalOffset)
+          }
           //add to margin case text is bottom and image is on top (alternate and straight styles)
           if (dataPoint.image) {
             this.marginTop = Math.max(this.marginTop, addToMargin)
           }
         }
 
+        
       } else {
         //if minimalist, disconsider margin and spacing is default to one line 
         spacing = this.getTextHeight(dataPoint["labelText"], dataPoint["textSize"], fontFamily, false) + 3
@@ -267,6 +275,12 @@ export class Visual implements IVisual {
     if (this.viewModel.settings.imageSettings.style !== "image") {
       this.finalMarginTop = !this.viewModel.settings.textSettings.stagger || this.viewModel.settings.style.timelineStyle == "minimalist" ? this.marginTop : marginTopStagger
 
+      if(this.viewModel.settings.style.timelineStyle != "minimalist"){
+        //case user input offset is > than margin
+      this.finalMarginTop = Math.max(this.finalMarginTop, maxOffsetTop + this.viewModel.settings.textSettings.spacing)
+      }
+
+
     } else {
       this.finalMarginTop = 50 + imagesHeight / 2
     }
@@ -278,6 +292,8 @@ export class Visual implements IVisual {
       this.finalMarginTop += 35
     }
 
+    
+  
     //axis format
     let axisFormat = this.viewModel.settings.axisSettings.dateFormat != "customJS" ? this.viewModel.settings.axisSettings.dateFormat : this.viewModel.settings.axisSettings.customJS
     let axisValueFormatter = axisFormat == "same" ? valueFormatter : createFormatter(axisFormat);
@@ -327,9 +343,13 @@ export class Visual implements IVisual {
             svgHeightTracking += this.viewModel.settings.textSettings.spacing
           }
 
-          if (filteredData.filter(el => el.top).length > 0) {
+          if (filteredData.filter(el => el.top && el.image).length > 0) {
             svgHeightTracking = Math.max(svgHeightTracking, axisMarginTop + addToMargin)
           }
+
+
+         svgHeightTracking = Math.max(svgHeightTracking, axisMarginTop + maxOffsetBottom + this.viewModel.settings.textSettings.spacing)
+          
 
           bar = this.container.append("line")
             .attr("x1", this.padding)
@@ -354,10 +374,12 @@ export class Visual implements IVisual {
             svgHeightTracking += this.viewModel.settings.textSettings.spacing
           }
 
-          if (filteredData.filter(el => el.top).length > 0) {
+          if (filteredData.filter(el => el.top && el.image).length > 0) {
             svgHeightTracking = Math.max(svgHeightTracking, axisMarginTop + this.barHeight + addToMargin)
           }
           
+          svgHeightTracking = Math.max(svgHeightTracking, axisMarginTop + this.barHeight + maxOffsetBottom + this.viewModel.settings.textSettings.spacing)
+
           bar = this.container.append('rect')
             .attr('width', this.width)
             .attr('x', 0)//this.padding)
