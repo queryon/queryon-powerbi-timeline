@@ -131,10 +131,10 @@ export class Visual implements IVisual {
       if (today > this.maxVal) {
         this.maxVal = today
       }
-    }
+    } 
 
     if (!this.viewModel.settings.axisSettings.manualScalePixel || !this.viewModel.settings.axisSettings.customPixel || isNaN(this.viewModel.settings.axisSettings.customPixel)) {
-      this.width = options.viewport.width;
+      this.width = options.viewport.width -20;
     } else {
       this.width = this.viewModel.settings.axisSettings.customPixel
     }
@@ -192,7 +192,7 @@ export class Visual implements IVisual {
 
     filteredData.forEach((dataPoint, i) => {
       dataPoint["formatted"] = valueFormatter.format(dataPoint["date"])
-      dataPoint["labelText"] = this.viewModel.settings.imageSettings.style != "image" ? `${dataPoint["formatted"]}${this.viewModel.settings.textSettings.separator} ${dataPoint["label"]}` : dataPoint["label"]
+      dataPoint["labelText"] = this.viewModel.settings.style.timelineStyle != "image" ? `${dataPoint["formatted"]}${this.viewModel.settings.textSettings.separator} ${dataPoint["label"]}` : dataPoint["label"]
       dataPoint["textColor"] = dataPoint.customFormat ? dataPoint.textColor : textColor
       dataPoint["fontFamily"] = dataPoint.customFormat ? dataPoint.fontFamily : fontFamily
       dataPoint["textSize"] = dataPoint.customFormat ? dataPoint.textSize : textSize
@@ -221,7 +221,7 @@ export class Visual implements IVisual {
           spacing = dataPoint["textHeight"]
         }
 
-        if (this.viewModel.settings.imageSettings.style !== "image") {
+        if (this.viewModel.settings.style.timelineStyle !== "image") {
           if (dataPoint["top"]) {
             this.marginTop = Math.max(this.marginTop, dataPoint["textHeight"] + 30)
 
@@ -276,7 +276,7 @@ export class Visual implements IVisual {
     }
 
     //define "official" margin top to start drawing graph
-    if (this.viewModel.settings.imageSettings.style !== "image") {
+    if (this.viewModel.settings.style.timelineStyle !== "image") {
       this.finalMarginTop = !this.viewModel.settings.textSettings.stagger || this.viewModel.settings.style.timelineStyle == "minimalist" ? this.marginTop : marginTopStagger
 
       if (this.viewModel.settings.style.timelineStyle != "minimalist" && filteredData.filter(el => el.top & el.customVertical).length > 0) {
@@ -324,7 +324,7 @@ export class Visual implements IVisual {
       .range([0, this.width - (this.padding * 2)]); //min and max width in px           
 
 
-    if (this.viewModel.settings.imageSettings.style !== "image") {
+    if (this.viewModel.settings.style.timelineStyle !== "image") {
       //all styles, not image focus:
       let bar, axisMarginTop, enabledAnnotations, strokeColor, width, axisPadding
 
@@ -354,7 +354,7 @@ export class Visual implements IVisual {
           svgHeightTracking = Math.max(svgHeightTracking, axisMarginTop + maxOffsetBottom + this.viewModel.settings.textSettings.spacing)
           
           if (svgHeightTracking > this.height) {
-            this.width -= 20
+            // this.width -= 20
           }
           width = this.width
           
@@ -388,7 +388,7 @@ export class Visual implements IVisual {
           svgHeightTracking = Math.max(svgHeightTracking, axisMarginTop + this.barHeight + maxOffsetBottom + this.viewModel.settings.textSettings.spacing)
 
           if (svgHeightTracking > this.height) {
-            this.width -= 20
+            // this.width -= 20
           }
           width = this.width
 
@@ -409,7 +409,7 @@ export class Visual implements IVisual {
 
 
           if (axisMarginTop > this.height) {
-           this.width -= 20
+          //  this.width -= 20
             needScroll = true
             axisMarginTop = this.height - 40
           }

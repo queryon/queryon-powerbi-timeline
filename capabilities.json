@@ -723,12 +723,8 @@
                                 "value": "straight"
                             },
                             {
-                                "displayName": "Alternate",
+                                "displayName": "Alternating",
                                 "value": "alternate"
-                            },
-                            {
-                                "displayName": "Image focused",
-                                "value": "image"
                             }
                         ]
                     }
@@ -751,14 +747,18 @@
                                 "value": "bar"
                             },
                             {
-                                "displayName": "Minimalist",
+                                "displayName": "Waterfall",
                                 "value": "minimalist"
+                            },
+                            {
+                                "displayName": "Kaban",
+                                "value": "image"
                             }
                         ]
                     }
                 },
                 "minimalistStyle": {
-                    "displayName": "Minimalist Icon Style",
+                    "displayName": "Waterfall Icon Style",
                     "type": {
                         "enumeration": [
                             {
@@ -785,7 +785,7 @@
                     }
                 },
                 "minimalistSize": {
-                    "displayName": "Minimalist Icon Size",
+                    "displayName": "Waterfall Icon Size",
                     "type": {
                         "enumeration": [
                             {
