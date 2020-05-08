@@ -404,15 +404,26 @@ export class Visual implements IVisual {
         case "minimalist":
           enabledAnnotations = false;
 
-          axisMarginTop = 10 + this.finalMarginTop + this.viewModel.settings.textSettings.spacing * (filteredData.length)
-          svgHeightTracking = axisMarginTop + 30
+          if(this.viewModel.settings.style.minimalistAxis == "bottom"){
+            axisMarginTop = 10 + this.finalMarginTop + this.viewModel.settings.textSettings.spacing * (filteredData.length)
+            svgHeightTracking = axisMarginTop + 30
 
-
-          if (axisMarginTop > this.height) {
-          //  this.width -= 20
-            needScroll = true
-            axisMarginTop = this.height - 40
+            if (svgHeightTracking > this.height) {
+              //  this.width -= 20
+                needScroll = true
+                axisMarginTop = this.height - 40
+              }
+          } else {
+            axisMarginTop = this.finalMarginTop 
+            svgHeightTracking = this.finalMarginTop + this.viewModel.settings.textSettings.spacing * (filteredData.length)
+            
+            if (svgHeightTracking > this.height) {
+                needScroll = true
+              }
           }
+          
+
+
 
           if (this.viewModel.settings.download.downloadCalendar && this.viewModel.settings.download.position.split(",")[0] == "TOP") {
             axisMarginTop += 35
@@ -508,7 +519,9 @@ export class Visual implements IVisual {
                 if (this.viewModel.settings.download.downloadCalendar && this.viewModel.settings.download.position.split(",")[0] == "TOP") {
                   pointY += 35
                 }
-                return "translate(" + (axisPadding + scale(element["date"]) - shapeSize) + "," + pointY + ") rotate(180)"
+                return "translate(" + (axisPadding + scale(element["date"])) + "," + pointY + ") rotate(180)"
+
+                // return "translate(" + (axisPadding + scale(element["date"]) - shapeSize) + "," + pointY + ") rotate(180)"
               })
 
               .attr("class", element => `minIconSelector min_icon_selector_${element["selectionId"].key.replace(/\W/g, '')}`)
@@ -537,7 +550,9 @@ export class Visual implements IVisual {
             enterIcons = minIcons.enter()
               .append("g").attr("class", "min-icons");
             enterIcons.append('rect')
-              .attr("x", element => axisPadding + scale(element["date"]) - shapeSize)
+            .attr("x", element => axisPadding + scale(element["date"]))
+
+              // .attr("x", element => axisPadding + scale(element["date"]) - shapeSize)
               .attr("y", (element, i) => {
                 let y = 10 + (this.marginTop + this.viewModel.settings.textSettings.spacing * i) - shapeSize
                 if (this.viewModel.settings.download.downloadCalendar && this.viewModel.settings.download.position.split(",")[0] == "TOP") {
@@ -911,7 +926,9 @@ export class Visual implements IVisual {
       if (this.viewModel.settings.download.downloadCalendar && this.viewModel.settings.download.position.split(",")[0] !== "TOP") {
         finalHeight += 35
       }
-      this.width = Math.max(filteredData.filter(el => el.image).length * (imagesWidth + 10), this.width - 4)
+      // this.width = Math.max(filteredData.filter(el => el.image).length * (imagesWidth + 10), this.width - 4)
+
+      this.width = Math.max(filteredData.length * (imagesWidth + 10), this.width - 4)
 
       this.svg.attr("height", finalHeight);
       this.svg.attr("width", this.width);
@@ -1546,6 +1563,7 @@ export class Visual implements IVisual {
           objectEnumeration.push({
             objectName: objectName,
             properties: {
+              minimalistAxis: this.viewModel.settings.style.minimalistAxis,
               minimalistStyle: this.viewModel.settings.style.minimalistStyle
             },
             selector: null
@@ -1589,10 +1607,22 @@ export class Visual implements IVisual {
           properties: {
             imagesHeight: this.viewModel.settings.imageSettings.imagesHeight,
             imagesWidth: this.viewModel.settings.imageSettings.imagesWidth,
-            style: this.viewModel.settings.imageSettings.style
+            // style: this.viewModel.settings.imageSettings.style
           },
           selector: null
         });
+
+        if(this.viewModel.settings.style.timelineStyle !== "minimalist" && this.viewModel.settings.style.timelineStyle !== "image"){
+          objectEnumeration.push({
+            objectName: objectName,
+            properties: {
+             
+              style: this.viewModel.settings.imageSettings.style
+            },
+            selector: null
+          });
+  
+        }
         break;
       case 'download':
         objectEnumeration.push({
@@ -1757,6 +1787,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
       lineColor: { solid: { color: 'black' } },
       lineThickness: 2,
       minimalistStyle: "circle",
+      minimalistAxis: "bottom",
       minimalistSize: 2,
       barColor: { solid: { color: 'rgb(186,215,57)' } },
       barHeight: 30,
@@ -1895,6 +1926,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
       lineColor: getValue(objects, 'style', 'lineColor', defaultSettings.style.lineColor),
       lineThickness: getValue(objects, 'style', 'lineThickness', defaultSettings.style.lineThickness),
       minimalistStyle: getValue(objects, 'style', 'minimalistStyle', defaultSettings.style.minimalistStyle),
+      minimalistAxis: getValue(objects, 'style', 'minimalistAxis', defaultSettings.style.minimalistAxis),
       minimalistSize: getValue(objects, 'style', 'minimalistSize', defaultSettings.style.minimalistSize),
       barColor: getValue(objects, 'style', 'barColor', defaultSettings.style.barColor),
       barHeight: getValue(objects, 'style', 'barHeight', defaultSettings.style.barHeight),

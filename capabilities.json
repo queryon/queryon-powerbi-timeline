@@ -692,7 +692,6 @@
                         "numeric": true
                     }
                 }
-
             }
         },
         "imageSettings": {
@@ -780,6 +779,21 @@
                             {
                                 "displayName": "Thin bar",
                                 "value": "thinBar"
+                            }
+                        ]
+                    }
+                },
+                "minimalistAxis": {
+                    "displayName": "Waterfall Axis",
+                    "type": {
+                        "enumeration": [
+                            {
+                                "displayName": "Axis Top",
+                                "value": "top"
+                            },
+                            {
+                                "displayName": "Axis Bottom",
+                                "value": "bottom"
                             }
                         ]
                     }
