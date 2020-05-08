@@ -332,9 +332,8 @@ export class Visual implements IVisual {
       this.svg.attr("width", this.width - 4);
       switch (this.viewModel.settings.style.timelineStyle) {
         case "line":
-          width = this.width
-          enabledAnnotations = true;
           axisMarginTop = this.finalMarginTop;
+          enabledAnnotations = true;
           axisPadding = this.padding;
           strokeColor = this.viewModel.settings.axisSettings.axisColor.solid.color
 
@@ -351,9 +350,14 @@ export class Visual implements IVisual {
             svgHeightTracking = Math.max(svgHeightTracking, axisMarginTop + addToMargin)
           }
 
-
+          
           svgHeightTracking = Math.max(svgHeightTracking, axisMarginTop + maxOffsetBottom + this.viewModel.settings.textSettings.spacing)
-
+          
+          if (svgHeightTracking > this.height) {
+            this.width -= 20
+          }
+          width = this.width
+          
 
           bar = this.container.append("line")
             .attr("x1", this.padding)
@@ -365,9 +369,8 @@ export class Visual implements IVisual {
           break;
 
         case "bar":
-          width = this.width
-          enabledAnnotations = true;
           axisMarginTop = this.finalMarginTop
+          enabledAnnotations = true;
           strokeColor = "transparent"
           axisPadding = this.padding;
           svgHeightTracking = this.finalMarginTop + this.barHeight + 20;
@@ -383,6 +386,11 @@ export class Visual implements IVisual {
           }
 
           svgHeightTracking = Math.max(svgHeightTracking, axisMarginTop + this.barHeight + maxOffsetBottom + this.viewModel.settings.textSettings.spacing)
+
+          if (svgHeightTracking > this.height) {
+            this.width -= 20
+          }
+          width = this.width
 
           bar = this.container.append('rect')
             .attr('width', this.width)
@@ -401,6 +409,7 @@ export class Visual implements IVisual {
 
 
           if (axisMarginTop > this.height) {
+           this.width -= 20
             needScroll = true
             axisMarginTop = this.height - 40
           }

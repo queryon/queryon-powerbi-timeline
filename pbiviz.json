@@ -15,7 +15,7 @@
         "email": "powerbi@queryon.com"
     },
     "assets": {
-        "icon": "assets/icon.png"
+        "icon": "assets/Timeline.png"
     },
     "externalJS": [],
     "style": "style/visual.less",
