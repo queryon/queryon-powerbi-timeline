@@ -50,6 +50,7 @@ export class Visual implements IVisual {
   private selectionIdBuilder: ISelectionIdBuilder
   private selectionManager: ISelectionManager
   private tooltipServiceWrapper: ITooltipServiceWrapper;
+  private imagesWidth: number;
 
   constructor(options: VisualConstructorOptions) {
     options.element.style["overflow"] = 'auto';
@@ -91,7 +92,7 @@ export class Visual implements IVisual {
     let maxFromData = d3.max(data, function (d: any) { return d.date })
 
     let imagesHeight = this.viewModel.settings.imageSettings.imagesHeight
-    let imagesWidth = this.viewModel.settings.imageSettings.imagesWidth
+    this.imagesWidth = this.viewModel.settings.imageSettings.imagesWidth
     let spacing
 
     if (this.viewModel.settings.axisSettings.manualScale) {
@@ -288,7 +289,7 @@ export class Visual implements IVisual {
 
 
     } else {
-      this.finalMarginTop = 50 + imagesHeight / 2
+      this.finalMarginTop = 20 //+ imagesHeight / 2
     }
 
 
@@ -306,7 +307,7 @@ export class Visual implements IVisual {
 
     //increment padding based on image
     if (filteredData.filter(el => el.image).length > 0) {
-      let dynamicPadding = Math.max(this.padding, imagesWidth / 2)
+      let dynamicPadding = Math.max(this.padding, this.imagesWidth / 2)
       this.padding = dynamicPadding
     }
 
@@ -868,9 +869,9 @@ export class Visual implements IVisual {
 
                 if (this.viewModel.settings.style.timelineStyle == "bar" && !element.top) { imageY += this.barHeight }
 
-                if (orientation == "middle") { imageX = element.x - (imagesWidth / 2) }
+                if (orientation == "middle") { imageX = element.x - (this.imagesWidth / 2) }
                 else if (orientation == "left") { imageX = element.x }
-                else { imageX = element.x - imagesWidth }
+                else { imageX = element.x - this.imagesWidth }
                 break;
 
               case "straight":
@@ -901,7 +902,7 @@ export class Visual implements IVisual {
             }
 
 
-            imageX = !imageX ? element.x - (imagesWidth / 2) : imageX
+            imageX = !imageX ? element.x - (this.imagesWidth / 2) : imageX
 
 
             if (this.viewModel.settings.imageSettings.style != "default") {
@@ -916,7 +917,7 @@ export class Visual implements IVisual {
 
             let image = this.container.append('image')
               .attr('xlink:href', element.image)
-              .attr('width', imagesWidth)
+              .attr('width', this.imagesWidth)
               .attr('height', imagesHeight)
               .attr('x', imageX)
               .attr('y', imageY)
@@ -978,13 +979,15 @@ export class Visual implements IVisual {
       let countTop = 0, countBottom = 0, counter
       let imgCountTop = 0, imgCountBottom = 0, imgCounter
 
-      finalHeight = this.finalMarginTop + (imagesHeight / 2 + 20) + spacing //+ 100
+      finalHeight = filteredData.filter(el => el.image).length > 0 ? this.finalMarginTop + imagesHeight + 30 + spacing : this.finalMarginTop + 30 + spacing
+      
       if (this.viewModel.settings.download.downloadCalendar && this.viewModel.settings.download.position.split(",")[0] !== "TOP") {
         finalHeight += 35
       }
       // this.width = Math.max(filteredData.filter(el => el.image).length * (imagesWidth + 10), this.width - 4)
 
-      this.width = Math.max(filteredData.length * (imagesWidth + 10), this.width - 4)
+      // this.width = Math.max(filteredData.length * (this.imagesWidth + 10), this.width - 4)
+      this.width = Math.max(filteredData.length * (this.viewModel.settings.textSettings.wrap + 10) +20, this.width - 4)
 
       this.svg.attr("height", finalHeight);
       this.svg.attr("width", this.width);
@@ -1000,7 +1003,7 @@ export class Visual implements IVisual {
         }
 
 
-        element["x"] = i == 0 ? this.padding : this.padding + ((imagesWidth + 10) * i)
+        element["x"] = i == 0 ? this.padding : this.padding + ((this.viewModel.settings.textSettings.wrap + 10) * i)
         element["dy"] = imagesHeight / 2 + 10
         orientation = "left"
 
@@ -1028,7 +1031,7 @@ export class Visual implements IVisual {
             },
             x: element["x"],
             y: this.finalMarginTop,
-            dy: element["dy"] * -1,
+            dy: 1,
             color: this.viewModel.settings.axisSettings.axisColor.solid.color
           }]
 
@@ -1072,8 +1075,8 @@ export class Visual implements IVisual {
             bgPadding: 0
           },
           x: element["x"],
-          y: this.finalMarginTop,
-          dy: element["dy"],
+          y: element.image ? this.finalMarginTop + imagesHeight : this.finalMarginTop,
+          dy: 30,
           color: element.textColor,
           id: element.selectionId
         }]
@@ -1102,12 +1105,13 @@ export class Visual implements IVisual {
             imgCounter = imgCountBottom
           }
 
-          let imageY = this.finalMarginTop - imagesHeight / 2
+          // let imageY = this.finalMarginTop - imagesHeight / 2
+          let imageY = this.finalMarginTop + 25
           let imageX = element.x
 
           let image = this.container.append('image')
             .attr('xlink:href', element.image)
-            .attr('width', imagesWidth)
+            .attr('width', this.imagesWidth)
             .attr('height', imagesHeight)
             .attr('x', imageX)
             // .attr('x', element.labelOrientation !== "middle" ? element.x : element.x - (imagesWidth / 2))
