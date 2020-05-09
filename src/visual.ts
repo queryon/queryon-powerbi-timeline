@@ -77,7 +77,7 @@ export class Visual implements IVisual {
     this.container.selectAll("text").remove();
     this.container.selectAll("circle").remove();
     this.container.selectAll("path").remove();
-    
+
     this.padding = 15;
 
     let data = this.viewModel.dataPoints
@@ -133,10 +133,10 @@ export class Visual implements IVisual {
       if (today > this.maxVal) {
         this.maxVal = today
       }
-    } 
+    }
 
     if (!this.viewModel.settings.axisSettings.manualScalePixel || !this.viewModel.settings.axisSettings.customPixel || isNaN(this.viewModel.settings.axisSettings.customPixel)) {
-      this.width = options.viewport.width -20;
+      this.width = options.viewport.width - 20;
     } else {
       this.width = this.viewModel.settings.axisSettings.customPixel
     }
@@ -210,7 +210,7 @@ export class Visual implements IVisual {
       }
 
       //increment image height on staggered image view
-      if (dataPoint.image && (this.viewModel.settings.imageSettings.style == "default")){// || this.viewModel.settings.imageSettings.style == "image")) {
+      if (dataPoint.image && (this.viewModel.settings.imageSettings.style == "default")) {// || this.viewModel.settings.imageSettings.style == "image")) {
         dataPoint["textHeight"] += (imagesHeight + 2)
 
       }
@@ -352,14 +352,14 @@ export class Visual implements IVisual {
             svgHeightTracking = Math.max(svgHeightTracking, axisMarginTop + addToMargin)
           }
 
-          
+
           svgHeightTracking = Math.max(svgHeightTracking, axisMarginTop + maxOffsetBottom + this.viewModel.settings.textSettings.spacing)
-          
+
           if (svgHeightTracking > this.height) {
             // this.width -= 20
           }
           width = this.width
-          
+
 
           bar = this.container.append("line")
             .attr("x1", this.padding)
@@ -406,31 +406,33 @@ export class Visual implements IVisual {
         case "minimalist":
           enabledAnnotations = false;
 
-          if(this.viewModel.settings.style.minimalistAxis == "bottom"){
+          if (this.viewModel.settings.style.minimalistAxis == "bottom") {
             axisMarginTop = 10 + this.finalMarginTop + this.viewModel.settings.textSettings.spacing * (filteredData.length)
             svgHeightTracking = axisMarginTop + 30
 
             if (svgHeightTracking > this.height) {
               //  this.width -= 20
-                needScroll = true
-                axisMarginTop = this.height - 40
-              }
+              needScroll = true
+              axisMarginTop = this.height - 40
+
+
+            }
           } else {
-            axisMarginTop = this.finalMarginTop 
+            axisMarginTop = this.finalMarginTop
             svgHeightTracking = this.finalMarginTop + this.viewModel.settings.textSettings.spacing * (filteredData.length)
-            
+
             if (svgHeightTracking > this.height) {
-                needScroll = true
-              }
+              needScroll = true
+            }
           }
-          
+
 
 
 
           if (this.viewModel.settings.download.downloadCalendar && this.viewModel.settings.download.position.split(",")[0] == "TOP") {
-          
+
             svgHeightTracking += 35
-            if(!needScroll){
+            if (!needScroll) {
               axisMarginTop += 35
             }
           }
@@ -555,7 +557,7 @@ export class Visual implements IVisual {
             enterIcons = minIcons.enter()
               .append("g").attr("class", "min-icons");
             enterIcons.append('rect')
-            .attr("x", element => axisPadding + scale(element["date"]))
+              .attr("x", element => axisPadding + scale(element["date"]))
 
               // .attr("x", element => axisPadding + scale(element["date"]) - shapeSize)
               .attr("y", (element, i) => {
@@ -589,43 +591,49 @@ export class Visual implements IVisual {
 
           }
 
-         
+
 
           minIcons = minIcons.merge(enterIcons)
             .style("fill", element => element["textColor"]);
 
 
-            
-          
-          //Add line
-          if(this.viewModel.settings.style.minimalistConnect){
-          this.container.append("path")
-          .datum(filteredData)
-          .attr("fill", "none")
-          .attr("stroke", this.viewModel.settings.style.connectColor.solid.color)//"#69b3a2")
-          .attr("stroke-width", 1)
-          .attr("d", d3.line()
-          .x(element => axisPadding + scale(element["date"]))
-          .y( (el, i) => {
-            let y = 10 + (this.marginTop + this.viewModel.settings.textSettings.spacing * (i)) - shapeSize
-            if (this.viewModel.settings.download.downloadCalendar && this.viewModel.settings.download.position.split(",")[0] == "TOP") {
-              y += 35
-            }
-            return y
-          }))
-        }
 
-        
+
+          //Add line
+          if (this.viewModel.settings.style.minimalistConnect) {
+            this.container.append("path")
+              .datum(filteredData)
+              .attr("fill", "none")
+              .attr("stroke", this.viewModel.settings.style.connectColor.solid.color)//"#69b3a2")
+              .attr("stroke-width", 1)
+              .attr("d", d3.line()
+                .x(element => axisPadding + scale(element["date"]))
+                .y((el, i) => {
+                  let y = 10 + (this.marginTop + this.viewModel.settings.textSettings.spacing * (i)) - shapeSize
+                  if (this.viewModel.settings.download.downloadCalendar && this.viewModel.settings.download.position.split(",")[0] == "TOP") {
+                    y += 35
+                  }
+                  return y
+                }))
+          }
+
+
           break;
       }
 
       finalHeight = Math.max(this.height - 4, svgHeightTracking)
 
-      if (this.viewModel.settings.download.downloadCalendar) {
-        // finalHeight += 35
-      }
       this.svg.attr("height", finalHeight);
-
+      
+      let transparentContainer
+      if(needScroll){        
+        transparentContainer = this.container.append('rect')
+        .attr('width', this.width)
+        .attr('x', 0)//this.padding)
+        .attr('fill', "white")
+        .attr('y', axisMarginTop)
+        .attr('height', this.height)
+      }
       //axis setup
 
       if (axisMarginTop) {
@@ -666,10 +674,23 @@ export class Visual implements IVisual {
 
         if (needScroll) {
           //on scroll event delete and re-write axis on better position
-
+            // https://github.com/wbkd/d3-extended
+          d3.selection.prototype.moveToFront = function () {
+            return this.each(function () {
+              this.parentNode.appendChild(this);
+            });
+          };
           sandBox.on("scroll", (e) => {
             let firstXForm = axisSVG.property("transform").baseVal.getItem(0)
             axisSVG.remove()
+            transparentContainer.remove()
+            //Appent transparent container
+            transparentContainer = this.container.append('rect')
+              .attr('width', this.width)
+              .attr('x', 0)//this.padding)
+              .attr('fill', "white")
+              .attr('y', axisMarginTop + sandBox.property("scrollTop"))
+              .attr('height', this.height)
             //Append group and insert axis
             axisSVG = this.container.append("g")
               .attr("transform", "translate(" + axisPadding + "," + (axisMarginTop + sandBox.property("scrollTop")) + ")")
@@ -702,6 +723,10 @@ export class Visual implements IVisual {
             // Setting
             // axisSVG.attr("transform", "translate(" + axisPadding + "," + (this.height - sandBox.property("scrollTop")) + ")")
 
+
+
+           let cal: any =  d3.select("#calendar-icon")
+           cal.moveToFront()
 
           })
         }
@@ -1250,10 +1275,11 @@ export class Visual implements IVisual {
       // let calY = orientationVertical == "TOP" ? 2 : this.height - 55 //increased case there's a scrollbar
 
       //append download icon
-      let image = this.container.append('image')
+      let calendarIcon = this.container.append('image')
         .attr('xlink:href', "https://queryon.com/wp-content/uploads/2020/04/time-and-date.png")
         .attr('width', 30)
         .attr('height', 30)
+        .attr("id", "calendar-icon")
         .attr('x', calX)
         .attr('y', calY)
         .on("click", () => {
@@ -1601,7 +1627,7 @@ export class Visual implements IVisual {
             selector: null
           });
 
-          if(this.viewModel.settings.style.minimalistConnect){
+          if (this.viewModel.settings.style.minimalistConnect) {
             objectEnumeration.push({
               objectName: objectName,
               properties: {
@@ -1654,16 +1680,16 @@ export class Visual implements IVisual {
           selector: null
         });
 
-        if(this.viewModel.settings.style.timelineStyle !== "minimalist" && this.viewModel.settings.style.timelineStyle !== "image"){
+        if (this.viewModel.settings.style.timelineStyle !== "minimalist" && this.viewModel.settings.style.timelineStyle !== "image") {
           objectEnumeration.push({
             objectName: objectName,
             properties: {
-             
+
               style: this.viewModel.settings.imageSettings.style
             },
             selector: null
           });
-  
+
         }
         break;
       case 'download':
@@ -1831,7 +1857,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
       minimalistStyle: "circle",
       minimalistAxis: "bottom",
       minimalistConnect: false,
-      connectColor:  { solid: { color: 'gray' } },
+      connectColor: { solid: { color: 'gray' } },
       minimalistSize: 2,
       barColor: { solid: { color: 'rgb(186,215,57)' } },
       barHeight: 30,
