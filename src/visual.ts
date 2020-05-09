@@ -76,6 +76,8 @@ export class Visual implements IVisual {
     this.container.selectAll("line").remove();
     this.container.selectAll("text").remove();
     this.container.selectAll("circle").remove();
+    this.container.selectAll("path").remove();
+    
     this.padding = 15;
 
     let data = this.viewModel.dataPoints
@@ -426,8 +428,11 @@ export class Visual implements IVisual {
 
 
           if (this.viewModel.settings.download.downloadCalendar && this.viewModel.settings.download.position.split(",")[0] == "TOP") {
-            axisMarginTop += 35
+          
             svgHeightTracking += 35
+            if(!needScroll){
+              axisMarginTop += 35
+            }
           }
           strokeColor = this.viewModel.settings.axisSettings.axisColor.solid.color
 
@@ -583,8 +588,34 @@ export class Visual implements IVisual {
               })
 
           }
+
+         
+
           minIcons = minIcons.merge(enterIcons)
             .style("fill", element => element["textColor"]);
+
+
+            
+          
+          //Add line
+          if(this.viewModel.settings.style.minimalistConnect){
+          this.container.append("path")
+          .datum(filteredData)
+          .attr("fill", "none")
+          .attr("stroke", this.viewModel.settings.style.connectColor.solid.color)//"#69b3a2")
+          .attr("stroke-width", 1)
+          .attr("d", d3.line()
+          .x(element => axisPadding + scale(element["date"]))
+          .y( (el, i) => {
+            let y = 10 + (this.marginTop + this.viewModel.settings.textSettings.spacing * (i)) - shapeSize
+            if (this.viewModel.settings.download.downloadCalendar && this.viewModel.settings.download.position.split(",")[0] == "TOP") {
+              y += 35
+            }
+            return y
+          }))
+        }
+
+        
           break;
       }
 
@@ -1564,10 +1595,21 @@ export class Visual implements IVisual {
             objectName: objectName,
             properties: {
               minimalistAxis: this.viewModel.settings.style.minimalistAxis,
-              minimalistStyle: this.viewModel.settings.style.minimalistStyle
+              minimalistStyle: this.viewModel.settings.style.minimalistStyle,
+              minimalistConnect: this.viewModel.settings.style.minimalistConnect
             },
             selector: null
           });
+
+          if(this.viewModel.settings.style.minimalistConnect){
+            objectEnumeration.push({
+              objectName: objectName,
+              properties: {
+                connectColor: this.viewModel.settings.style.connectColor
+              },
+              selector: null
+            });
+          }
 
           if (this.viewModel.settings.style.minimalistStyle !== "thinBar" && this.viewModel.settings.style.minimalistStyle !== "dot") {
             objectEnumeration.push({
@@ -1788,6 +1830,8 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
       lineThickness: 2,
       minimalistStyle: "circle",
       minimalistAxis: "bottom",
+      minimalistConnect: false,
+      connectColor:  { solid: { color: 'gray' } },
       minimalistSize: 2,
       barColor: { solid: { color: 'rgb(186,215,57)' } },
       barHeight: 30,
@@ -1927,6 +1971,8 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
       lineThickness: getValue(objects, 'style', 'lineThickness', defaultSettings.style.lineThickness),
       minimalistStyle: getValue(objects, 'style', 'minimalistStyle', defaultSettings.style.minimalistStyle),
       minimalistAxis: getValue(objects, 'style', 'minimalistAxis', defaultSettings.style.minimalistAxis),
+      minimalistConnect: getValue(objects, 'style', 'minimalistConnect', defaultSettings.style.minimalistConnect),
+      connectColor: getValue(objects, 'style', 'connectColor', defaultSettings.style.connectColor),
       minimalistSize: getValue(objects, 'style', 'minimalistSize', defaultSettings.style.minimalistSize),
       barColor: getValue(objects, 'style', 'barColor', defaultSettings.style.barColor),
       barHeight: getValue(objects, 'style', 'barHeight', defaultSettings.style.barHeight),

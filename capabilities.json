@@ -783,6 +783,22 @@
                         ]
                     }
                 },
+                "minimalistConnect": {
+                    "displayName": "Connected icons",
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "connectColor": {
+                    "displayName": "Line color",
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
+                    }
+                },
                 "minimalistAxis": {
                     "displayName": "Waterfall Axis",
                     "type": {
