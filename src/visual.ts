@@ -203,12 +203,14 @@ export class Visual implements IVisual {
       dataPoint["labelOrientation"] = dataPoint.customFormat ? dataPoint.labelOrientation : labelOrientation
       dataPoint["annotationStyle"] = dataPoint.customFormat ? dataPoint.annotationStyle : annotationStyle
       dataPoint["textWidth"] = this.getTextWidth(dataPoint["labelText"], dataPoint["textSize"], fontFamily)
-      dataPoint["textHeight"] = this.getTextHeight(dataPoint["labelText"], dataPoint["textSize"], fontFamily, true) + 3
-
+      // dataPoint["textHeight"] = this.getTextHeight(dataPoint["labelText"], dataPoint["textSize"], fontFamily, true) + 3
+      dataPoint["textHeight"] = this.getAnnotationHeight(dataPoint)
+     
+      // this.getAnnotationHeight(dataPoint)
       //increment text height (for calculation) with description height
-      if (dataPoint.description) {
-        dataPoint["textHeight"] += this.getTextHeight(dataPoint["description"], dataPoint["textSize"], fontFamily, true) + 2
-      }
+      // if (dataPoint.description) {
+      //   dataPoint["textHeight"] += this.getTextHeight(dataPoint["description"], dataPoint["textSize"], fontFamily, true) + 2
+      // }
 
       //increment image height on staggered image view
       if (dataPoint.image && (this.viewModel.settings.imageSettings.style == "default")) {// || this.viewModel.settings.imageSettings.style == "image")) {
@@ -379,16 +381,19 @@ export class Visual implements IVisual {
           svgHeightTracking = this.finalMarginTop + this.barHeight + 20;
 
           if (this.viewModel.settings.textSettings.stagger) {
-            svgHeightTracking += (filteredData.filter(el => !el.top).length + 1) * this.viewModel.settings.textSettings.spacing
+            svgHeightTracking += (filteredData.filter(el => !el.top).length) * this.viewModel.settings.textSettings.spacing
           } else {
             svgHeightTracking += this.viewModel.settings.textSettings.spacing
           }
 
           if (filteredData.filter(el => el.top && el.image).length > 0) {
-            svgHeightTracking = Math.max(svgHeightTracking, axisMarginTop + this.barHeight + addToMargin)
+            // svgHeightTracking = Math.max(svgHeightTracking, axisMarginTop + this.barHeight + addToMargin)
+            svgHeightTracking = Math.max(svgHeightTracking, axisMarginTop  + addToMargin)
+
           }
 
           svgHeightTracking = Math.max(svgHeightTracking, axisMarginTop + this.barHeight + maxOffsetBottom + this.viewModel.settings.textSettings.spacing)
+
 
           if (svgHeightTracking > this.height) {
             // this.width -= 20
@@ -625,15 +630,15 @@ export class Visual implements IVisual {
       finalHeight = Math.max(this.height - 4, svgHeightTracking)
 
       this.svg.attr("height", finalHeight);
-      
+
       let transparentContainer
-      if(needScroll){        
+      if (needScroll) {
         transparentContainer = this.container.append('rect')
-        .attr('width', this.width)
-        .attr('x', 0)//this.padding)
-        .attr('fill', "white")
-        .attr('y', axisMarginTop)
-        .attr('height', this.height)
+          .attr('width', this.width)
+          .attr('x', 0)//this.padding)
+          .attr('fill', "white")
+          .attr('y', axisMarginTop)
+          .attr('height', this.height)
       }
       //axis setup
 
@@ -675,7 +680,7 @@ export class Visual implements IVisual {
 
         if (needScroll) {
           //on scroll event delete and re-write axis on better position
-            // https://github.com/wbkd/d3-extended
+          // https://github.com/wbkd/d3-extended
           d3.selection.prototype.moveToFront = function () {
             return this.each(function () {
               this.parentNode.appendChild(this);
@@ -726,8 +731,8 @@ export class Visual implements IVisual {
 
 
 
-           let cal: any =  d3.select("#calendar-icon")
-           cal.moveToFront()
+            let cal: any = d3.select("#calendar-icon")
+            cal.moveToFront()
 
           })
         }
@@ -931,6 +936,8 @@ export class Visual implements IVisual {
           }
 
 
+
+
           this.container
             .append("g")
             .attr('class', `annotation_selector_${element.selectionId.key.replace(/\W/g, '')} annotationSelector`)
@@ -970,7 +977,10 @@ export class Visual implements IVisual {
 
               })
             })
+
         })
+
+
       }
     }
     else { //image focus config:    
@@ -980,14 +990,14 @@ export class Visual implements IVisual {
       let imgCountTop = 0, imgCountBottom = 0, imgCounter
 
       finalHeight = filteredData.filter(el => el.image).length > 0 ? this.finalMarginTop + imagesHeight + 30 + spacing : this.finalMarginTop + 30 + spacing
-      
+
       if (this.viewModel.settings.download.downloadCalendar && this.viewModel.settings.download.position.split(",")[0] !== "TOP") {
         finalHeight += 35
       }
       // this.width = Math.max(filteredData.filter(el => el.image).length * (imagesWidth + 10), this.width - 4)
 
       // this.width = Math.max(filteredData.length * (this.imagesWidth + 10), this.width - 4)
-      this.width = Math.max(filteredData.length * (this.viewModel.settings.textSettings.wrap + 10) +20, this.width - 4)
+      this.width = Math.max(filteredData.length * (this.viewModel.settings.textSettings.wrap + 10) + 20, this.width - 4)
 
       this.svg.attr("height", finalHeight);
       this.svg.attr("width", this.width);
@@ -1184,33 +1194,12 @@ export class Visual implements IVisual {
 
     //Handles click on/out bar
     this.svg.on('click', () => {
-      // console.log("test")
       const mouseEvent: MouseEvent = d3.event as MouseEvent;
       const eventTarget: EventTarget = mouseEvent.target;
       let dataPoint: any = d3.select(<Element>eventTarget).datum();
       if (dataPoint) {
 
-        // this.selectionManager.select(dataPoint.selectionId).then((ids: ISelectionId[]) => {
-        //   if (ids.length > 0) {
-        //     console.log(dataPoint)
-        //     // d3.select(<Element>eventTarget).style('fill-opacity', 1)
-        //     this.container.selectAll('.annotationSelector').style('font-weight', "normal")
-        //     d3.select(` annotation_selector_${dataPoint.selectionId.key.replace(/\W/g, '')}`).style('font-weight', "bold")
-        //     // d3.select(`.annotation_selector_${dataPoint.label.replace(/\W/g, '')}_${dataPoint.dateAsInt}`).style('font-weight', "bold")
-
-        //   } else {
-
-        //     console.log("no ids", dataPoint)
-
-        //     this.container.selectAll('.annotationSelector').style('font-weight', "normal")
-        //     this.container.selectAll('.minIconSelector').style('opacity', 1)
-        //     this.container.selectAll('.annotationSelector').style('opacity', 1)
-
-
-        //   }
-        // })
       } else {
-        // console.log("no datapoint")
         this.selectionManager.clear().then(() => {
           if (this.viewModel.settings.style.timelineStyle == "minimalist") {
             d3.selectAll('.annotationSelector').style('opacity', 1)
@@ -1300,7 +1289,6 @@ export class Visual implements IVisual {
             })
 
             if (error) {
-              // console.log(error)
               return
             }
           })
@@ -1308,7 +1296,6 @@ export class Visual implements IVisual {
           const { error, value } = ics.createEvents(events)
 
           if (error) {
-            console.log(error)
             return
           }
 
@@ -1757,6 +1744,68 @@ export class Visual implements IVisual {
     return Math.min(textWidth, this.viewModel.settings.textSettings.wrap)
   }
 
+  private getAnnotationHeight(element) {
+    //annotations config
+    let annotationsData, makeAnnotations
+
+
+
+
+    // if (element.labelOrientation !== "Auto") {
+    //   orientation = element.labelOrientation
+    // } else {
+    //   orientation = this.getAnnotationOrientation(element)
+    // }
+
+
+
+    // svgHeightTracking = Math.max(svgHeightTracking, element["y"] + element["dy"])
+
+    element["alignment"] = {
+      "className": "custom",
+      "connector": { "end": "dot" },
+      "note": { "align": "dynamic" }
+    }
+
+    // element.alignment.note.align = orientation
+    annotationsData = [{
+      note: {
+        wrap: this.viewModel.settings.textSettings.wrap,
+        title: element.labelText,
+        label: element.description,
+        bgPadding: 0
+      },
+      x: 1,
+      y: 1,
+      dy: 0,
+      color: element.textColor
+    }]
+
+
+
+    element["type"] = new svgAnnotations.annotationCustomType(
+      svgAnnotations['annotationLabel'],
+      element.alignment
+    )
+
+    makeAnnotations = svgAnnotations.annotation()
+      .annotations(annotationsData)
+      .type(new svgAnnotations.annotationCustomType(element.type, element.alignment))
+
+
+    let anno = this.container
+      .append("g")
+      .attr('class', `annotation_selector_${element.selectionId.key.replace(/\W/g, '')} annotationSelector`)
+      .style('font-size', element.textSize + "px")
+      .style('font-family', element.fontFamily)
+      .style('background-color', 'transparent')
+      .call(makeAnnotations)
+
+    let result =  anno.node().getBBox().height
+    anno.remove()
+
+    return result
+  }
   private getTextHeight(textString: string, textSize: number, fontFamily: string, wrappedText: boolean) {
     let textData = [textString]
 
@@ -1787,7 +1836,6 @@ export class Visual implements IVisual {
     txt.attr("color", function (d) {
       //Irrelevant color. ".EACH" does not work on IE and we need to iterate over the elements after they have been appended to dom.
       let thisHeight = this.getBBox().height
-
       textHeight = thisHeight
       // this.remove()
       if (this.parentNode) {
@@ -2086,9 +2134,9 @@ function createFormatter(format, precision?: any, value?: number) {
 function wrap(text, width) {
   text.each(function () {
 
-    var text = d3.select(this),
-      words = text.text().split(/\s+/).reverse(),
-      word,
+    var text = d3.select(this)
+    var words = text.text().split(/\s+/).reverse()
+    var word,
       line = [],
       lineNumber = 0,
       lineHeight = 1,
