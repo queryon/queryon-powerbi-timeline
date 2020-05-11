@@ -680,6 +680,16 @@
                         }
                     }
                 },
+                "iconColor": {
+                    "displayName": "Icon color",
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
+                    }
+                },
                 "customVertical": {
                     "displayName": "Custom Vertical Offset",
                     "type": {
@@ -757,7 +767,7 @@
                     }
                 },
                 "minimalistStyle": {
-                    "displayName": "Waterfall Icon Style",
+                    "displayName": "Icons Style",
                     "type": {
                         "enumeration": [
                             {
@@ -781,6 +791,16 @@
                                 "value": "thinBar"
                             }
                         ]
+                    }
+                },
+                "iconsColor": {
+                    "displayName": "Icons color",
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
                     }
                 },
                 "minimalistConnect": {
@@ -815,7 +835,7 @@
                     }
                 },
                 "minimalistSize": {
-                    "displayName": "Waterfall Icon Size",
+                    "displayName": "Icon Size",
                     "type": {
                         "enumeration": [
                             {

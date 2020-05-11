@@ -93,7 +93,7 @@ export class Visual implements IVisual {
 
     let imagesHeight = this.viewModel.settings.imageSettings.imagesHeight
     this.imagesWidth = this.viewModel.settings.imageSettings.imagesWidth
-    let spacing
+    let spacing = 0
 
     if (this.viewModel.settings.axisSettings.manualScale) {
       if (this.viewModel.settings.axisSettings.barMin && this.viewModel.settings.axisSettings.barMin != "") {
@@ -152,6 +152,7 @@ export class Visual implements IVisual {
     let textSize = this.viewModel.settings.textSettings.textSize,
       fontFamily = this.viewModel.settings.textSettings.fontFamily,
       textColor = this.viewModel.settings.textSettings.textColor.solid.color,
+      iconsColor = this.viewModel.settings.style.iconsColor.solid.color,
       top = this.viewModel.settings.textSettings.top,
       labelOrientation = this.viewModel.settings.textSettings.labelOrientation,
       annotationStyle = this.viewModel.settings.textSettings.annotationStyle
@@ -197,6 +198,7 @@ export class Visual implements IVisual {
       dataPoint["formatted"] = valueFormatter.format(dataPoint["date"])
       dataPoint["labelText"] = this.viewModel.settings.style.timelineStyle != "image" ? `${dataPoint["formatted"]}${this.viewModel.settings.textSettings.separator} ${dataPoint["label"]}` : dataPoint["label"]
       dataPoint["textColor"] = dataPoint.customFormat ? dataPoint.textColor : textColor
+      dataPoint["iconColor"] = dataPoint.customFormat ? dataPoint.iconColor : iconsColor
       dataPoint["fontFamily"] = dataPoint.customFormat ? dataPoint.fontFamily : fontFamily
       dataPoint["textSize"] = dataPoint.customFormat ? dataPoint.textSize : textSize
       dataPoint["top"] = dataPoint.customFormat ? dataPoint.top : top
@@ -205,7 +207,7 @@ export class Visual implements IVisual {
       dataPoint["textWidth"] = this.getTextWidth(dataPoint["labelText"], dataPoint["textSize"], fontFamily)
       // dataPoint["textHeight"] = this.getTextHeight(dataPoint["labelText"], dataPoint["textSize"], fontFamily, true) + 3
       dataPoint["textHeight"] = this.getAnnotationHeight(dataPoint)
-     
+
       // this.getAnnotationHeight(dataPoint)
       //increment text height (for calculation) with description height
       // if (dataPoint.description) {
@@ -247,7 +249,7 @@ export class Visual implements IVisual {
       }
       else {
         //if minimalist, disconsider margin and spacing is default to one line 
-        spacing = this.getTextHeight(dataPoint["labelText"], dataPoint["textSize"], fontFamily, false) + 3
+        spacing = Math.max(this.getTextHeight(dataPoint["labelText"], dataPoint["textSize"], fontFamily, false) + 3, spacing)
       }
 
     })
@@ -388,7 +390,7 @@ export class Visual implements IVisual {
 
           if (filteredData.filter(el => el.top && el.image).length > 0) {
             // svgHeightTracking = Math.max(svgHeightTracking, axisMarginTop + this.barHeight + addToMargin)
-            svgHeightTracking = Math.max(svgHeightTracking, axisMarginTop  + addToMargin)
+            svgHeightTracking = Math.max(svgHeightTracking, axisMarginTop + addToMargin)
 
           }
 
@@ -475,6 +477,7 @@ export class Visual implements IVisual {
             })
             .attr('font-family', element => element["fontFamily"])
             .attr('font-size', element => element["textSize"])
+            .attr("fill", el => el["textColor"])
 
             .attr("id", (element) => element["selectionId"])
             .text(element => element["label"])
@@ -600,7 +603,7 @@ export class Visual implements IVisual {
 
 
           minIcons = minIcons.merge(enterIcons)
-            .style("fill", element => element["textColor"]);
+            .style("fill", element => element["iconColor"]);
 
 
 
@@ -1325,7 +1328,7 @@ export class Visual implements IVisual {
     switch (objectName) {
       case 'textSettings':
 
-        if (this.viewModel.settings.style.timelineStyle !== "minimalist") {
+        if (this.viewModel.settings.style.timelineStyle !== "minimalist" && this.viewModel.settings.style.timelineStyle !== "image") {
           objectEnumeration.push({
             objectName: objectName,
             properties: {
@@ -1362,11 +1365,11 @@ export class Visual implements IVisual {
           objectEnumeration.push({
             objectName: objectName,
             properties: {
-              separator: this.viewModel.settings.textSettings.separator,
               wrap: this.viewModel.settings.textSettings.wrap,
+              separator: this.viewModel.settings.textSettings.separator,
               labelOrientation: this.viewModel.settings.textSettings.labelOrientation,
-              annotationStyle: this.viewModel.settings.textSettings.annotationStyle,
               top: this.viewModel.settings.textSettings.top,
+              annotationStyle: this.viewModel.settings.textSettings.annotationStyle,
               boldTitles: this.viewModel.settings.textSettings.boldTitles,
               fontFamily: this.viewModel.settings.textSettings.fontFamily,
               textSize: this.viewModel.settings.textSettings.textSize,
@@ -1376,6 +1379,17 @@ export class Visual implements IVisual {
             selector: null
           });
         } else {
+          if (this.viewModel.settings.style.timelineStyle == "image") {
+            objectEnumeration.push({
+              objectName: objectName,
+              properties: {
+                wrap: this.viewModel.settings.textSettings.wrap,
+                annotationStyle: this.viewModel.settings.textSettings.annotationStyle
+              },
+              selector: null
+            });
+          }
+
           objectEnumeration.push({
             objectName: objectName,
             properties: {
@@ -1387,6 +1401,8 @@ export class Visual implements IVisual {
             },
             selector: null
           });
+
+
         }
 
         if (this.viewModel.settings.textSettings.dateFormat == "customJS") {
@@ -1527,7 +1543,40 @@ export class Visual implements IVisual {
                 },
                 selector: dataElement.selectionId.getSelector()
               });
+
+
+              objectEnumeration.push({
+                objectName: objectName,
+                displayName: dataElement.label + " Custom Vertical Offset",
+                properties: {
+                  customVertical: dataElement.customVertical
+                },
+                selector: dataElement.selectionId.getSelector()
+              });
+
+              if (dataElement.customVertical) {
+                objectEnumeration.push({
+                  objectName: objectName,
+                  displayName: dataElement.label + " Vertical Offset in px",
+                  properties: {
+                    verticalOffset: dataElement.verticalOffset
+                  },
+                  selector: dataElement.selectionId.getSelector()
+                });
+              }
+
+            } else {
+
+              objectEnumeration.push({
+                objectName: objectName,
+                displayName: dataElement.label + " Icon Color",
+                properties: {
+                  iconColor: dataElement.iconColor
+                },
+                selector: dataElement.selectionId.getSelector()
+              });
             }
+
             objectEnumeration.push({
               objectName: objectName,
               displayName: dataElement.label + " Font Family",
@@ -1555,25 +1604,8 @@ export class Visual implements IVisual {
               selector: dataElement.selectionId.getSelector()
             });
 
-            objectEnumeration.push({
-              objectName: objectName,
-              displayName: dataElement.label + " Custom Vertical Offset",
-              properties: {
-                customVertical: dataElement.customVertical
-              },
-              selector: dataElement.selectionId.getSelector()
-            });
 
-            if (dataElement.customVertical) {
-              objectEnumeration.push({
-                objectName: objectName,
-                displayName: dataElement.label + " Vertical Offset in px",
-                properties: {
-                  verticalOffset: dataElement.verticalOffset
-                },
-                selector: dataElement.selectionId.getSelector()
-              });
-            }
+
           }
         }
         break;
@@ -1612,6 +1644,7 @@ export class Visual implements IVisual {
             objectName: objectName,
             properties: {
               minimalistAxis: this.viewModel.settings.style.minimalistAxis,
+              iconsColor: this.viewModel.settings.style.iconsColor,
               minimalistStyle: this.viewModel.settings.style.minimalistStyle,
               minimalistConnect: this.viewModel.settings.style.minimalistConnect
             },
@@ -1801,7 +1834,7 @@ export class Visual implements IVisual {
       .style('background-color', 'transparent')
       .call(makeAnnotations)
 
-    let result =  anno.node().getBBox().height
+    let result = anno.node().getBBox().height
     anno.remove()
 
     return result
@@ -1908,6 +1941,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
       lineThickness: 2,
       minimalistStyle: "circle",
       minimalistAxis: "bottom",
+      iconsColor: { solid: { color: 'black' } },
       minimalistConnect: false,
       connectColor: { solid: { color: 'gray' } },
       minimalistSize: 2,
@@ -1991,6 +2025,8 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
     element["fontFamily"] = getCategoricalObjectValue(category, i, 'dataPoint', 'fontFamily', "Arial")
     element["textSize"] = getCategoricalObjectValue(category, i, 'dataPoint', 'textSize', 12)
     element["textColor"] = getCategoricalObjectValue(category, i, 'dataPoint', 'textColor', { "solid": { "color": "black" } }).solid.color
+    element["iconColor"] = getCategoricalObjectValue(category, i, 'dataPoint', 'iconColor', { "solid": { "color": "black" } }).solid.color
+
     element["top"] = getCategoricalObjectValue(category, i, 'dataPoint', 'top', false)
 
     element["customVertical"] = element["customFormat"] ? getCategoricalObjectValue(category, i, 'dataPoint', 'customVertical', false) : false
@@ -2050,6 +2086,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
       minimalistStyle: getValue(objects, 'style', 'minimalistStyle', defaultSettings.style.minimalistStyle),
       minimalistAxis: getValue(objects, 'style', 'minimalistAxis', defaultSettings.style.minimalistAxis),
       minimalistConnect: getValue(objects, 'style', 'minimalistConnect', defaultSettings.style.minimalistConnect),
+      iconsColor: getValue(objects, 'style', 'iconsColor', defaultSettings.style.iconsColor),
       connectColor: getValue(objects, 'style', 'connectColor', defaultSettings.style.connectColor),
       minimalistSize: getValue(objects, 'style', 'minimalistSize', defaultSettings.style.minimalistSize),
       barColor: getValue(objects, 'style', 'barColor', defaultSettings.style.barColor),
