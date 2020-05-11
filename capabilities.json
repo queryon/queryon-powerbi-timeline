@@ -257,11 +257,11 @@
                             },
                             {
                                 "displayName": "d/m/yy",
-                                "value": "dd/MM/yyyy"
+                                "value": "%d/%M/yy"
                             },
                             {
                                 "displayName": "d/m",
-                                "value": "dd/MM/yyyy"
+                                "value": "%d/%M"
                             },
                             {
                                 "displayName": "Time (h:mm:ss)",
@@ -325,11 +325,11 @@
                             },
                             {
                                 "displayName": "d/m/yy",
-                                "value": "dd/MM/yyyy"
+                                "value": "%d/%M/yy"
                             },
                             {
                                 "displayName": "d/m",
-                                "value": "dd/MM/yyyy"
+                                "value": "%d/%M"
                             },
                             {
                                 "displayName": "Time (h:mm:ss)",
