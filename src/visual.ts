@@ -916,7 +916,13 @@ export class Visual implements IVisual {
             if (this.viewModel.settings.imageSettings.style != "default") {
               let connector = this.container.append("line")
                 .attr("x1", element.x)
-                .attr("y1", this.finalMarginTop)
+                .attr("y1", () => {
+                  let result = this.finalMarginTop
+                  if (this.viewModel.settings.style.timelineStyle == "bar" && element.top) { 
+                    result += this.barHeight 
+                  }
+                  return result
+                })
                 .attr("x2", element.x)
                 .attr("y2", element.top ? imageY : imageY + imagesHeight)
                 .attr("stroke-width", 1)
