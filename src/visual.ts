@@ -3,7 +3,6 @@
 import "core-js/stable";
 import "./../style/visual.less";
 import powerbi from "powerbi-visuals-api";
-import { BlobBuilder } from "blob"
 import VisualConstructorOptions = powerbi.extensibility.visual.VisualConstructorOptions;
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import IVisual = powerbi.extensibility.visual.IVisual;
@@ -192,7 +191,7 @@ export class Visual implements IVisual {
       addToMargin = imagesHeight + 20
     }
 
-    let maxOffsetTop = 0, maxOffsetBottom = 0
+    let maxOffsetTop = 0, maxOffsetBottom = 0, ICSevents = []
 
     filteredData.forEach((dataPoint, i) => {
       dataPoint["formatted"] = valueFormatter.format(dataPoint["date"])
@@ -208,11 +207,16 @@ export class Visual implements IVisual {
       // dataPoint["textHeight"] = this.getTextHeight(dataPoint["labelText"], dataPoint["textSize"], fontFamily, true) + 3
       dataPoint["textHeight"] = this.getAnnotationHeight(dataPoint)
 
-      // this.getAnnotationHeight(dataPoint)
-      //increment text height (for calculation) with description height
-      // if (dataPoint.description) {
-      //   dataPoint["textHeight"] += this.getTextHeight(dataPoint["description"], dataPoint["textSize"], fontFamily, true) + 2
-      // }
+      
+      let startTime = [dataPoint.date.getFullYear(), dataPoint.date.getMonth() + 1, dataPoint.date.getDate(), dataPoint.date.getHours(), dataPoint.date.getMinutes()];
+
+      ICSevents.push({
+        title: dataPoint.label,
+        description: dataPoint.description,
+        // startInputType: 'utc',
+        start: startTime,
+        duration: { minutes: 30 }
+      })
 
       //increment image height on staggered image view
       if (dataPoint.image && (this.viewModel.settings.imageSettings.style == "default")) {// || this.viewModel.settings.imageSettings.style == "image")) {
@@ -222,8 +226,6 @@ export class Visual implements IVisual {
 
       //add heights to margin conditionally:
       if (this.viewModel.settings.style.timelineStyle !== "minimalist") {
-
-
         if (!spacing || spacing < dataPoint["textHeight"]) {
           spacing = dataPoint["textHeight"]
         }
@@ -297,9 +299,11 @@ export class Visual implements IVisual {
     }
 
 
-
+    let downloadTop = this.viewModel.settings.download.downloadCalendar && this.viewModel.settings.download.position.split(",")[0] == "TOP",
+    downloadBottom = this.viewModel.settings.download.downloadCalendar && this.viewModel.settings.download.position.split(",")[0] !== "TOP"
+    
     //download calendar icon is enabled and positioned at top
-    if (this.viewModel.settings.download.downloadCalendar && this.viewModel.settings.download.position.split(",")[0] == "TOP") {
+    if (downloadTop) {
       this.finalMarginTop += 35
     }
 
@@ -309,8 +313,10 @@ export class Visual implements IVisual {
     let axisFormat = this.viewModel.settings.axisSettings.dateFormat != "customJS" ? this.viewModel.settings.axisSettings.dateFormat : this.viewModel.settings.axisSettings.customJS
     let axisValueFormatter = axisFormat == "same" ? valueFormatter : createFormatter(axisFormat);
 
+    let filteredWithImage = filteredData.filter(el => el.image)
+
     //increment padding based on image
-    if (filteredData.filter(el => el.image).length > 0) {
+    if (filteredWithImage.length > 0 && this.viewModel.settings.style.timelineStyle !== "minimalist") {
       let dynamicPadding = Math.max(this.padding, this.imagesWidth / 2)
       this.padding = dynamicPadding
     }
@@ -437,7 +443,7 @@ export class Visual implements IVisual {
 
 
 
-          if (this.viewModel.settings.download.downloadCalendar && this.viewModel.settings.download.position.split(",")[0] == "TOP") {
+          if (downloadTop) {
 
             svgHeightTracking += 35
             if (!needScroll) {
@@ -470,7 +476,7 @@ export class Visual implements IVisual {
             .attr("x", 0)
             .attr("y", (element, i) => {
               let result = 10 + this.marginTop + this.viewModel.settings.textSettings.spacing * i
-              if (this.viewModel.settings.download.downloadCalendar && this.viewModel.settings.download.position.split(",")[0] == "TOP") {
+              if (downloadTop) {
                 result += 35
               }
               return result
@@ -532,7 +538,7 @@ export class Visual implements IVisual {
               .attr("d", shapeOptions[this.viewModel.settings.style.minimalistStyle])
               .attr("transform", (element, i) => {
                 let pointY = 10 + (this.marginTop + this.viewModel.settings.textSettings.spacing * i) - shapeSize
-                if (this.viewModel.settings.download.downloadCalendar && this.viewModel.settings.download.position.split(",")[0] == "TOP") {
+                if (downloadTop) {
                   pointY += 35
                 }
                 return "translate(" + (axisPadding + scale(element["date"])) + "," + pointY + ") rotate(180)"
@@ -571,7 +577,7 @@ export class Visual implements IVisual {
               // .attr("x", element => axisPadding + scale(element["date"]) - shapeSize)
               .attr("y", (element, i) => {
                 let y = 10 + (this.marginTop + this.viewModel.settings.textSettings.spacing * i) - shapeSize
-                if (this.viewModel.settings.download.downloadCalendar && this.viewModel.settings.download.position.split(",")[0] == "TOP") {
+                if (downloadTop) {
                   y += 35
                 }
                 return y
@@ -619,7 +625,7 @@ export class Visual implements IVisual {
                 .x(element => axisPadding + scale(element["date"]))
                 .y((el, i) => {
                   let y = 10 + (this.marginTop + this.viewModel.settings.textSettings.spacing * (i)) - shapeSize
-                  if (this.viewModel.settings.download.downloadCalendar && this.viewModel.settings.download.position.split(",")[0] == "TOP") {
+                  if (downloadTop) {
                     y += 35
                   }
                   return y
@@ -896,7 +902,7 @@ export class Visual implements IVisual {
 
               default:
                 imageY = element.top ? this.finalMarginTop + 20 : 0
-                if (this.viewModel.settings.download.downloadCalendar && this.viewModel.settings.download.position.split(",")[0] == "TOP") {
+                if (downloadTop) {
                   imageY += 35
                 }
                 if (imgCounter % 2 == 0) {
@@ -998,14 +1004,12 @@ export class Visual implements IVisual {
       let countTop = 0, countBottom = 0, counter
       let imgCountTop = 0, imgCountBottom = 0, imgCounter
 
-      finalHeight = filteredData.filter(el => el.image).length > 0 ? this.finalMarginTop + imagesHeight + 30 + spacing : this.finalMarginTop + 30 + spacing
+      finalHeight = filteredWithImage.length > 0 ? this.finalMarginTop + imagesHeight + 30 + spacing : this.finalMarginTop + 30 + spacing
 
-      if (this.viewModel.settings.download.downloadCalendar && this.viewModel.settings.download.position.split(",")[0] !== "TOP") {
+      if (downloadBottom) {
         finalHeight += 35
       }
-      // this.width = Math.max(filteredData.filter(el => el.image).length * (imagesWidth + 10), this.width - 4)
-
-      // this.width = Math.max(filteredData.length * (this.imagesWidth + 10), this.width - 4)
+      
       this.width = Math.max(filteredData.length * (this.viewModel.settings.textSettings.wrap + 10) + 20, this.width - 4)
 
       this.svg.attr("height", finalHeight);
@@ -1261,7 +1265,7 @@ export class Visual implements IVisual {
     if (this.viewModel.settings.download.downloadCalendar) {
 
       const ics = require('ics')
-      let orientationVertical = this.viewModel.settings.download.position.split(",")[0]
+      // let orientationVertical = this.viewModel.settings.download.position.split(",")[0]
       let orientationHorizontal = this.viewModel.settings.download.position.split(",")[1]
       let calX
       if (orientationHorizontal == "LEFT") {
@@ -1272,9 +1276,11 @@ export class Visual implements IVisual {
           calX -= 20
         }
       }
-      let calY = orientationVertical == "TOP" ? 2 : finalHeight - 35
+      let calY = downloadTop ? 2 : finalHeight - 35
 
-      // let calY = orientationVertical == "TOP" ? 2 : this.height - 55 //increased case there's a scrollbar
+       
+ 
+      
 
       //append download icon
       let calendarIcon = this.container.append('image')
@@ -1285,29 +1291,11 @@ export class Visual implements IVisual {
         .attr('x', calX)
         .attr('y', calY)
         .on("click", () => {
-          let events = []
-          filteredData.forEach(el => {
-            let startTime = [el.date.getFullYear(), el.date.getMonth() + 1, el.date.getDate(), el.date.getHours(), el.date.getMinutes()];
-
-            events.push({
-              title: el.label,
-              description: el.description,
-              // startInputType: 'utc',
-              start: startTime,
-              duration: { minutes: 30 }
-            })
-
-            if (error) {
-              return
-            }
-          })
-
-          const { error, value } = ics.createEvents(events)
+          const { error, value } = ics.createEvents(ICSevents)
 
           if (error) {
             return
           }
-
           var blob;
 
           blob = new Blob([value]);
