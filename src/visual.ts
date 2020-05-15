@@ -207,7 +207,7 @@ export class Visual implements IVisual {
       // dataPoint["textHeight"] = this.getTextHeight(dataPoint["labelText"], dataPoint["textSize"], fontFamily, true) + 3
       dataPoint["textHeight"] = this.getAnnotationHeight(dataPoint)
 
-      
+
       let startTime = [dataPoint.date.getFullYear(), dataPoint.date.getMonth() + 1, dataPoint.date.getDate(), dataPoint.date.getHours(), dataPoint.date.getMinutes()];
 
       ICSevents.push({
@@ -300,8 +300,8 @@ export class Visual implements IVisual {
 
 
     let downloadTop = this.viewModel.settings.download.downloadCalendar && this.viewModel.settings.download.position.split(",")[0] == "TOP",
-    downloadBottom = this.viewModel.settings.download.downloadCalendar && this.viewModel.settings.download.position.split(",")[0] !== "TOP"
-    
+      downloadBottom = this.viewModel.settings.download.downloadCalendar && this.viewModel.settings.download.position.split(",")[0] !== "TOP"
+
     //download calendar icon is enabled and positioned at top
     if (downloadTop) {
       this.finalMarginTop += 35
@@ -641,7 +641,7 @@ export class Visual implements IVisual {
       this.svg.attr("height", finalHeight);
 
       let transparentContainer
-      if (needScroll) {
+      if (needScroll && this.viewModel.settings.style.minimalistAxis == "bottom") {
         transparentContainer = this.container.append('rect')
           .attr('width', this.width)
           .attr('x', 0)//this.padding)
@@ -698,14 +698,16 @@ export class Visual implements IVisual {
           sandBox.on("scroll", (e) => {
             let firstXForm = axisSVG.property("transform").baseVal.getItem(0)
             axisSVG.remove()
-            transparentContainer.remove()
-            //Appent transparent container
-            transparentContainer = this.container.append('rect')
-              .attr('width', this.width)
-              .attr('x', 0)//this.padding)
-              .attr('fill', "white")
-              .attr('y', axisMarginTop + sandBox.property("scrollTop"))
-              .attr('height', this.height)
+            if (this.viewModel.settings.style.minimalistAxis == "bottom") {
+              transparentContainer.remove()
+              //Appent transparent container
+              transparentContainer = this.container.append('rect')
+                .attr('width', this.width)
+                .attr('x', 0)//this.padding)
+                .attr('fill', "white")
+                .attr('y', axisMarginTop + sandBox.property("scrollTop"))
+                .attr('height', this.height)
+            }
             //Append group and insert axis
             axisSVG = this.container.append("g")
               .attr("transform", "translate(" + axisPadding + "," + (axisMarginTop + sandBox.property("scrollTop")) + ")")
@@ -924,8 +926,8 @@ export class Visual implements IVisual {
                 .attr("x1", element.x)
                 .attr("y1", () => {
                   let result = this.finalMarginTop
-                  if (this.viewModel.settings.style.timelineStyle == "bar" && element.top) { 
-                    result += this.barHeight 
+                  if (this.viewModel.settings.style.timelineStyle == "bar" && element.top) {
+                    result += this.barHeight
                   }
                   return result
                 })
@@ -1009,7 +1011,7 @@ export class Visual implements IVisual {
       if (downloadBottom) {
         finalHeight += 35
       }
-      
+
       this.width = Math.max(filteredData.length * (this.viewModel.settings.textSettings.wrap + 10) + 20, this.width - 4)
 
       this.svg.attr("height", finalHeight);
@@ -1278,9 +1280,9 @@ export class Visual implements IVisual {
       }
       let calY = downloadTop ? 2 : finalHeight - 35
 
-       
- 
-      
+
+
+
 
       //append download icon
       let calendarIcon = this.container.append('image')
