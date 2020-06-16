@@ -87,6 +87,18 @@ export class Visual implements IVisual {
       this.viewModel.settings.textSettings.wrap = 90
     }
 
+    if(data.length > 30 && this.viewModel.settings.style.timelineStyle !== "minimalist"){
+      this.svg.attr("width", options.viewport.width -4)
+      this.svg.attr("height", options.viewport.height - 4)
+
+      this.container.append("text")
+      .text("Dataset is too large. Waterfall view is recommended")
+      .attr("y", 20)
+      .attr("width", this.width)
+      return
+    }
+
+    console.log(data.length)
     let minFromData = d3.min(data, function (d: any) { return d.date })
     let maxFromData = d3.max(data, function (d: any) { return d.date })
 
@@ -121,18 +133,6 @@ export class Visual implements IVisual {
 
       this.viewModel.settings.axisSettings.barMin = false;
       this.viewModel.settings.axisSettings.barMax = false;
-    }
-
-    let today
-    if (this.viewModel.settings.style.today) {
-      today = new Date
-      if (today < this.minVal) {
-        this.minVal = today
-      }
-
-      if (today > this.maxVal) {
-        this.maxVal = today
-      }
     }
 
     if (!this.viewModel.settings.axisSettings.manualScalePixel || !this.viewModel.settings.axisSettings.customPixel || isNaN(this.viewModel.settings.axisSettings.customPixel)) {
@@ -203,7 +203,7 @@ export class Visual implements IVisual {
       dataPoint["top"] = dataPoint.customFormat ? dataPoint.top : top
       dataPoint["labelOrientation"] = dataPoint.customFormat ? dataPoint.labelOrientation : labelOrientation
       dataPoint["annotationStyle"] = dataPoint.customFormat ? dataPoint.annotationStyle : annotationStyle
-      dataPoint["textWidth"] = this.getTextWidth(dataPoint["labelText"], dataPoint["textSize"], fontFamily)
+      dataPoint["textWidth"] = this.viewModel.settings.style.timelineStyle == "minimalist"? false : this.getTextWidth(dataPoint["labelText"], dataPoint["textSize"], fontFamily)
       // dataPoint["textHeight"] = this.getTextHeight(dataPoint["labelText"], dataPoint["textSize"], fontFamily, true) + 3
       dataPoint["textHeight"] = this.getAnnotationHeight(dataPoint)
 
@@ -461,16 +461,21 @@ export class Visual implements IVisual {
             .domain([this.minVal, this.maxVal]) //min and max data 
             .range([0, newWidth]); //min and max width in px    
 
+            this.svg.append("defs").append("clipPath")
+            .attr("id", "clip")
+              .append("rect")
+            .attr("width",  this.width - newWidth)
+            .attr("height", svgHeightTracking);
 
           //append points and annotations
           let textLateral = this.container.selectAll(".text-lateral")
             .data(filteredData)
 
           textLateral.exit().remove();
-
+         
           var enter = textLateral.enter()
-            .append("g").attr("class", "text-lateral");
-
+            .append("g").attr("class", "text-lateral")
+            .attr("clip-path", "url(#clip)")
 
           enter.append("text")
             .attr("x", 0)
@@ -484,10 +489,9 @@ export class Visual implements IVisual {
             .attr('font-family', element => element["fontFamily"])
             .attr('font-size', element => element["textSize"])
             .attr("fill", el => el["textColor"])
-
+          
             .attr("id", (element) => element["selectionId"])
             .text(element => element["label"])
-            .call(wrapAndCrop, this.width - newWidth - (this.padding * 2))
             .attr('class', element => `annotation_selector_${element["selectionId"].key.replace(/\W/g, '')} annotationSelector`)
             .on('click', element => {
 
@@ -750,7 +754,8 @@ export class Visual implements IVisual {
 
       }
       //append today icon
-      if (this.viewModel.settings.style.today) {
+      let today= new Date
+      if (this.viewModel.settings.style.today && today >= this.minVal && today <= this.maxVal) {
         let todayIcon = this.container
           .append('path')
           .attr("d", d3.symbol().type(d3.symbolTriangle).size(150))
@@ -1286,7 +1291,7 @@ export class Visual implements IVisual {
 
       //append download icon
       let calendarIcon = this.container.append('image')
-        .attr('xlink:href', "https://queryon.com/wp-content/uploads/2020/04/time-and-date.png")
+        .attr('xlink:href', "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAQAAACROWYpAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAAmJLR0QAAKqNIzIAAAAJcEhZcwAADsQAAA7EAZUrDhsAAAAHdElNRQfkBg8SOTSmsBjTAAAC8ElEQVQ4y53UbWjVZRgG8N/Ozs7aOZMtWSuTs2UMEvZlK2kp9kogytiLxdyoYJCGYKkEITb6ELE06INpYkFfVviWJEsC8QUN0lJWzGKR5UrTZnNTZyxkL2fn34cdT3s5Luj6dD33c1//57mf+7r/ZMJK3bqt9D9Q5LgGDY4rmjkxlCGyQFwgELcgw/4EZE1Z32e1xX5Uhm7lTvjAhduLcxULp8582st6bdWlCFeVW2uO7Y5IgoQrRiaK31cpAbLdI+yyYSEBsiTluldCrzEQccRbRv8VX/CiXyYUEaTfIjklxgPe1OjSLXFYQjea5PvbnhnZbuckUiWmxCQ1qXZUtSQzMHZPfrDx70Sd8aEiMWZg0cx97lRljyqdGdkZC+1VpXNqY8PIdtCfZhn0PXqnsB+M+E6xXJfNniwPY8wyG90U1YqWSSzPDn+pVipHlhylnnTVoFRv12qzzHXr3K/AnEnsVfO9Yq5vfGKndiedV6/O7+PtGhfP95jZFuky6vE0e9Rcj9jhDV/K1qDcKYd9ocBr+p0dv3bILkmzHLAXUizwkGartYMmSxGy2Q1bXPS6Pl+HM4xHIKbYWbk2paTEHEMstdqvxAbNoZRJaoypscIKNQIhgSXyfHzbCWyTozaTST4y6po1DhlIJ0cNCibYZMAhyzOZZJe3xZXoSKfWqveHHnVq07EOZZlNcl2WiL50Yr5hXZKG5Kdj/SKZTDLkZ9smVbtPiS3Yad/0wahwWqsWlThts1wJo4qdQ9jdeM95HHAXrkig2EgmkxR6zpiYiFOos12jYcdcVO9djfr9hGcUjtc81STfOuqGl7QZUOGETms8j6htKlXY705LfBo2pEWPQCBmFcYE8qxS4EEv2GpE1Fd+E8GIHotdQ7NR7VkWeUqu6Qjc4QmtLtkkaiz1S8x200YlWqx30oyoddo688TFlSoVFzfPeh2WT3f1dCy0QcRBHfpQ7GFLjXpn/NT/ElOoxrPK5Mgy4lef+fyWbf8BTNASSGAMJiEAAAAldEVYdGRhdGU6Y3JlYXRlADIwMjAtMDYtMTVUMTg6NTc6NTItMDQ6MDC+fJWTAAAAJXRFWHRkYXRlOm1vZGlmeQAyMDIwLTA2LTE1VDE4OjU3OjUyLTA0OjAwzyEtLwAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAAASUVORK5CYII=")
         .attr('width', 30)
         .attr('height', 30)
         .attr("id", "calendar-icon")
