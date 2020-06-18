@@ -50,6 +50,7 @@ export class Visual implements IVisual {
   private selectionManager: ISelectionManager
   private tooltipServiceWrapper: ITooltipServiceWrapper;
   private imagesWidth: number;
+  private fontHeightLib: any;
 
   constructor(options: VisualConstructorOptions) {
     options.element.style["overflow"] = 'auto';
@@ -63,7 +64,7 @@ export class Visual implements IVisual {
     this.tooltipServiceWrapper = createTooltipServiceWrapper(
       options.host.tooltipService,
       options.element);
-
+      this.fontHeightLib = {}
   }
 
   public update(options: VisualUpdateOptions) {
@@ -77,6 +78,8 @@ export class Visual implements IVisual {
     this.container.selectAll("text").remove();
     this.container.selectAll("circle").remove();
     this.container.selectAll("path").remove();
+    this.svg.selectAll("clipPath").remove();
+    // this.svg.selectAll("defs").remove();
 
     this.padding = 15;
 
@@ -87,12 +90,12 @@ export class Visual implements IVisual {
       this.viewModel.settings.textSettings.wrap = 90
     }
 
-    if(data.length > 30 && this.viewModel.settings.style.timelineStyle !== "minimalist"){
+    if(data.length > 100 && this.viewModel.settings.style.timelineStyle !== "minimalist"){
       this.svg.attr("width", options.viewport.width -4)
       this.svg.attr("height", options.viewport.height - 4)
 
       this.container.append("text")
-      .text("Dataset is too large. Waterfall view is recommended")
+      .text("Dataset is too large. Waterfall Style is recommended.")
       .attr("y", 20)
       .attr("width", this.width)
       return
@@ -205,7 +208,7 @@ export class Visual implements IVisual {
       dataPoint["annotationStyle"] = dataPoint.customFormat ? dataPoint.annotationStyle : annotationStyle
       dataPoint["textWidth"] = this.viewModel.settings.style.timelineStyle == "minimalist"? false : this.getTextWidth(dataPoint["labelText"], dataPoint["textSize"], fontFamily)
       // dataPoint["textHeight"] = this.getTextHeight(dataPoint["labelText"], dataPoint["textSize"], fontFamily, true) + 3
-      dataPoint["textHeight"] = this.getAnnotationHeight(dataPoint)
+      dataPoint["textHeight"] = this.viewModel.settings.style.timelineStyle == "minimalist"? false : this.getAnnotationHeight(dataPoint)
 
 
       let startTime = [dataPoint.date.getFullYear(), dataPoint.date.getMonth() + 1, dataPoint.date.getDate(), dataPoint.date.getHours(), dataPoint.date.getMinutes()];
@@ -251,7 +254,14 @@ export class Visual implements IVisual {
       }
       else {
         //if minimalist, disconsider margin and spacing is default to one line 
-        spacing = Math.max(this.getTextHeight(dataPoint["labelText"], dataPoint["textSize"], fontFamily, false) + 3, spacing)
+        let itemHeight
+        
+        if (!this.fontHeightLib[`${dataPoint["textSize"]}${fontFamily}`]){
+          this.fontHeightLib[`${dataPoint["textSize"]}${fontFamily}`]  =  this.getTextHeight(dataPoint["labelText"], dataPoint["textSize"], fontFamily, false) + 3
+          console.log(this.fontHeightLib)
+        }
+        itemHeight = this.fontHeightLib[`${dataPoint["textSize"]}${fontFamily}`] 
+        spacing = Math.max(itemHeight, spacing)
       }
 
     })
@@ -464,7 +474,7 @@ export class Visual implements IVisual {
             this.svg.append("defs").append("clipPath")
             .attr("id", "clip")
               .append("rect")
-            .attr("width",  this.width - newWidth)
+            .attr("width",  this.width - newWidth - this.padding -10)
             .attr("height", svgHeightTracking);
 
           //append points and annotations
