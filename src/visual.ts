@@ -51,7 +51,8 @@ export class Visual implements IVisual {
   private tooltipServiceWrapper: ITooltipServiceWrapper;
   private imagesWidth: number;
   private fontHeightLib: any;
-
+  private spacing: any;
+  
   constructor(options: VisualConstructorOptions) {
     options.element.style["overflow"] = 'auto';
     this.svg = d3.select(options.element)
@@ -65,6 +66,7 @@ export class Visual implements IVisual {
       options.host.tooltipService,
       options.element);
       this.fontHeightLib = {}
+    this.spacing = false
   }
 
   public update(options: VisualUpdateOptions) {
@@ -101,7 +103,6 @@ export class Visual implements IVisual {
       return
     }
 
-    console.log(data.length)
     let minFromData = d3.min(data, function (d: any) { return d.date })
     let maxFromData = d3.max(data, function (d: any) { return d.date })
 
@@ -206,10 +207,9 @@ export class Visual implements IVisual {
       dataPoint["top"] = dataPoint.customFormat ? dataPoint.top : top
       dataPoint["labelOrientation"] = dataPoint.customFormat ? dataPoint.labelOrientation : labelOrientation
       dataPoint["annotationStyle"] = dataPoint.customFormat ? dataPoint.annotationStyle : annotationStyle
-      dataPoint["textWidth"] = this.viewModel.settings.style.timelineStyle == "minimalist"? false : this.getTextWidth(dataPoint["labelText"], dataPoint["textSize"], fontFamily)
+      dataPoint["textWidth"] = this.viewModel.settings.style.timelineStyle == "minimalist"? false : Math.min(this.viewModel.settings.textSettings.wrap, BrowserText.getWidth(dataPoint["labelText"], dataPoint["textSize"], fontFamily));  // this.getTextWidth(dataPoint["labelText"], dataPoint["textSize"], fontFamily)
       // dataPoint["textHeight"] = this.getTextHeight(dataPoint["labelText"], dataPoint["textSize"], fontFamily, true) + 3
       dataPoint["textHeight"] = this.viewModel.settings.style.timelineStyle == "minimalist"? false : this.getAnnotationHeight(dataPoint)
-
 
       let startTime = [dataPoint.date.getFullYear(), dataPoint.date.getMonth() + 1, dataPoint.date.getDate(), dataPoint.date.getHours(), dataPoint.date.getMinutes()];
 
@@ -258,7 +258,6 @@ export class Visual implements IVisual {
         
         if (!this.fontHeightLib[`${dataPoint["textSize"]}${fontFamily}`]){
           this.fontHeightLib[`${dataPoint["textSize"]}${fontFamily}`]  =  this.getTextHeight(dataPoint["labelText"], dataPoint["textSize"], fontFamily, false) + 3
-          console.log(this.fontHeightLib)
         }
         itemHeight = this.fontHeightLib[`${dataPoint["textSize"]}${fontFamily}`] 
         spacing = Math.max(itemHeight, spacing)
@@ -1754,56 +1753,43 @@ export class Visual implements IVisual {
   }
 
 
-  private getTextWidth(textString: string, textSize: number, fontFamily: string) {
-    let textData = [textString]
+  // private getTextWidth(textString: string, textSize: number, fontFamily: string) {
+  //   let textData = [textString]
 
-    let textWidth
+  //   let textWidth
 
-    //Measure text's width for correct positioning of annotation
-    this.svg.append('g')
-      .selectAll('.dummyText')
-      .data(textData)
-      .enter()
-      .append("text")
-      .attr("font-family", fontFamily)
-      .attr("font-size", textSize)
-      .text(function (d) { return d })
-      // .each(function (d, i) {
-      //   let thisWidth = this.getComputedTextLength()
-      //   textWidth = thisWidth
-      //   this.remove() // remove them just after displaying them
-      // })
-      .attr("color", function (d) {
-        //Irrelevant color. ".EACH" does not work on IE and we need to iterate over the elements after they have been appended to dom.
-        let thisWidth = this.getBBox().width
-        textWidth = thisWidth
-        // this.remove()
-        if (this.parentNode) {
-          this.parentNode.removeChild(this);
-        }
+  //   //Measure text's width for correct positioning of annotation
+  //   this.svg.append('g')
+  //     .selectAll('.dummyText')
+  //     .data(textData)
+  //     .enter()
+  //     .append("text")
+  //     .attr("font-family", fontFamily)
+  //     .attr("font-size", textSize)
+  //     .text(function (d) { return d })
+  //     // .each(function (d, i) {
+  //     //   let thisWidth = this.getComputedTextLength()
+  //     //   textWidth = thisWidth
+  //     //   this.remove() // remove them just after displaying them
+  //     // })
+  //     .attr("color", function (d) {
+  //       //Irrelevant color. ".EACH" does not work on IE and we need to iterate over the elements after they have been appended to dom.
+  //       let thisWidth = this.getBBox().width
+  //       textWidth = thisWidth
+  //       // this.remove()
+  //       if (this.parentNode) {
+  //         this.parentNode.removeChild(this);
+  //       }
 
 
-        return "white"
-      })
-    return Math.min(textWidth, this.viewModel.settings.textSettings.wrap)
-  }
+  //       return "white"
+  //     })
+  //   return Math.min(textWidth, this.viewModel.settings.textSettings.wrap)
+  // }
 
   private getAnnotationHeight(element) {
     //annotations config
     let annotationsData, makeAnnotations
-
-
-
-
-    // if (element.labelOrientation !== "Auto") {
-    //   orientation = element.labelOrientation
-    // } else {
-    //   orientation = this.getAnnotationOrientation(element)
-    // }
-
-
-
-    // svgHeightTracking = Math.max(svgHeightTracking, element["y"] + element["dy"])
 
     element["alignment"] = {
       "className": "custom",
@@ -1854,14 +1840,6 @@ export class Visual implements IVisual {
     let textData = [textString]
 
     let textHeight
-
-    // let styles =    {
-    //   "font-family": fontFamily,
-    //   "font-size": `${textSize}px`
-    // }
-    // let width = d3PlusText.textWidth(textString,styles)
-
-
 
 
     let txt = this.svg.append('g')
@@ -2261,3 +2239,24 @@ function wrapAndCrop(text, width) {
   });
 
 }
+
+var BrowserText = (function () {
+  var canvas = document.createElement('canvas'),
+      context = canvas.getContext('2d');
+
+  /**
+   * Measures the rendered width of arbitrary text given the font size and font face
+   * @param {string} text The text to measure
+   * @param {number} fontSize The font size in pixels
+   * @param {string} fontFace The font face ("Arial", "Helvetica", etc.)
+   * @returns {number} The width of the text
+   **/
+  function getWidth(text, fontSize, fontFace) {
+      context.font = fontSize + 'px ' + fontFace;
+      return context.measureText(text).width;
+  }
+
+  return {
+      getWidth: getWidth
+  };
+})();
