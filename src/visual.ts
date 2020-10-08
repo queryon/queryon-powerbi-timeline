@@ -69,6 +69,7 @@ export class Visual implements IVisual {
     this.spacing = false
   }
 
+
   public update(options: VisualUpdateOptions) {
     this.viewModel = visualTransform(options, this.host)
     //set empty canva
@@ -2032,62 +2033,62 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
 
   let timelineSettings = {
     download: {
-      downloadCalendar: getValue(objects, 'download', 'downloadCalendar', defaultSettings.download.downloadCalendar),
-      position: getValue(objects, 'download', 'position', defaultSettings.download.position),
-      calendarName: getValue(objects, 'download', 'calendarName', defaultSettings.download.calendarName)
+      downloadCalendar: getSettingsValue(objects, 'download', 'downloadCalendar', defaultSettings.download.downloadCalendar),
+      position: getSettingsValue(objects, 'download', 'position', defaultSettings.download.position),
+      calendarName: getSettingsValue(objects, 'download', 'calendarName', defaultSettings.download.calendarName)
     },
     textSettings: {
-      stagger: getValue(objects, 'textSettings', 'stagger', defaultSettings.textSettings.stagger),
-      autoStagger: getValue(objects, 'textSettings', 'autoStagger', defaultSettings.textSettings.autoStagger),
-      separator: getValue(objects, 'textSettings', 'separator', defaultSettings.textSettings.separator),
-      spacing: getValue(objects, 'textSettings', 'spacing', defaultSettings.textSettings.spacing),
-      top: getValue(objects, 'textSettings', 'top', defaultSettings.textSettings.top),
-      labelOrientation: getValue(objects, 'textSettings', 'labelOrientation', defaultSettings.textSettings.labelOrientation),
-      annotationStyle: getValue(objects, 'textSettings', 'annotationStyle', defaultSettings.textSettings.annotationStyle),
-      textColor: getValue(objects, 'textSettings', 'textColor', defaultSettings.textSettings.textColor),
-      textSize: getValue(objects, 'textSettings', 'textSize', defaultSettings.textSettings.textSize),
-      fontFamily: getValue(objects, 'textSettings', 'fontFamily', defaultSettings.textSettings.fontFamily),
-      dateFormat: getValue(objects, 'textSettings', 'dateFormat', defaultSettings.textSettings.dateFormat),
-      customJS: getValue(objects, 'textSettings', 'customJS', defaultSettings.textSettings.customJS),
-      boldTitles: getValue(objects, 'textSettings', 'boldTitles', defaultSettings.textSettings.boldTitles),
-      wrap: getValue(objects, 'textSettings', 'wrap', defaultSettings.textSettings.wrap),
+      stagger: getSettingsValue(objects, 'textSettings', 'stagger', defaultSettings.textSettings.stagger),
+      autoStagger: getSettingsValue(objects, 'textSettings', 'autoStagger', defaultSettings.textSettings.autoStagger),
+      separator: getSettingsValue(objects, 'textSettings', 'separator', defaultSettings.textSettings.separator),
+      spacing: getSettingsValue(objects, 'textSettings', 'spacing', defaultSettings.textSettings.spacing),
+      top: getSettingsValue(objects, 'textSettings', 'top', defaultSettings.textSettings.top),
+      labelOrientation: getSettingsValue(objects, 'textSettings', 'labelOrientation', defaultSettings.textSettings.labelOrientation),
+      annotationStyle: getSettingsValue(objects, 'textSettings', 'annotationStyle', defaultSettings.textSettings.annotationStyle),
+      textColor: getSettingsValue(objects, 'textSettings', 'textColor', defaultSettings.textSettings.textColor),
+      textSize: getSettingsValue(objects, 'textSettings', 'textSize', defaultSettings.textSettings.textSize),
+      fontFamily: getSettingsValue(objects, 'textSettings', 'fontFamily', defaultSettings.textSettings.fontFamily),
+      dateFormat: getSettingsValue(objects, 'textSettings', 'dateFormat', defaultSettings.textSettings.dateFormat),
+      customJS: getSettingsValue(objects, 'textSettings', 'customJS', defaultSettings.textSettings.customJS),
+      boldTitles: getSettingsValue(objects, 'textSettings', 'boldTitles', defaultSettings.textSettings.boldTitles),
+      wrap: getSettingsValue(objects, 'textSettings', 'wrap', defaultSettings.textSettings.wrap),
 
     },
     axisSettings: {
-      axis: getValue(objects, 'axisSettings', 'axis', defaultSettings.axisSettings.axis),
-      axisColor: getValue(objects, 'axisSettings', 'axisColor', defaultSettings.axisSettings.axisColor),
-      fontSize: getValue(objects, 'axisSettings', 'fontSize', defaultSettings.axisSettings.fontSize),
-      fontFamily: getValue(objects, 'axisSettings', 'fontFamily', defaultSettings.axisSettings.fontFamily),
-      bold: getValue(objects, 'axisSettings', 'bold', defaultSettings.axisSettings.bold),
-      dateFormat: getValue(objects, 'axisSettings', 'dateFormat', defaultSettings.axisSettings.dateFormat),
-      manualScale: getValue(objects, 'axisSettings', 'manualScale', defaultSettings.axisSettings.manualScale),
-      barMin: getValue(objects, 'axisSettings', 'barMin', defaultSettings.axisSettings.barMin),
-      barMax: getValue(objects, 'axisSettings', 'barMax', defaultSettings.axisSettings.barMax),
-      customJS: getValue(objects, 'axisSettings', 'customJS', defaultSettings.axisSettings.customJS),
-      manualScalePixel: getValue(objects, 'axisSettings', 'manualScalePixel', defaultSettings.axisSettings.manualScalePixel),
-      customPixel: getValue(objects, 'axisSettings', 'customPixel', defaultSettings.axisSettings.customPixel)
+      axis: getSettingsValue(objects, 'axisSettings', 'axis', defaultSettings.axisSettings.axis),
+      axisColor: getSettingsValue(objects, 'axisSettings', 'axisColor', defaultSettings.axisSettings.axisColor),
+      fontSize: getSettingsValue(objects, 'axisSettings', 'fontSize', defaultSettings.axisSettings.fontSize),
+      fontFamily: getSettingsValue(objects, 'axisSettings', 'fontFamily', defaultSettings.axisSettings.fontFamily),
+      bold: getSettingsValue(objects, 'axisSettings', 'bold', defaultSettings.axisSettings.bold),
+      dateFormat: getSettingsValue(objects, 'axisSettings', 'dateFormat', defaultSettings.axisSettings.dateFormat),
+      manualScale: getSettingsValue(objects, 'axisSettings', 'manualScale', defaultSettings.axisSettings.manualScale),
+      barMin: getSettingsValue(objects, 'axisSettings', 'barMin', defaultSettings.axisSettings.barMin),
+      barMax: getSettingsValue(objects, 'axisSettings', 'barMax', defaultSettings.axisSettings.barMax),
+      customJS: getSettingsValue(objects, 'axisSettings', 'customJS', defaultSettings.axisSettings.customJS),
+      manualScalePixel: getSettingsValue(objects, 'axisSettings', 'manualScalePixel', defaultSettings.axisSettings.manualScalePixel),
+      customPixel: getSettingsValue(objects, 'axisSettings', 'customPixel', defaultSettings.axisSettings.customPixel)
 
     },
     style: {
-      timelineStyle: getValue(objects, 'style', 'timelineStyle', defaultSettings.style.timelineStyle),
-      lineColor: getValue(objects, 'style', 'lineColor', defaultSettings.style.lineColor),
-      lineThickness: getValue(objects, 'style', 'lineThickness', defaultSettings.style.lineThickness),
-      minimalistStyle: getValue(objects, 'style', 'minimalistStyle', defaultSettings.style.minimalistStyle),
-      minimalistAxis: getValue(objects, 'style', 'minimalistAxis', defaultSettings.style.minimalistAxis),
-      minimalistConnect: getValue(objects, 'style', 'minimalistConnect', defaultSettings.style.minimalistConnect),
-      iconsColor: getValue(objects, 'style', 'iconsColor', defaultSettings.style.iconsColor),
-      connectColor: getValue(objects, 'style', 'connectColor', defaultSettings.style.connectColor),
-      minimalistSize: getValue(objects, 'style', 'minimalistSize', defaultSettings.style.minimalistSize),
-      barColor: getValue(objects, 'style', 'barColor', defaultSettings.style.barColor),
-      barHeight: getValue(objects, 'style', 'barHeight', defaultSettings.style.barHeight),
-      today: getValue(objects, 'style', 'today', defaultSettings.style.today),
-      todayTop: getValue(objects, 'style', 'todayTop', defaultSettings.style.todayTop),
-      todayColor: getValue(objects, 'style', 'todayColor', defaultSettings.style.todayColor)
+      timelineStyle: getSettingsValue(objects, 'style', 'timelineStyle', defaultSettings.style.timelineStyle),
+      lineColor: getSettingsValue(objects, 'style', 'lineColor', defaultSettings.style.lineColor),
+      lineThickness: getSettingsValue(objects, 'style', 'lineThickness', defaultSettings.style.lineThickness),
+      minimalistStyle: getSettingsValue(objects, 'style', 'minimalistStyle', defaultSettings.style.minimalistStyle),
+      minimalistAxis: getSettingsValue(objects, 'style', 'minimalistAxis', defaultSettings.style.minimalistAxis),
+      minimalistConnect: getSettingsValue(objects, 'style', 'minimalistConnect', defaultSettings.style.minimalistConnect),
+      iconsColor: getSettingsValue(objects, 'style', 'iconsColor', defaultSettings.style.iconsColor),
+      connectColor: getSettingsValue(objects, 'style', 'connectColor', defaultSettings.style.connectColor),
+      minimalistSize: getSettingsValue(objects, 'style', 'minimalistSize', defaultSettings.style.minimalistSize),
+      barColor: getSettingsValue(objects, 'style', 'barColor', defaultSettings.style.barColor),
+      barHeight: getSettingsValue(objects, 'style', 'barHeight', defaultSettings.style.barHeight),
+      today: getSettingsValue(objects, 'style', 'today', defaultSettings.style.today),
+      todayTop: getSettingsValue(objects, 'style', 'todayTop', defaultSettings.style.todayTop),
+      todayColor: getSettingsValue(objects, 'style', 'todayColor', defaultSettings.style.todayColor)
     },
     imageSettings: {
-      imagesHeight: getValue(objects, 'imageSettings', 'imagesHeight', defaultSettings.imageSettings.imagesHeight),
-      imagesWidth: getValue(objects, 'imageSettings', 'imagesWidth', defaultSettings.imageSettings.imagesWidth),
-      style: getValue(objects, 'imageSettings', 'style', defaultSettings.imageSettings.style)
+      imagesHeight: getSettingsValue(objects, 'imageSettings', 'imagesHeight', defaultSettings.imageSettings.imagesHeight),
+      imagesWidth: getSettingsValue(objects, 'imageSettings', 'imagesWidth', defaultSettings.imageSettings.imagesWidth),
+      style: getSettingsValue(objects, 'imageSettings', 'style', defaultSettings.imageSettings.style)
     }
   }
   return {
@@ -2096,15 +2097,22 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
   };
 }
 
-export function getValue(objects, objectName, propertyName, defaultValue) {
+
+/** Gets the settings value 
+ * @param objects The powerbi.DataViewObjects
+ * @param sectionKey The name/key of the parent settings section
+ * @param settingKey The name/key of the specific setting in the parent section
+ * @param defaultValue The defualt value for this setting
+*/
+export function getSettingsValue(objects: powerbi.DataViewObjects, sectionKey: string, settingKey: string, defaultValue: string | number | boolean | object) {
 
   //gets settings from global attributes in property pane.
   if (objects) {
-    let object = objects[objectName];
+    let object = objects[sectionKey];
 
     if (object) {
 
-      let property = object[propertyName];
+      let property = object[settingKey];
       if (property !== undefined) {
 
         return property;
@@ -2113,6 +2121,8 @@ export function getValue(objects, objectName, propertyName, defaultValue) {
   }
   return defaultValue;
 }
+
+
 export function getCategoricalObjectValue(category, index, objectName, propertyName, defaultValue) {
 
   let categoryObjects = category.objects
