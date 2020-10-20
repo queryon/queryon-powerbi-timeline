@@ -58,7 +58,7 @@ export class Visual implements IVisual {
   private selectionIdBuilder: ISelectionIdBuilder
   private selectionManager: ISelectionManager
   private tooltipServiceWrapper: ITooltipServiceWrapper;
-  private imagesWidth: number;
+  //private imagesWidth: number; // is this.imageSettings.imagesWidth
   private fontHeightLib: any;
   private spacing: any;
 
@@ -121,7 +121,7 @@ export class Visual implements IVisual {
     let filteredWithImage = filteredData.filter(el => el.image)
     //increment padding based on image
     if (filteredWithImage.length > 0 && this.styleSettings.timelineStyle !== "minimalist") {
-      let dynamicPadding = Math.max(this.padding, this.imagesWidth / 2)
+      let dynamicPadding = Math.max(this.padding, this.imageSettings.imagesWidth / 2)
       this.padding = dynamicPadding
     }
 
@@ -137,35 +137,19 @@ export class Visual implements IVisual {
     }
   }
 
-
-  public update(options: VisualUpdateOptions) {
-    this.viewModel = generateViewModel(options, this.host)
-    this.setEmptyCanvas();
-
-    let data = this.viewModel.dataPoints
-
-    //min label width from annotation plugin
-    if (this.textSettings.wrap < 90) {
-      this.textSettings.wrap = 90
+   private getAdditionalMargin() {
+    //stablish image margin addition 
+    if (this.imageSettings.style == "alternate") {
+      return (this.imageSettings.imagesHeight * 2) + 20
+    } else if (this.imageSettings.style == "straight") {
+      return this.imageSettings.imagesHeight + 20
     }
+  }
 
-    if(data.length > 100 && this.styleSettings.timelineStyle !== "minimalist"){
-      this.svg.attr("width", options.viewport.width -4)
-      this.svg.attr("height", options.viewport.height - 4)
-
-      this.container.append("text")
-      .text("Dataset is too large. Waterfall Style is recommended.")
-      .attr("y", 20)
-      .attr("width", this.width)
-      return
-    }
-
+  /** Determines the Min & Max date values for the timeline */
+  private setDateRange(data: DataPoint[]) {
     let minFromData = d3.min(data, function (d: any) { return d.date })
     let maxFromData = d3.max(data, function (d: any) { return d.date })
-
-    let imagesHeight = this.imageSettings.imagesHeight
-    this.imagesWidth = this.imageSettings.imagesWidth
-    let spacing = 0
 
     if (this.axisSettings.manualScale) {
       if (this.axisSettings.barMin && this.axisSettings.barMin != "") {
@@ -195,6 +179,34 @@ export class Visual implements IVisual {
       this.axisSettings.barMin = '';
       this.axisSettings.barMax = '';
     }
+  }
+
+
+  public update(options: VisualUpdateOptions) {
+    this.viewModel = generateViewModel(options, this.host)
+    this.setEmptyCanvas();
+
+    let data = this.viewModel.dataPoints
+
+    //min label width from annotation plugin
+    if (this.textSettings.wrap < 90) {
+      this.textSettings.wrap = 90
+    }
+
+    if(data.length > 100 && this.styleSettings.timelineStyle !== "minimalist"){
+      this.svg.attr("width", options.viewport.width -4)
+      this.svg.attr("height", options.viewport.height - 4)
+
+      this.container.append("text")
+      .text("Dataset is too large. Waterfall Style is recommended.")
+      .attr("y", 20)
+      .attr("width", this.width)
+      return
+    }
+
+    this.setDateRange(data);
+
+    let spacing = 0
 
     if (!this.axisSettings.manualScalePixel || !this.axisSettings.customPixel || isNaN(this.axisSettings.customPixel)) {
       this.width = options.viewport.width - 20;
@@ -245,13 +257,7 @@ export class Visual implements IVisual {
       filteredData = data.filter(element => element.date >= this.minVal && element.date <= this.maxVal)
     }
 
-    //stablish image margin addition 
-    let addToMargin = 0
-    if (this.imageSettings.style == "alternate") {
-      addToMargin = (imagesHeight * 2) + 20
-    } else if (this.imageSettings.style == "straight") {
-      addToMargin = imagesHeight + 20
-    }
+    let addToMargin = this.getAdditionalMargin();
 
     let maxOffsetTop = 0, maxOffsetBottom = 0, ICSevents = []
 
@@ -281,7 +287,7 @@ export class Visual implements IVisual {
 
       //increment image height on staggered image view
       if (dataPoint.image && (this.imageSettings.style == "default")) {// || this.imageSettings.style == "image")) {
-        dataPoint["textHeight"] += (imagesHeight + 2)
+        dataPoint["textHeight"] += (this.imageSettings.imagesHeight + 2)
 
       }
 
@@ -384,7 +390,7 @@ export class Visual implements IVisual {
 
     //increment padding based on image
     if (filteredWithImage.length > 0 && this.styleSettings.timelineStyle !== "minimalist") {
-      let dynamicPadding = Math.max(this.padding, this.imagesWidth / 2)
+      let dynamicPadding = Math.max(this.padding, this.imageSettings.imagesWidth / 2)
       this.padding = dynamicPadding
     }
 
@@ -952,18 +958,18 @@ export class Visual implements IVisual {
 
             switch (this.imageSettings.style) {
               case "default":
-                imageY = !element.top ? (this.finalMarginTop + element.dy) + element.textHeight - imagesHeight : (this.finalMarginTop + element.dy) - element.textHeight - 5
+                imageY = !element.top ? (this.finalMarginTop + element.dy) + element.textHeight - this.imageSettings.imagesHeight : (this.finalMarginTop + element.dy) - element.textHeight - 5
 
 
                 if (this.styleSettings.timelineStyle == "bar" && !element.top) { imageY += this.barHeight }
 
-                if (orientation == "middle") { imageX = element.x - (this.imagesWidth / 2) }
+                if (orientation == "middle") { imageX = element.x - (this.imageSettings.imagesWidth / 2) }
                 else if (orientation == "left") { imageX = element.x }
-                else { imageX = element.x - this.imagesWidth }
+                else { imageX = element.x - this.imageSettings.imagesWidth }
                 break;
 
               case "straight":
-                imageY = element.top ? this.finalMarginTop + 20 : this.finalMarginTop - 20 - imagesHeight
+                imageY = element.top ? this.finalMarginTop + 20 : this.finalMarginTop - 20 - this.imageSettings.imagesHeight
 
                 if (this.styleSettings.timelineStyle == "bar" && element.top) { imageY += this.barHeight }
                 break;
@@ -980,7 +986,7 @@ export class Visual implements IVisual {
                   imageY += 35
                 }
                 if (imgCounter % 2 == 0) {
-                  imageY += imagesHeight
+                  imageY += this.imageSettings.imagesHeight
                 }
 
                 if (this.styleSettings.timelineStyle == "bar" && element.top) { imageY += this.barHeight }
@@ -990,7 +996,7 @@ export class Visual implements IVisual {
             }
 
 
-            imageX = !imageX ? element.x - (this.imagesWidth / 2) : imageX
+            imageX = !imageX ? element.x - (this.imageSettings.imagesWidth / 2) : imageX
 
 
             if (this.imageSettings.style != "default") {
@@ -1004,15 +1010,15 @@ export class Visual implements IVisual {
                   return result
                 })
                 .attr("x2", element.x)
-                .attr("y2", element.top ? imageY : imageY + imagesHeight)
+                .attr("y2", element.top ? imageY : imageY + this.imageSettings.imagesHeight)
                 .attr("stroke-width", 1)
                 .attr("stroke", element.textColor);
             }
 
             let image = this.container.append('image')
               .attr('xlink:href', element.image)
-              .attr('width', this.imagesWidth)
-              .attr('height', imagesHeight)
+              .attr('width', this.imageSettings.imagesWidth)
+              .attr('height', this.imageSettings.imagesHeight)
               .attr('x', imageX)
               .attr('y', imageY)
 
@@ -1078,7 +1084,7 @@ export class Visual implements IVisual {
       let countTop = 0, countBottom = 0, counter
       let imgCountTop = 0, imgCountBottom = 0, imgCounter
 
-      finalHeight = filteredWithImage.length > 0 ? this.finalMarginTop + imagesHeight + 30 + spacing : this.finalMarginTop + 30 + spacing
+      finalHeight = filteredWithImage.length > 0 ? this.finalMarginTop + this.imageSettings.imagesHeight + 30 + spacing : this.finalMarginTop + 30 + spacing
 
       if (downloadBottom) {
         finalHeight += 35
@@ -1101,7 +1107,7 @@ export class Visual implements IVisual {
 
 
         element["x"] = i == 0 ? this.padding : this.padding + ((this.textSettings.wrap + 10) * i)
-        element["dy"] = imagesHeight / 2 + 10
+        element["dy"] = this.imageSettings.imagesHeight / 2 + 10
         orientation = "left"
 
 
@@ -1172,7 +1178,7 @@ export class Visual implements IVisual {
             bgPadding: 0
           },
           x: element["x"],
-          y: element.image ? this.finalMarginTop + imagesHeight : this.finalMarginTop,
+          y: element.image ? this.finalMarginTop + this.imageSettings.imagesHeight : this.finalMarginTop,
           dy: 30,
           color: element.textColor,
           id: element.selectionId
@@ -1208,8 +1214,8 @@ export class Visual implements IVisual {
 
           let image = this.container.append('image')
             .attr('xlink:href', element.image)
-            .attr('width', this.imagesWidth)
-            .attr('height', imagesHeight)
+            .attr('width', this.imageSettings.imagesWidth)
+            .attr('height', this.imageSettings.imagesHeight)
             .attr('x', imageX)
             // .attr('x', element.labelOrientation !== "middle" ? element.x : element.x - (imagesWidth / 2))
             .attr('y', imageY)
