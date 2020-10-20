@@ -100,10 +100,9 @@ export class Visual implements IVisual {
     this.spacing = false
   }
 
-
-  public update(options: VisualUpdateOptions) {
-    this.viewModel = generateViewModel(options, this.host)
-    //set empty canva
+  // Douglas 2020-10-20: Unknown what the purpose of this is, just refactored it out of update()
+  /** Empties the canvas to remove lingering elements */
+  private setEmptyCanvas(){
     this.container.selectAll("g").remove();
     this.container.selectAll("rect").remove();
     this.container.selectAll("image").remove();
@@ -114,6 +113,13 @@ export class Visual implements IVisual {
     this.container.selectAll("path").remove();
     this.svg.selectAll("clipPath").remove();
     // this.svg.selectAll("defs").remove();
+  }
+
+
+  public update(options: VisualUpdateOptions) {
+    this.viewModel = generateViewModel(options, this.host)
+
+    this.setEmptyCanvas();
 
     this.padding = 15;
 
