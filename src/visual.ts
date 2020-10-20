@@ -205,75 +205,15 @@ export class Visual implements IVisual {
         }
     }
 
-    /** If the data size is too large for the view type, this notified the user 
-     * @returns True if the size is too large. False if it's fine.
-    */
-    private validateDataSizeConstraints(data: DataPoint[], options: VisualUpdateOptions) {
-        if (data.length > 100 && this.styleSettings.timelineStyle !== "minimalist") {
-            this.svg.attr("width", options.viewport.width - 4)
-            this.svg.attr("height", options.viewport.height - 4)
-
-            this.container
-                .append("text")
-                .text("Dataset is too large. Waterfall Style is recommended.")
-                .attr("y", 20)
-                .attr("width", this.width);
-
-            return true;
-        }
-
-        return false;
-    }
-
-    /** Sets the defalt global values, executed on every update() call */
-    private setDefaultGlobals() {
-        this.marginTop = this.defaultMarginTop;
-        this.padding = this.defaultPadding
-    }
+    private filterAndProcessData(data: DataPoint[], dateValueFormatter: any, addToMargin: number) {
+        const textSize = this.textSettings.textSize;
+        const fontFamily = this.textSettings.fontFamily;
+        const iconsColor = this.styleSettings.iconsColor.solid.color;
+        const top = this.textSettings.top;
+        const labelOrientation = this.textSettings.labelOrientation;
+        const annotationStyle = this.textSettings.annotationStyle;
 
 
-    public update(options: VisualUpdateOptions) {
-        this.viewModel = generateViewModel(options, this.host)
-        const data = this.viewModel.dataPoints
-
-        if(this.validateDataSizeConstraints(data, options)) return; // Short circuit if data size is too large for view type
-
-        this.setEmptyCanvas();
-        this.setDefaultGlobals();
-        this.setDateRange(this.viewModel.dataPoints); // Set the date range of the timeline based on the data
-
-        let spacing = 0
-        const dateValueFormatter = this.createDateFormatter(options);
-
-        //min label width from annotation plugin
-        if (this.textSettings.wrap < 90) {
-            this.textSettings.wrap = 90
-        }
-
-        if (!this.axisSettings.manualScalePixel || !this.axisSettings.customPixel || isNaN(this.axisSettings.customPixel)) {
-            this.width = options.viewport.width - 20;
-        } else {
-            this.width = this.axisSettings.customPixel
-        }
-
-        this.height = options.viewport.height;
-        this.barHeight = this.styleSettings.barHeight;
-        let marginTopStagger = 20;
-        let svgHeightTracking, finalHeight, needScroll = false;
-
-        //Parse global formats
-        let textSize = this.textSettings.textSize,
-            fontFamily = this.textSettings.fontFamily,
-            textColor = this.textSettings.textColor.solid.color,
-            iconsColor = this.styleSettings.iconsColor.solid.color,
-            top = this.textSettings.top,
-            labelOrientation = this.textSettings.labelOrientation,
-            annotationStyle = this.textSettings.annotationStyle
-
-        //sort so staggering works in right order
-        // data = data.sort((a, b) => (a.date > b.date) ? 1 : -1)
-
-        //let filteredData: DataPoint[];
         let filteredData;
 
         //filter data out of axis range, reverse order if axis is in decremental order
@@ -284,14 +224,15 @@ export class Visual implements IVisual {
             filteredData = data.filter(element => element.date >= this.minVal && element.date <= this.maxVal)
         }
 
-        let addToMargin = this.getAdditionalMargin();
-
-        let maxOffsetTop = 0, maxOffsetBottom = 0, ICSevents = []
+        let spacing = 0;
+        let maxOffsetTop = 0;
+        let maxOffsetBottom = 0;
+        let ICSevents = [];
 
         filteredData.forEach((dataPoint, i) => {
             dataPoint["formatted"] = dateValueFormatter.format(dataPoint["date"])
             dataPoint["labelText"] = this.styleSettings.timelineStyle != "image" ? `${dataPoint["formatted"]}${this.textSettings.separator} ${dataPoint["label"]}` : dataPoint["label"]
-            dataPoint["textColor"] = dataPoint.customFormat ? dataPoint.textColor : textColor
+            dataPoint["textColor"] = dataPoint.customFormat ? dataPoint.textColor : textSize
             dataPoint["iconColor"] = dataPoint.customFormat ? dataPoint.iconColor : iconsColor
             dataPoint["fontFamily"] = dataPoint.customFormat ? dataPoint.fontFamily : fontFamily
             dataPoint["textSize"] = dataPoint.customFormat ? dataPoint.textSize : textSize
@@ -354,8 +295,82 @@ export class Visual implements IVisual {
                 spacing = Math.max(itemHeight, spacing)
             }
 
-        })
+        });
 
+        return {
+            filteredData: filteredData,
+            spacing: spacing,
+            maxOffsetTop: maxOffsetTop,
+            maxOffsetBottom: maxOffsetBottom,
+            ICSevents: ICSevents
+        }
+    }
+
+    /** If the data size is too large for the view type, this notified the user 
+     * @returns True if the size is too large. False if it's fine.
+    */
+    private validateDataSizeConstraints(data: DataPoint[], options: VisualUpdateOptions) {
+        if (data.length > 100 && this.styleSettings.timelineStyle !== "minimalist") {
+            this.svg.attr("width", options.viewport.width - 4)
+            this.svg.attr("height", options.viewport.height - 4)
+
+            this.container
+                .append("text")
+                .text("Dataset is too large. Waterfall Style is recommended.")
+                .attr("y", 20)
+                .attr("width", this.width);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /** Sets the defalt global values, executed on every update() call */
+    private setDefaultGlobals() {
+        this.marginTop = this.defaultMarginTop;
+        this.padding = this.defaultPadding
+    }
+
+
+    public update(options: VisualUpdateOptions) {
+        this.viewModel = generateViewModel(options, this.host)
+        const data = this.viewModel.dataPoints
+
+        if(this.validateDataSizeConstraints(data, options)) return; // Short circuit if data size is too large for view type
+
+        this.setEmptyCanvas();
+        this.setDefaultGlobals();
+        this.setDateRange(this.viewModel.dataPoints); // Set the date range of the timeline based on the data
+
+        const addToMargin = this.getAdditionalMargin();
+        const dateValueFormatter = this.createDateFormatter(options);
+        const processedDataResults = this.filterAndProcessData(data, dateValueFormatter, addToMargin);
+
+        const filteredData = processedDataResults.filteredData;
+        let spacing = processedDataResults.spacing;
+        const maxOffsetTop = processedDataResults.maxOffsetTop;
+        const maxOffsetBottom = processedDataResults.maxOffsetBottom;
+        const ICSevents = processedDataResults.ICSevents;
+
+        //min label width from annotation plugin
+        if (this.textSettings.wrap < 90) {
+            this.textSettings.wrap = 90
+        }
+
+        if (!this.axisSettings.manualScalePixel || !this.axisSettings.customPixel || isNaN(this.axisSettings.customPixel)) {
+            this.width = options.viewport.width - 20;
+        } else {
+            this.width = this.axisSettings.customPixel
+        }
+
+        this.height = options.viewport.height;
+        this.barHeight = this.styleSettings.barHeight;
+        let marginTopStagger = 20;
+        let svgHeightTracking, finalHeight, needScroll = false;
+
+        //sort so staggering works in right order
+        // data = data.sort((a, b) => (a.date > b.date) ? 1 : -1)
 
         if (this.textSettings.annotationStyle === 'annotationCallout' || this.textSettings.annotationStyle === 'annotationCalloutCurve') {
             //annotation styles that add to text height, increment spacing
