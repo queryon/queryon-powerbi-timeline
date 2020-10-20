@@ -207,6 +207,7 @@ export class Visual implements IVisual {
 
     private filterAndProcessData(data: DataPoint[], dateValueFormatter: any, addToMargin: number) {
         const textSize = this.textSettings.textSize;
+        const textColor = this.textSettings.textColor.solid.color;
         const fontFamily = this.textSettings.fontFamily;
         const iconsColor = this.styleSettings.iconsColor.solid.color;
         const top = this.textSettings.top;
@@ -214,7 +215,7 @@ export class Visual implements IVisual {
         const annotationStyle = this.textSettings.annotationStyle;
 
 
-        let filteredData;
+        let filteredData: DataPoint[];
 
         //filter data out of axis range, reverse order if axis is in decremental order
         if (this.minVal > this.maxVal) {
@@ -232,7 +233,7 @@ export class Visual implements IVisual {
         filteredData.forEach((dataPoint, i) => {
             dataPoint["formatted"] = dateValueFormatter.format(dataPoint["date"])
             dataPoint["labelText"] = this.styleSettings.timelineStyle != "image" ? `${dataPoint["formatted"]}${this.textSettings.separator} ${dataPoint["label"]}` : dataPoint["label"]
-            dataPoint["textColor"] = dataPoint.customFormat ? dataPoint.textColor : textSize
+            dataPoint["textColor"] = dataPoint.customFormat ? dataPoint.textColor : textColor
             dataPoint["iconColor"] = dataPoint.customFormat ? dataPoint.iconColor : iconsColor
             dataPoint["fontFamily"] = dataPoint.customFormat ? dataPoint.fontFamily : fontFamily
             dataPoint["textSize"] = dataPoint.customFormat ? dataPoint.textSize : textSize
