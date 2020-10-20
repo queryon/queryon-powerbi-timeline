@@ -40,8 +40,10 @@ type Selection<T extends d3.BaseType> = d3.Selection<T, any, any, any>;
 
 export class Visual implements IVisual {
 
-    private defaultPadding = 15; // Extracted implicitly from use
-    private maxPadding = 30; // Extacted implicitly from use
+    private readonly defaultPadding = 15; // Extracted implicitly from use
+    private readonly maxPadding = 30; // Extracted implicitly from use
+
+    private readonly defaultMarginTop = 10; // Extracted implicitly from use
 
     private host: IVisualHost;
     private svg: Selection<SVGElement>;
@@ -50,7 +52,7 @@ export class Visual implements IVisual {
     private width: number;
     private height: number;
     private barHeight: number;
-    private marginTop: number;
+    private marginTop: number = 10;
     private finalMarginTop: number;
     private minVal: any;
     private maxVal: any;
@@ -61,6 +63,12 @@ export class Visual implements IVisual {
     //private imagesWidth: number; // is this.imageSettings.imagesWidth
     private fontHeightLib: any;
     private spacing: any;
+
+    // Filled in when processing filtered data
+    private maxOffsetTop = 0;
+    private maxOffsetBottom = 0;
+    private ICSevents = [];
+
 
     /* Settings Getters for cleaner and less verbose code */
     get settings(): Settings {
@@ -117,10 +125,9 @@ export class Visual implements IVisual {
         // this.svg.selectAll("defs").remove();
     }
 
-    private setPadding(filteredData: DataPoint[]) {
-        let filteredWithImage = filteredData.filter(el => el.image)
+    private setPadding(filteredDataWithImage: DataPoint[]) {
         //increment padding based on image
-        if (filteredWithImage.length > 0 && this.styleSettings.timelineStyle !== "minimalist") {
+        if (filteredDataWithImage.length > 0 && this.styleSettings.timelineStyle !== "minimalist") {
             let dynamicPadding = Math.max(this.padding, this.imageSettings.imagesWidth / 2)
             this.padding = dynamicPadding
         }
@@ -144,6 +151,23 @@ export class Visual implements IVisual {
         } else if (this.imageSettings.style == "straight") {
             return this.imageSettings.imagesHeight + 20
         }
+    }
+
+    /** Determines the Date format and generated a formatter for it */
+    private createDateFormatter(options: VisualUpdateOptions) {
+        let format;
+        if (this.textSettings.dateFormat === "same") {
+            options.dataViews[0].categorical.categories.forEach(category => {
+                let categoryName = Object.keys(category.source.roles)[0];
+                if (categoryName == "date") {
+                    format = category.source.format;
+                }
+            })
+        } else {
+            format = this.textSettings.dateFormat != "customJS" ? this.textSettings.dateFormat : this.textSettings.customJS;
+        }
+
+        return createFormatter(format);
     }
 
     /** Determines the Min & Max date values for the timeline */
@@ -181,32 +205,50 @@ export class Visual implements IVisual {
         }
     }
 
+    /** If the data size is too large for the view type, this notified the user 
+     * @returns True if the size is too large. False if it's fine.
+    */
+    private validateDataSizeConstraints(data: DataPoint[], options: VisualUpdateOptions) {
+        if (data.length > 100 && this.styleSettings.timelineStyle !== "minimalist") {
+            this.svg.attr("width", options.viewport.width - 4)
+            this.svg.attr("height", options.viewport.height - 4)
+
+            this.container
+                .append("text")
+                .text("Dataset is too large. Waterfall Style is recommended.")
+                .attr("y", 20)
+                .attr("width", this.width);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /** Sets the defalt global values, executed on every update() call */
+    private setDefaultGlobals() {
+        this.marginTop = this.defaultMarginTop;
+        this.padding = this.defaultPadding
+    }
+
 
     public update(options: VisualUpdateOptions) {
         this.viewModel = generateViewModel(options, this.host)
-        this.setEmptyCanvas();
+        const data = this.viewModel.dataPoints
 
-        let data = this.viewModel.dataPoints
+        if(this.validateDataSizeConstraints(data, options)) return; // Short circuit if data size is too large for view type
+
+        this.setEmptyCanvas();
+        this.setDefaultGlobals();
+        this.setDateRange(this.viewModel.dataPoints); // Set the date range of the timeline based on the data
+
+        let spacing = 0
+        const dateValueFormatter = this.createDateFormatter(options);
 
         //min label width from annotation plugin
         if (this.textSettings.wrap < 90) {
             this.textSettings.wrap = 90
         }
-
-        if (data.length > 100 && this.styleSettings.timelineStyle !== "minimalist") {
-            this.svg.attr("width", options.viewport.width - 4)
-            this.svg.attr("height", options.viewport.height - 4)
-
-            this.container.append("text")
-                .text("Dataset is too large. Waterfall Style is recommended.")
-                .attr("y", 20)
-                .attr("width", this.width)
-            return
-        }
-
-        this.setDateRange(data);
-
-        let spacing = 0
 
         if (!this.axisSettings.manualScalePixel || !this.axisSettings.customPixel || isNaN(this.axisSettings.customPixel)) {
             this.width = options.viewport.width - 20;
@@ -215,7 +257,6 @@ export class Visual implements IVisual {
         }
 
         this.height = options.viewport.height;
-        this.marginTop = 10;
         this.barHeight = this.styleSettings.barHeight;
         let marginTopStagger = 20;
         let svgHeightTracking, finalHeight, needScroll = false;
@@ -228,20 +269,6 @@ export class Visual implements IVisual {
             top = this.textSettings.top,
             labelOrientation = this.textSettings.labelOrientation,
             annotationStyle = this.textSettings.annotationStyle
-
-        //date formatting
-        let format, valueFormatter
-        if (this.textSettings.dateFormat === "same") {
-            options.dataViews[0].categorical.categories.forEach(category => {
-                let categoryName = Object.keys(category.source.roles)[0]
-                if (categoryName == "date") {
-                    format = category.source.format
-                }
-            })
-        } else {
-            format = this.textSettings.dateFormat != "customJS" ? this.textSettings.dateFormat : this.textSettings.customJS
-        }
-        valueFormatter = createFormatter(format);
 
         //sort so staggering works in right order
         // data = data.sort((a, b) => (a.date > b.date) ? 1 : -1)
@@ -262,7 +289,7 @@ export class Visual implements IVisual {
         let maxOffsetTop = 0, maxOffsetBottom = 0, ICSevents = []
 
         filteredData.forEach((dataPoint, i) => {
-            dataPoint["formatted"] = valueFormatter.format(dataPoint["date"])
+            dataPoint["formatted"] = dateValueFormatter.format(dataPoint["date"])
             dataPoint["labelText"] = this.styleSettings.timelineStyle != "image" ? `${dataPoint["formatted"]}${this.textSettings.separator} ${dataPoint["label"]}` : dataPoint["label"]
             dataPoint["textColor"] = dataPoint.customFormat ? dataPoint.textColor : textColor
             dataPoint["iconColor"] = dataPoint.customFormat ? dataPoint.iconColor : iconsColor
@@ -384,7 +411,7 @@ export class Visual implements IVisual {
 
         //axis format
         let axisFormat = this.axisSettings.dateFormat != "customJS" ? this.axisSettings.dateFormat : this.axisSettings.customJS
-        let axisValueFormatter = axisFormat == "same" ? valueFormatter : createFormatter(axisFormat);
+        let axisValueFormatter = axisFormat == "same" ? dateValueFormatter : createFormatter(axisFormat);
 
         let filteredWithImage = filteredData.filter(el => el.image)
 
@@ -2086,6 +2113,7 @@ export function getCategoricalObjectValue(
 
 
 declare function require(name: string);
+
 
 function createFormatter(format, precision?: any, value?: number) {
     let valueFormatter = {}
