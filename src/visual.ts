@@ -40,10 +40,13 @@ type Selection<T extends d3.BaseType> = d3.Selection<T, any, any, any>;
 
 export class Visual implements IVisual {
 
+  private defaultPadding = 15; // Extracted implicitly from use
+  private maxPadding = 30; // Extacted implicitly from use
+
   private host: IVisualHost;
   private svg: Selection<SVGElement>;
   private container: Selection<SVGElement>;
-  private padding: number;
+  private padding: number = this.defaultPadding;
   private width: number;
   private height: number;
   private barHeight: number;
@@ -89,7 +92,6 @@ export class Visual implements IVisual {
     this.svg = d3.select(options.element)
       .append('svg')
     this.container = this.svg.append("g")
-    this.padding = 15;
     this.host = options.host
     this.selectionIdBuilder = this.host.createSelectionIdBuilder();
     this.selectionManager = this.host.createSelectionManager();
@@ -115,13 +117,30 @@ export class Visual implements IVisual {
     // this.svg.selectAll("defs").remove();
   }
 
+  private setPadding(filteredData: DataPoint[]) {
+    let filteredWithImage = filteredData.filter(el => el.image)
+    //increment padding based on image
+    if (filteredWithImage.length > 0 && this.styleSettings.timelineStyle !== "minimalist") {
+      let dynamicPadding = Math.max(this.padding, this.imagesWidth / 2)
+      this.padding = dynamicPadding
+    }
+
+    //increment padding based on values on axis
+    if (this.axisSettings.axis === "Values" || this.styleSettings.timelineStyle == "minimalist") {
+      let dynamicPadding = Math.max(this.padding, this.maxPadding)
+      this.padding = dynamicPadding
+    }
+
+    //increment padding in case scroll bar 
+    if (this.finalMarginTop > this.height) {
+      this.padding = Math.max(this.padding, this.maxPadding)
+    }
+  }
+
 
   public update(options: VisualUpdateOptions) {
     this.viewModel = generateViewModel(options, this.host)
-
     this.setEmptyCanvas();
-
-    this.padding = 15;
 
     let data = this.viewModel.dataPoints
 
@@ -215,7 +234,8 @@ export class Visual implements IVisual {
     //sort so staggering works in right order
     // data = data.sort((a, b) => (a.date > b.date) ? 1 : -1)
 
-    let filteredData
+    //let filteredData: DataPoint[];
+    let filteredData;
 
     //filter data out of axis range, reverse order if axis is in decremental order
     if (this.minVal > this.maxVal) {
@@ -370,13 +390,13 @@ export class Visual implements IVisual {
 
     //increment padding based on values on axis
     if (this.axisSettings.axis === "Values" || this.styleSettings.timelineStyle == "minimalist") {
-      let dynamicPadding = Math.max(this.padding, 30)
+      let dynamicPadding = Math.max(this.padding, this.maxPadding)
       this.padding = dynamicPadding
     }
 
     //increment padding in case scroll bar 
     if (this.finalMarginTop > this.height) {
-      this.padding = Math.max(this.padding, 30)
+      this.padding = Math.max(this.padding, this.maxPadding)
     }
 
     let scale = d3.scaleTime()
@@ -1053,7 +1073,7 @@ export class Visual implements IVisual {
       }
     }
     else { //image focus config:    
-      this.padding = 15
+      this.padding = this.defaultPadding;
       let annotationsData, makeAnnotations, dateStyle, dateType, datesData, makeDates
       let countTop = 0, countBottom = 0, counter
       let imgCountTop = 0, imgCountBottom = 0, imgCounter
