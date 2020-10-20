@@ -142,8 +142,8 @@ export class Visual implements IVisual {
       this.minVal = minFromData
       this.maxVal = maxFromData
 
-      this.viewModel.settings.axisSettings.barMin = false;
-      this.viewModel.settings.axisSettings.barMax = false;
+      this.viewModel.settings.axisSettings.barMin = '';
+      this.viewModel.settings.axisSettings.barMax = '';
     }
 
     if (!this.viewModel.settings.axisSettings.manualScalePixel || !this.viewModel.settings.axisSettings.customPixel || isNaN(this.viewModel.settings.axisSettings.customPixel)) {

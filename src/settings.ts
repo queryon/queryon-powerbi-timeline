@@ -56,7 +56,7 @@ export class DownloadSettings extends SettingBase {
 export class TextSettings extends SettingBase {
     public stagger: boolean = true;
     public autoStagger: boolean =  true;
-    public spacing: boolean =  false;
+    public spacing: number =  0;
     public separator: string = ":";
     public boldTitles: boolean =  false;
     public annotationStyle: string =  "annotationLabel";
@@ -85,7 +85,7 @@ export class AxisSettings extends SettingBase {
     public bold: boolean = false;
     public barMin: string = "";
     public barMax: string = "";
-    public customPixel: string = "";
+    public customPixel: number = 0;
     public customJS: string = "MM/dd/yyyy"
 
     public static FromViewObjects(objects?: powerbi.DataViewObjects) : AxisSettings {
