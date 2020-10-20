@@ -30,6 +30,12 @@ import { color, text, timeThursday } from "d3";
 // import { image } from "d3";
 
 
+
+import { ViewModel } from '@/interfaces';
+import { Settings } from "./settings";
+import { DataPoint } from "./dataPoint";
+
+
 type Selection<T extends d3.BaseType> = d3.Selection<T, any, any, any>;
 
 export class Visual implements IVisual {
@@ -45,7 +51,7 @@ export class Visual implements IVisual {
   private finalMarginTop: number;
   private minVal: any;
   private maxVal: any;
-  private viewModel: any;
+  private viewModel: ViewModel;
   private selectionIdBuilder: ISelectionIdBuilder
   private selectionManager: ISelectionManager
   private tooltipServiceWrapper: ITooltipServiceWrapper;
@@ -71,7 +77,7 @@ export class Visual implements IVisual {
 
 
   public update(options: VisualUpdateOptions) {
-    this.viewModel = visualTransform(options, this.host)
+    this.viewModel = generateViewModel(options, this.host)
     //set empty canva
     this.container.selectAll("g").remove();
     this.container.selectAll("rect").remove();
@@ -1885,216 +1891,80 @@ export class Visual implements IVisual {
 
 }
 
-function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
-  let dataViews = options.dataViews;
-
-  let defaultSettings = {
-    download: {
-      downloadCalendar: false,
-      position: "TOP,LEFT",
-      calendarName: ""
-    },
-    textSettings: {
-      stagger: true,
-      autoStagger: true,
-      spacing: false,
-      separator: ":",
-      boldTitles: false,
-      annotationStyle: "annotationLabel",
-      labelOrientation: "Auto",
-      fontFamily: "Arial",
-      textSize: 12,
-      textColor: { solid: { color: 'Black' } },
-      top: false,
-      dateFormat: "same",
-      customJS: "MM/dd/yyyy",
-      wrap: 400
-    },
-    axisSettings: {
-      axis: "None",
-      dateFormat: "same",
-      manualScale: false,
-      manualScalePixel: false,
-      axisColor: { solid: { color: 'gray' } },
-      fontSize: 12,
-      fontFamily: 'Arial',
-      bold: false,
-      barMin: "",
-      barMax: "",
-      customPixel: "",
-      customJS: "MM/dd/yyyy"
-
-    },
-    style: {
-      timelineStyle: "line",
-      lineColor: { solid: { color: 'black' } },
-      lineThickness: 2,
-      minimalistStyle: "circle",
-      minimalistAxis: "bottom",
-      iconsColor: { solid: { color: 'black' } },
-      minimalistConnect: false,
-      connectColor: { solid: { color: 'gray' } },
-      minimalistSize: 2,
-      barColor: { solid: { color: 'rgb(186,215,57)' } },
-      barHeight: 30,
-      today: false,
-      todayTop: true,
-      todayColor: { solid: { color: 'red' } }
-    },
-    imageSettings: {
-      imagesHeight: 100,
-      imagesWidth: 100,
-      style: 'straight'
-    }
-  };
-
-  let viewModel = {
+function generateViewModel(options: VisualUpdateOptions, host: IVisualHost) {
+  const dataViews = options.dataViews;
+  const dataObjects = dataViews[0].metadata.objects;
+  const viewModel: ViewModel = {
     dataPoints: [],
-    settings: defaultSettings
+    settings: new Settings(dataObjects)
   };
 
-  let timelineDataPoints = []
-
-  let dataView: DataView = options.dataViews[0];
-  let objects = dataViews[0].metadata.objects;
-
-  let categorical = dataViews[0].categorical;
-  let labelData, imageData, dateData, linkData, descriptionData, labelColumn, imageColumn, dateColumn, linkColumn, descriptionColumn, category
-
-
-  //parse data
-  if (!dataViews
-    || !dataViews[0]
-    || !dataViews[0].categorical
-  ) {
+  // If no data views, return early
+  if (!dataViews || !dataViews[0] || !dataViews[0].categorical) {
     return viewModel;
   }
 
-  let categoricalData = {}
+  let categoricalData: Record<string, powerbi.DataViewCategoryColumn> = {}
 
   dataViews[0].categorical.categories.forEach(category => {
     let categoryName = Object.keys(category.source.roles)[0]
     categoricalData[categoryName] = category
   })
 
-  category = categoricalData["label"]
+  const category = categoricalData["label"]
 
-  labelData = categoricalData["label"].values
-  labelColumn = categoricalData["label"].source.displayName
+  const labelData = categoricalData["label"].values
+  const labelColumn = categoricalData["label"].source.displayName
 
-  dateData = categoricalData["date"].values
-  dateColumn = categoricalData["date"].source.displayName
+  const dateData = categoricalData["date"].values
+  const dateColumn = categoricalData["date"].source.displayName
 
-  linkData = categoricalData["link"] ? categoricalData["link"].values : false
-  linkColumn = categoricalData["link"] ? categoricalData["link"].source.displayName : false
+  const linkData = categoricalData["link"] ? categoricalData["link"].values : false
+  const linkColumn = categoricalData["link"] ? categoricalData["link"].source.displayName : false
 
-  descriptionData = categoricalData["description"] ? categoricalData["description"].values : false
-  descriptionColumn = categoricalData["description"] ? categoricalData["description"].source.displayName : false
+  const descriptionData = categoricalData["description"] ? categoricalData["description"].values : false
+  const descriptionColumn = categoricalData["description"] ? categoricalData["description"].source.displayName : false
 
-  imageData = categoricalData["image_url"] ? categoricalData["image_url"].values : false
-  imageColumn = categoricalData["image_url"] ? categoricalData["image_url"].source.displayName : false
+  const imageData = categoricalData["image_url"] ? categoricalData["image_url"].values : false
+  const imageColumn = categoricalData["image_url"] ? categoricalData["image_url"].source.displayName : false
 
-  for (let i = 0; i < Math.min(dateData.length, labelData.length); i++) {
-    let element = {}
-    element["label"] = labelData[i] ? labelData[i].replace(/(\r\n|\n|\r)/gm, " ") : ""
-    element["date"] = new Date(dateData[i])
-    element["URL"] = linkData[i] ? linkData[i] : false
-    element["image"] = imageData[i] ? imageData[i] : false
-    element["description"] = descriptionData[i] ? descriptionData[i].replace(/(\r\n|\n|\r)/gm, " ") : ""
-    element["labelColumn"] = labelColumn
-    element["dateColumn"] = dateColumn
-    element["descriptionColumn"] = descriptionColumn
-
-    element["selectionId"] = host.createSelectionIdBuilder()
+  const dataLength = Math.min(dateData.length, labelData.length);
+  for (let i = 0; i < dataLength; i++) {
+    let element: DataPoint = new DataPoint();
+    const selectionId = host.createSelectionIdBuilder()
       .withCategory(category, i)
-      .createSelectionId()
+      .createSelectionId();
 
-    let value = Date.parse(element["date"]);
-    element["dateAsInt"] = value
-    element["customFormat"] = getCategoricalObjectValue(category, i, 'dataPoint', 'customFormat', false)
-    element["fontFamily"] = getCategoricalObjectValue(category, i, 'dataPoint', 'fontFamily', "Arial")
-    element["textSize"] = getCategoricalObjectValue(category, i, 'dataPoint', 'textSize', 12)
-    element["textColor"] = getCategoricalObjectValue(category, i, 'dataPoint', 'textColor', { "solid": { "color": "black" } }).solid.color
-    element["iconColor"] = getCategoricalObjectValue(category, i, 'dataPoint', 'iconColor', { "solid": { "color": "black" } }).solid.color
+    element.label = labelData[i] ? (labelData[i] as string).replace(/(\r\n|\n|\r)/gm, " ") : element.label;
+    element.date = new Date(dateData[i] as any); //any because primitive can be a boolean
+    element.URL = linkData[i] ? linkData[i] : element.URL;
+    element.image = imageData[i] ? imageData[i] : element.image;
+    element.description = descriptionData[i] ? descriptionData[i].replace(/(\r\n|\n|\r)/gm, " ") : element.description;
+    element.labelColumn = labelColumn;
+    element.dateColumn = dateColumn;
+    element.descriptionColumn = descriptionColumn;
 
-    element["top"] = getCategoricalObjectValue(category, i, 'dataPoint', 'top', false)
+    element.selectionId = selectionId;
+    element.dateAsInt = element.date.getTime();
+    element.customFormat = getCategoricalObjectValue(category, i, 'dataPoint', 'customFormat', element.customFormat);
+    element.fontFamily = getCategoricalObjectValue(category, i, 'dataPoint', 'fontFamily', element.fontFamily);
+    element.textSize = getCategoricalObjectValue(category, i, 'dataPoint', 'textSize', element.textSize);
+    element.textColor = getCategoricalObjectValue(category, i, 'dataPoint', 'textColor', { "solid": { "color": "black" } }).solid.color;
+    element.iconColor =  getCategoricalObjectValue(category, i, 'dataPoint', 'iconColor', { "solid": { "color": "black" } }).solid.color;
+    element.top = getCategoricalObjectValue(category, i, 'dataPoint', 'top', element.top);
+    element.customVertical = element.customVertical ? getCategoricalObjectValue(category, i, 'dataPoint', 'customVertical', element.customVertical) : element.customVertical;
+    
+    element.verticalOffset = getCategoricalObjectValue(category, i, 'dataPoint', 'verticalOffset', element.verticalOffset);
 
-    element["customVertical"] = element["customFormat"] ? getCategoricalObjectValue(category, i, 'dataPoint', 'customVertical', false) : false
-    element["verticalOffset"] = getCategoricalObjectValue(category, i, 'dataPoint', 'verticalOffset', 20)
+    element.annotationStyle = getCategoricalObjectValue(category, i, 'dataPoint', 'annotationStyle', element.annotationStyle);
+    element.labelOrientation = getCategoricalObjectValue(category, i, 'dataPoint', 'labelOrientation', element.labelOrientation);
 
-    element["annotationStyle"] = getCategoricalObjectValue(category, i, 'dataPoint', 'annotationStyle', 'annotationLabel')
-    element["labelOrientation"] = getCategoricalObjectValue(category, i, 'dataPoint', 'labelOrientation', 'Auto')
-
-    if (element["date"]) {
-      timelineDataPoints.push(element)
+    if (element.date) {
+      viewModel.dataPoints.push(element)
     }
   }
-
-
-  let timelineSettings = {
-    download: {
-      downloadCalendar: getSettingsValue(objects, 'download', 'downloadCalendar', defaultSettings.download.downloadCalendar),
-      position: getSettingsValue(objects, 'download', 'position', defaultSettings.download.position),
-      calendarName: getSettingsValue(objects, 'download', 'calendarName', defaultSettings.download.calendarName)
-    },
-    textSettings: {
-      stagger: getSettingsValue(objects, 'textSettings', 'stagger', defaultSettings.textSettings.stagger),
-      autoStagger: getSettingsValue(objects, 'textSettings', 'autoStagger', defaultSettings.textSettings.autoStagger),
-      separator: getSettingsValue(objects, 'textSettings', 'separator', defaultSettings.textSettings.separator),
-      spacing: getSettingsValue(objects, 'textSettings', 'spacing', defaultSettings.textSettings.spacing),
-      top: getSettingsValue(objects, 'textSettings', 'top', defaultSettings.textSettings.top),
-      labelOrientation: getSettingsValue(objects, 'textSettings', 'labelOrientation', defaultSettings.textSettings.labelOrientation),
-      annotationStyle: getSettingsValue(objects, 'textSettings', 'annotationStyle', defaultSettings.textSettings.annotationStyle),
-      textColor: getSettingsValue(objects, 'textSettings', 'textColor', defaultSettings.textSettings.textColor),
-      textSize: getSettingsValue(objects, 'textSettings', 'textSize', defaultSettings.textSettings.textSize),
-      fontFamily: getSettingsValue(objects, 'textSettings', 'fontFamily', defaultSettings.textSettings.fontFamily),
-      dateFormat: getSettingsValue(objects, 'textSettings', 'dateFormat', defaultSettings.textSettings.dateFormat),
-      customJS: getSettingsValue(objects, 'textSettings', 'customJS', defaultSettings.textSettings.customJS),
-      boldTitles: getSettingsValue(objects, 'textSettings', 'boldTitles', defaultSettings.textSettings.boldTitles),
-      wrap: getSettingsValue(objects, 'textSettings', 'wrap', defaultSettings.textSettings.wrap),
-
-    },
-    axisSettings: {
-      axis: getSettingsValue(objects, 'axisSettings', 'axis', defaultSettings.axisSettings.axis),
-      axisColor: getSettingsValue(objects, 'axisSettings', 'axisColor', defaultSettings.axisSettings.axisColor),
-      fontSize: getSettingsValue(objects, 'axisSettings', 'fontSize', defaultSettings.axisSettings.fontSize),
-      fontFamily: getSettingsValue(objects, 'axisSettings', 'fontFamily', defaultSettings.axisSettings.fontFamily),
-      bold: getSettingsValue(objects, 'axisSettings', 'bold', defaultSettings.axisSettings.bold),
-      dateFormat: getSettingsValue(objects, 'axisSettings', 'dateFormat', defaultSettings.axisSettings.dateFormat),
-      manualScale: getSettingsValue(objects, 'axisSettings', 'manualScale', defaultSettings.axisSettings.manualScale),
-      barMin: getSettingsValue(objects, 'axisSettings', 'barMin', defaultSettings.axisSettings.barMin),
-      barMax: getSettingsValue(objects, 'axisSettings', 'barMax', defaultSettings.axisSettings.barMax),
-      customJS: getSettingsValue(objects, 'axisSettings', 'customJS', defaultSettings.axisSettings.customJS),
-      manualScalePixel: getSettingsValue(objects, 'axisSettings', 'manualScalePixel', defaultSettings.axisSettings.manualScalePixel),
-      customPixel: getSettingsValue(objects, 'axisSettings', 'customPixel', defaultSettings.axisSettings.customPixel)
-
-    },
-    style: {
-      timelineStyle: getSettingsValue(objects, 'style', 'timelineStyle', defaultSettings.style.timelineStyle),
-      lineColor: getSettingsValue(objects, 'style', 'lineColor', defaultSettings.style.lineColor),
-      lineThickness: getSettingsValue(objects, 'style', 'lineThickness', defaultSettings.style.lineThickness),
-      minimalistStyle: getSettingsValue(objects, 'style', 'minimalistStyle', defaultSettings.style.minimalistStyle),
-      minimalistAxis: getSettingsValue(objects, 'style', 'minimalistAxis', defaultSettings.style.minimalistAxis),
-      minimalistConnect: getSettingsValue(objects, 'style', 'minimalistConnect', defaultSettings.style.minimalistConnect),
-      iconsColor: getSettingsValue(objects, 'style', 'iconsColor', defaultSettings.style.iconsColor),
-      connectColor: getSettingsValue(objects, 'style', 'connectColor', defaultSettings.style.connectColor),
-      minimalistSize: getSettingsValue(objects, 'style', 'minimalistSize', defaultSettings.style.minimalistSize),
-      barColor: getSettingsValue(objects, 'style', 'barColor', defaultSettings.style.barColor),
-      barHeight: getSettingsValue(objects, 'style', 'barHeight', defaultSettings.style.barHeight),
-      today: getSettingsValue(objects, 'style', 'today', defaultSettings.style.today),
-      todayTop: getSettingsValue(objects, 'style', 'todayTop', defaultSettings.style.todayTop),
-      todayColor: getSettingsValue(objects, 'style', 'todayColor', defaultSettings.style.todayColor)
-    },
-    imageSettings: {
-      imagesHeight: getSettingsValue(objects, 'imageSettings', 'imagesHeight', defaultSettings.imageSettings.imagesHeight),
-      imagesWidth: getSettingsValue(objects, 'imageSettings', 'imagesWidth', defaultSettings.imageSettings.imagesWidth),
-      style: getSettingsValue(objects, 'imageSettings', 'style', defaultSettings.imageSettings.style)
-    }
-  }
-  return {
-    dataPoints: timelineDataPoints,
-    settings: timelineSettings
-  };
+  
+  return viewModel;
 }
 
 
@@ -2123,7 +1993,12 @@ export function getSettingsValue(objects: powerbi.DataViewObjects, sectionKey: s
 }
 
 
-export function getCategoricalObjectValue(category, index, objectName, propertyName, defaultValue) {
+export function getCategoricalObjectValue(
+  category: powerbi.DataViewCategoryColumn, 
+  index: number, 
+  objectName: string, 
+  propertyName: string, 
+  defaultValue: any) {
 
   let categoryObjects = category.objects
 

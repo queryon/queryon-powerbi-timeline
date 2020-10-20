@@ -2,11 +2,11 @@ import powerbi from "powerbi-visuals-api";
 
 
 export class DataPoint {
-    public label: string;
+    public label: string = '';
     public date: Date;
-    public URL: string | boolean;
-    public image: string | boolean;
-    public description: string;
+    public URL: string | boolean = false;
+    public image: string | boolean = false;
+    public description: string = '';
     public labelColumn: string;
     public dateColumn: string;
     public descriptionColumn: string | boolean;
@@ -24,4 +24,6 @@ export class DataPoint {
     public verticalOffset: number = 20;
     public annotationStyle: string = 'annotationLabel';
     public labelOrientation: string = 'Auto';
+
+    
 }
