@@ -32,7 +32,7 @@ import { color, text, timeThursday } from "d3";
 
 
 import { ViewModel } from '@/interfaces';
-import { Settings } from "./settings";
+import { AxisSettings, DownloadSettings, ImageSettings, Settings, StyleSettings, TextSettings } from "./settings";
 import { DataPoint } from "./dataPoint";
 
 
@@ -58,6 +58,31 @@ export class Visual implements IVisual {
   private imagesWidth: number;
   private fontHeightLib: any;
   private spacing: any;
+
+  /* Settings Getters for cleaner and less verbose code */
+  get settings(): Settings {
+    return this.viewModel.settings;
+  }
+
+  get downloadSettings() : DownloadSettings {
+    return this.settings.download;
+  }
+
+  get textSettings() : TextSettings {
+    return this.settings.textSettings;
+  }
+
+  get axisSettings() : AxisSettings {
+    return this.settings.axisSettings;
+  }
+
+  get styleSettings() : StyleSettings {
+    return this.settings.style;
+  }
+
+  get imageSettings() : ImageSettings {
+    return this.settings.imageSettings;
+  }
   
   constructor(options: VisualConstructorOptions) {
     options.element.style["overflow"] = 'auto';
@@ -95,11 +120,11 @@ export class Visual implements IVisual {
     let data = this.viewModel.dataPoints
 
     //min label width from annotation plugin
-    if (this.viewModel.settings.textSettings.wrap < 90) {
-      this.viewModel.settings.textSettings.wrap = 90
+    if (this.textSettings.wrap < 90) {
+      this.textSettings.wrap = 90
     }
 
-    if(data.length > 100 && this.viewModel.settings.style.timelineStyle !== "minimalist"){
+    if(data.length > 100 && this.styleSettings.timelineStyle !== "minimalist"){
       this.svg.attr("width", options.viewport.width -4)
       this.svg.attr("height", options.viewport.height - 4)
 
@@ -113,21 +138,21 @@ export class Visual implements IVisual {
     let minFromData = d3.min(data, function (d: any) { return d.date })
     let maxFromData = d3.max(data, function (d: any) { return d.date })
 
-    let imagesHeight = this.viewModel.settings.imageSettings.imagesHeight
-    this.imagesWidth = this.viewModel.settings.imageSettings.imagesWidth
+    let imagesHeight = this.imageSettings.imagesHeight
+    this.imagesWidth = this.imageSettings.imagesWidth
     let spacing = 0
 
-    if (this.viewModel.settings.axisSettings.manualScale) {
-      if (this.viewModel.settings.axisSettings.barMin && this.viewModel.settings.axisSettings.barMin != "") {
-        let minFromInput = new Date(this.viewModel.settings.axisSettings.barMin)
+    if (this.axisSettings.manualScale) {
+      if (this.axisSettings.barMin && this.axisSettings.barMin != "") {
+        let minFromInput = new Date(this.axisSettings.barMin)
 
         if (Object.prototype.toString.call(minFromInput) === '[object Date]' && !isNaN(minFromInput.getTime())) {
           this.minVal = minFromInput
         }
       }
 
-      if (this.viewModel.settings.axisSettings.barMax && this.viewModel.settings.axisSettings.barMax != "") {
-        let maxFromInput = new Date(this.viewModel.settings.axisSettings.barMax)
+      if (this.axisSettings.barMax && this.axisSettings.barMax != "") {
+        let maxFromInput = new Date(this.axisSettings.barMax)
 
         if (Object.prototype.toString.call(maxFromInput) === '[object Date]' && !isNaN(maxFromInput.getTime())) {
           this.maxVal = maxFromInput
@@ -142,34 +167,34 @@ export class Visual implements IVisual {
       this.minVal = minFromData
       this.maxVal = maxFromData
 
-      this.viewModel.settings.axisSettings.barMin = '';
-      this.viewModel.settings.axisSettings.barMax = '';
+      this.axisSettings.barMin = '';
+      this.axisSettings.barMax = '';
     }
 
-    if (!this.viewModel.settings.axisSettings.manualScalePixel || !this.viewModel.settings.axisSettings.customPixel || isNaN(this.viewModel.settings.axisSettings.customPixel)) {
+    if (!this.axisSettings.manualScalePixel || !this.axisSettings.customPixel || isNaN(this.axisSettings.customPixel)) {
       this.width = options.viewport.width - 20;
     } else {
-      this.width = this.viewModel.settings.axisSettings.customPixel
+      this.width = this.axisSettings.customPixel
     }
 
     this.height = options.viewport.height;
     this.marginTop = 10;
-    this.barHeight = this.viewModel.settings.style.barHeight;
+    this.barHeight = this.styleSettings.barHeight;
     let marginTopStagger = 20;
     let svgHeightTracking, finalHeight, needScroll = false;
 
     //Parse global formats
-    let textSize = this.viewModel.settings.textSettings.textSize,
-      fontFamily = this.viewModel.settings.textSettings.fontFamily,
-      textColor = this.viewModel.settings.textSettings.textColor.solid.color,
-      iconsColor = this.viewModel.settings.style.iconsColor.solid.color,
-      top = this.viewModel.settings.textSettings.top,
-      labelOrientation = this.viewModel.settings.textSettings.labelOrientation,
-      annotationStyle = this.viewModel.settings.textSettings.annotationStyle
+    let textSize = this.textSettings.textSize,
+      fontFamily = this.textSettings.fontFamily,
+      textColor = this.textSettings.textColor.solid.color,
+      iconsColor = this.styleSettings.iconsColor.solid.color,
+      top = this.textSettings.top,
+      labelOrientation = this.textSettings.labelOrientation,
+      annotationStyle = this.textSettings.annotationStyle
 
     //date formatting
     let format, valueFormatter
-    if (this.viewModel.settings.textSettings.dateFormat === "same") {
+    if (this.textSettings.dateFormat === "same") {
       options.dataViews[0].categorical.categories.forEach(category => {
         let categoryName = Object.keys(category.source.roles)[0]
         if (categoryName == "date") {
@@ -177,7 +202,7 @@ export class Visual implements IVisual {
         }
       })
     } else {
-      format = this.viewModel.settings.textSettings.dateFormat != "customJS" ? this.viewModel.settings.textSettings.dateFormat : this.viewModel.settings.textSettings.customJS
+      format = this.textSettings.dateFormat != "customJS" ? this.textSettings.dateFormat : this.textSettings.customJS
     }
     valueFormatter = createFormatter(format);
 
@@ -196,9 +221,9 @@ export class Visual implements IVisual {
 
     //stablish image margin addition 
     let addToMargin = 0
-    if (this.viewModel.settings.imageSettings.style == "alternate") {
+    if (this.imageSettings.style == "alternate") {
       addToMargin = (imagesHeight * 2) + 20
-    } else if (this.viewModel.settings.imageSettings.style == "straight") {
+    } else if (this.imageSettings.style == "straight") {
       addToMargin = imagesHeight + 20
     }
 
@@ -206,7 +231,7 @@ export class Visual implements IVisual {
 
     filteredData.forEach((dataPoint, i) => {
       dataPoint["formatted"] = valueFormatter.format(dataPoint["date"])
-      dataPoint["labelText"] = this.viewModel.settings.style.timelineStyle != "image" ? `${dataPoint["formatted"]}${this.viewModel.settings.textSettings.separator} ${dataPoint["label"]}` : dataPoint["label"]
+      dataPoint["labelText"] = this.styleSettings.timelineStyle != "image" ? `${dataPoint["formatted"]}${this.textSettings.separator} ${dataPoint["label"]}` : dataPoint["label"]
       dataPoint["textColor"] = dataPoint.customFormat ? dataPoint.textColor : textColor
       dataPoint["iconColor"] = dataPoint.customFormat ? dataPoint.iconColor : iconsColor
       dataPoint["fontFamily"] = dataPoint.customFormat ? dataPoint.fontFamily : fontFamily
@@ -214,9 +239,9 @@ export class Visual implements IVisual {
       dataPoint["top"] = dataPoint.customFormat ? dataPoint.top : top
       dataPoint["labelOrientation"] = dataPoint.customFormat ? dataPoint.labelOrientation : labelOrientation
       dataPoint["annotationStyle"] = dataPoint.customFormat ? dataPoint.annotationStyle : annotationStyle
-      dataPoint["textWidth"] = this.viewModel.settings.style.timelineStyle == "minimalist"? false : Math.min(this.viewModel.settings.textSettings.wrap, BrowserText.getWidth(dataPoint["labelText"], dataPoint["textSize"], fontFamily));  // this.getTextWidth(dataPoint["labelText"], dataPoint["textSize"], fontFamily)
+      dataPoint["textWidth"] = this.styleSettings.timelineStyle == "minimalist"? false : Math.min(this.textSettings.wrap, BrowserText.getWidth(dataPoint["labelText"], dataPoint["textSize"], fontFamily));  // this.getTextWidth(dataPoint["labelText"], dataPoint["textSize"], fontFamily)
       // dataPoint["textHeight"] = this.getTextHeight(dataPoint["labelText"], dataPoint["textSize"], fontFamily, true) + 3
-      dataPoint["textHeight"] = this.viewModel.settings.style.timelineStyle == "minimalist"? false : this.getAnnotationHeight(dataPoint)
+      dataPoint["textHeight"] = this.styleSettings.timelineStyle == "minimalist"? false : this.getAnnotationHeight(dataPoint)
 
       let startTime = [dataPoint.date.getFullYear(), dataPoint.date.getMonth() + 1, dataPoint.date.getDate(), dataPoint.date.getHours(), dataPoint.date.getMinutes()];
 
@@ -229,18 +254,18 @@ export class Visual implements IVisual {
       })
 
       //increment image height on staggered image view
-      if (dataPoint.image && (this.viewModel.settings.imageSettings.style == "default")) {// || this.viewModel.settings.imageSettings.style == "image")) {
+      if (dataPoint.image && (this.imageSettings.style == "default")) {// || this.imageSettings.style == "image")) {
         dataPoint["textHeight"] += (imagesHeight + 2)
 
       }
 
       //add heights to margin conditionally:
-      if (this.viewModel.settings.style.timelineStyle !== "minimalist") {
+      if (this.styleSettings.timelineStyle !== "minimalist") {
         if (!spacing || spacing < dataPoint["textHeight"]) {
           spacing = dataPoint["textHeight"]
         }
 
-        if (this.viewModel.settings.style.timelineStyle !== "image") {
+        if (this.styleSettings.timelineStyle !== "image") {
           if (dataPoint["top"]) {
             this.marginTop = Math.max(this.marginTop, dataPoint["textHeight"] + 30)
 
@@ -273,14 +298,14 @@ export class Visual implements IVisual {
     })
 
 
-    if (this.viewModel.settings.textSettings.annotationStyle === 'annotationCallout' || this.viewModel.settings.textSettings.annotationStyle === 'annotationCalloutCurve') {
+    if (this.textSettings.annotationStyle === 'annotationCallout' || this.textSettings.annotationStyle === 'annotationCalloutCurve') {
       //annotation styles that add to text height, increment spacing
       spacing += 10
     }
 
     //work around not limiting minimum spacing
-    if (this.viewModel.settings.textSettings.autoStagger || !this.viewModel.settings.textSettings.spacing) {
-      this.viewModel.settings.textSettings.spacing = spacing
+    if (this.textSettings.autoStagger || !this.textSettings.spacing) {
+      this.textSettings.spacing = spacing
       this.host.persistProperties({
         merge: [{
           objectName: 'textSettings',
@@ -290,23 +315,23 @@ export class Visual implements IVisual {
       });
     }
 
-    marginTopStagger += ((filteredData.filter(element => element.top).length) * this.viewModel.settings.textSettings.spacing) + 20
+    marginTopStagger += ((filteredData.filter(element => element.top).length) * this.textSettings.spacing) + 20
 
     //case margintopstagger wasn't incremented - no top staggered items:
     marginTopStagger = Math.max(this.marginTop, marginTopStagger)
 
 
-    if (this.viewModel.settings.imageSettings.style !== "default" && filteredData.filter(el => !el.top && el.image).length > 0) {
+    if (this.imageSettings.style !== "default" && filteredData.filter(el => !el.top && el.image).length > 0) {
       marginTopStagger = Math.max(marginTopStagger, addToMargin)
     }
 
     //define "official" margin top to start drawing graph
-    if (this.viewModel.settings.style.timelineStyle !== "image") {
-      this.finalMarginTop = !this.viewModel.settings.textSettings.stagger || this.viewModel.settings.style.timelineStyle == "minimalist" ? this.marginTop : marginTopStagger
+    if (this.styleSettings.timelineStyle !== "image") {
+      this.finalMarginTop = !this.textSettings.stagger || this.styleSettings.timelineStyle == "minimalist" ? this.marginTop : marginTopStagger
 
-      if (this.viewModel.settings.style.timelineStyle != "minimalist" && filteredData.filter(el => el.top & el.customVertical).length > 0) {
+      if (this.styleSettings.timelineStyle != "minimalist" && filteredData.filter(el => el.top & el.customVertical).length > 0) {
         //case user input offset is > than margin
-        this.finalMarginTop = Math.max(this.finalMarginTop, maxOffsetTop + this.viewModel.settings.textSettings.spacing)
+        this.finalMarginTop = Math.max(this.finalMarginTop, maxOffsetTop + this.textSettings.spacing)
       }
 
 
@@ -315,8 +340,8 @@ export class Visual implements IVisual {
     }
 
 
-    let downloadTop = this.viewModel.settings.download.downloadCalendar && this.viewModel.settings.download.position.split(",")[0] == "TOP",
-      downloadBottom = this.viewModel.settings.download.downloadCalendar && this.viewModel.settings.download.position.split(",")[0] !== "TOP"
+    let downloadTop = this.downloadSettings.downloadCalendar && this.downloadSettings.position.split(",")[0] == "TOP",
+      downloadBottom = this.downloadSettings.downloadCalendar && this.downloadSettings.position.split(",")[0] !== "TOP"
 
     //download calendar icon is enabled and positioned at top
     if (downloadTop) {
@@ -326,19 +351,19 @@ export class Visual implements IVisual {
 
 
     //axis format
-    let axisFormat = this.viewModel.settings.axisSettings.dateFormat != "customJS" ? this.viewModel.settings.axisSettings.dateFormat : this.viewModel.settings.axisSettings.customJS
+    let axisFormat = this.axisSettings.dateFormat != "customJS" ? this.axisSettings.dateFormat : this.axisSettings.customJS
     let axisValueFormatter = axisFormat == "same" ? valueFormatter : createFormatter(axisFormat);
 
     let filteredWithImage = filteredData.filter(el => el.image)
 
     //increment padding based on image
-    if (filteredWithImage.length > 0 && this.viewModel.settings.style.timelineStyle !== "minimalist") {
+    if (filteredWithImage.length > 0 && this.styleSettings.timelineStyle !== "minimalist") {
       let dynamicPadding = Math.max(this.padding, this.imagesWidth / 2)
       this.padding = dynamicPadding
     }
 
     //increment padding based on values on axis
-    if (this.viewModel.settings.axisSettings.axis === "Values" || this.viewModel.settings.style.timelineStyle == "minimalist") {
+    if (this.axisSettings.axis === "Values" || this.styleSettings.timelineStyle == "minimalist") {
       let dynamicPadding = Math.max(this.padding, 30)
       this.padding = dynamicPadding
     }
@@ -353,26 +378,26 @@ export class Visual implements IVisual {
       .range([0, this.width - (this.padding * 2)]); //min and max width in px           
 
 
-    if (this.viewModel.settings.style.timelineStyle !== "image") {
+    if (this.styleSettings.timelineStyle !== "image") {
       //all styles, not image focus:
       let bar, axisMarginTop, enabledAnnotations, strokeColor, width, axisPadding
 
 
       this.svg.attr("width", this.width - 4);
-      switch (this.viewModel.settings.style.timelineStyle) {
+      switch (this.styleSettings.timelineStyle) {
         case "line":
           axisMarginTop = this.finalMarginTop;
           enabledAnnotations = true;
           axisPadding = this.padding;
-          strokeColor = this.viewModel.settings.axisSettings.axisColor.solid.color
+          strokeColor = this.axisSettings.axisColor.solid.color
 
           // svgHeightTracking = this.height
           svgHeightTracking = this.finalMarginTop + 20
 
-          if (this.viewModel.settings.textSettings.stagger) {
-            svgHeightTracking += (filteredData.filter(el => !el.top).length) * this.viewModel.settings.textSettings.spacing + 20
+          if (this.textSettings.stagger) {
+            svgHeightTracking += (filteredData.filter(el => !el.top).length) * this.textSettings.spacing + 20
           } else {
-            svgHeightTracking += this.viewModel.settings.textSettings.spacing
+            svgHeightTracking += this.textSettings.spacing
           }
 
           if (filteredData.filter(el => el.top && el.image).length > 0) {
@@ -380,7 +405,7 @@ export class Visual implements IVisual {
           }
 
 
-          svgHeightTracking = Math.max(svgHeightTracking, axisMarginTop + maxOffsetBottom + this.viewModel.settings.textSettings.spacing)
+          svgHeightTracking = Math.max(svgHeightTracking, axisMarginTop + maxOffsetBottom + this.textSettings.spacing)
 
           if (svgHeightTracking > this.height) {
             // this.width -= 20
@@ -393,8 +418,8 @@ export class Visual implements IVisual {
             .attr("y1", this.finalMarginTop)
             .attr("x2", this.width - this.padding)
             .attr("y2", this.finalMarginTop)
-            .attr("stroke-width", this.viewModel.settings.style.lineThickness)
-            .attr("stroke", this.viewModel.settings.style.lineColor.solid.color);
+            .attr("stroke-width", this.styleSettings.lineThickness)
+            .attr("stroke", this.styleSettings.lineColor.solid.color);
           break;
 
         case "bar":
@@ -404,10 +429,10 @@ export class Visual implements IVisual {
           axisPadding = this.padding;
           svgHeightTracking = this.finalMarginTop + this.barHeight + 20;
 
-          if (this.viewModel.settings.textSettings.stagger) {
-            svgHeightTracking += (filteredData.filter(el => !el.top).length) * this.viewModel.settings.textSettings.spacing
+          if (this.textSettings.stagger) {
+            svgHeightTracking += (filteredData.filter(el => !el.top).length) * this.textSettings.spacing
           } else {
-            svgHeightTracking += this.viewModel.settings.textSettings.spacing
+            svgHeightTracking += this.textSettings.spacing
           }
 
           if (filteredData.filter(el => el.top && el.image).length > 0) {
@@ -416,7 +441,7 @@ export class Visual implements IVisual {
 
           }
 
-          svgHeightTracking = Math.max(svgHeightTracking, axisMarginTop + this.barHeight + maxOffsetBottom + this.viewModel.settings.textSettings.spacing)
+          svgHeightTracking = Math.max(svgHeightTracking, axisMarginTop + this.barHeight + maxOffsetBottom + this.textSettings.spacing)
 
 
           if (svgHeightTracking > this.height) {
@@ -427,7 +452,7 @@ export class Visual implements IVisual {
           bar = this.container.append('rect')
             .attr('width', this.width)
             .attr('x', 0)//this.padding)
-            .attr('fill', this.viewModel.settings.style.barColor.solid.color)
+            .attr('fill', this.styleSettings.barColor.solid.color)
             .attr('y', this.finalMarginTop)
             .attr('height', this.barHeight)
           bar.exit().remove()
@@ -436,8 +461,8 @@ export class Visual implements IVisual {
         case "minimalist":
           enabledAnnotations = false;
 
-          if (this.viewModel.settings.style.minimalistAxis == "bottom") {
-            axisMarginTop = 10 + this.finalMarginTop + this.viewModel.settings.textSettings.spacing * (filteredData.length)
+          if (this.styleSettings.minimalistAxis == "bottom") {
+            axisMarginTop = 10 + this.finalMarginTop + this.textSettings.spacing * (filteredData.length)
             svgHeightTracking = axisMarginTop + 30
 
             if (svgHeightTracking > this.height) {
@@ -449,7 +474,7 @@ export class Visual implements IVisual {
             }
           } else {
             axisMarginTop = this.finalMarginTop
-            svgHeightTracking = this.finalMarginTop + this.viewModel.settings.textSettings.spacing * (filteredData.length)
+            svgHeightTracking = this.finalMarginTop + this.textSettings.spacing * (filteredData.length)
 
             if (svgHeightTracking > this.height) {
               needScroll = true
@@ -466,7 +491,7 @@ export class Visual implements IVisual {
               axisMarginTop += 35
             }
           }
-          strokeColor = this.viewModel.settings.axisSettings.axisColor.solid.color
+          strokeColor = this.axisSettings.axisColor.solid.color
 
           //split screen for minimalist view
           let newWidth = (this.width * 0.70)
@@ -496,7 +521,7 @@ export class Visual implements IVisual {
           enter.append("text")
             .attr("x", 0)
             .attr("y", (element, i) => {
-              let result = 10 + this.marginTop + this.viewModel.settings.textSettings.spacing * i
+              let result = 10 + this.marginTop + this.textSettings.spacing * i
               if (downloadTop) {
                 result += 35
               }
@@ -529,7 +554,7 @@ export class Visual implements IVisual {
               })
             })
 
-          if (this.viewModel.settings.textSettings.boldTitles) {
+          if (this.textSettings.boldTitles) {
             enter.attr("font-weight", "bold")
           }
 
@@ -542,8 +567,8 @@ export class Visual implements IVisual {
           let enterIcons, shapeSize = 8
 
           //Add dots
-          if (this.viewModel.settings.style.minimalistStyle !== "thinBar") {
-            let size = 150 / this.viewModel.settings.style.minimalistSize
+          if (this.styleSettings.minimalistStyle !== "thinBar") {
+            let size = 150 / this.styleSettings.minimalistSize
             let shapeOptions = {
               "diamond": d3.symbol().type(d3.symbolDiamond).size(size),
               "circle": d3.symbol().type(d3.symbolCircle).size(size),
@@ -555,9 +580,9 @@ export class Visual implements IVisual {
             enterIcons = minIcons.enter()
               .append("g").attr("class", "min-icons");
             enterIcons.append('path')
-              .attr("d", shapeOptions[this.viewModel.settings.style.minimalistStyle])
+              .attr("d", shapeOptions[this.styleSettings.minimalistStyle])
               .attr("transform", (element, i) => {
-                let pointY = 10 + (this.marginTop + this.viewModel.settings.textSettings.spacing * i) - shapeSize
+                let pointY = 10 + (this.marginTop + this.textSettings.spacing * i) - shapeSize
                 if (downloadTop) {
                   pointY += 35
                 }
@@ -596,14 +621,14 @@ export class Visual implements IVisual {
 
               // .attr("x", element => axisPadding + scale(element["date"]) - shapeSize)
               .attr("y", (element, i) => {
-                let y = 10 + (this.marginTop + this.viewModel.settings.textSettings.spacing * i) - shapeSize
+                let y = 10 + (this.marginTop + this.textSettings.spacing * i) - shapeSize
                 if (downloadTop) {
                   y += 35
                 }
                 return y
               })
               .attr("width", 2)
-              .attr("height", this.viewModel.settings.textSettings.spacing)
+              .attr("height", this.textSettings.spacing)
               .attr("class", element => `minIconSelector min_icon_selector_${element["selectionId"].key.replace(/\W/g, '')}`)
               .attr("id", element => element["selectionId"])
               .on("click", (element) => {
@@ -635,16 +660,16 @@ export class Visual implements IVisual {
 
 
           //Add line
-          if (this.viewModel.settings.style.minimalistConnect) {
+          if (this.styleSettings.minimalistConnect) {
             this.container.append("path")
               .datum(filteredData)
               .attr("fill", "none")
-              .attr("stroke", this.viewModel.settings.style.connectColor.solid.color)//"#69b3a2")
+              .attr("stroke", this.styleSettings.connectColor.solid.color)//"#69b3a2")
               .attr("stroke-width", 1)
               .attr("d", d3.line()
                 .x(element => axisPadding + scale(element["date"]))
                 .y((el, i) => {
-                  let y = 10 + (this.marginTop + this.viewModel.settings.textSettings.spacing * (i)) - shapeSize
+                  let y = 10 + (this.marginTop + this.textSettings.spacing * (i)) - shapeSize
                   if (downloadTop) {
                     y += 35
                   }
@@ -661,7 +686,7 @@ export class Visual implements IVisual {
       this.svg.attr("height", finalHeight);
 
       let transparentContainer
-      if (needScroll && this.viewModel.settings.style.minimalistAxis == "bottom") {
+      if (needScroll && this.styleSettings.minimalistAxis == "bottom") {
         transparentContainer = this.container.append('rect')
           .attr('width', this.width)
           .attr('x', 0)//this.padding)
@@ -685,25 +710,25 @@ export class Visual implements IVisual {
           .call(x_axis)
           .attr('class', 'axis')
 
-          .attr('style', `color :${this.viewModel.settings.axisSettings.axisColor.solid.color}`)
-          .attr('style', `stroke :${this.viewModel.settings.axisSettings.axisColor.solid.color}`)
+          .attr('style', `color :${this.axisSettings.axisColor.solid.color}`)
+          .attr('style', `stroke :${this.axisSettings.axisColor.solid.color}`)
 
         this.container.selectAll('path, line')
           .attr('style', `color :${strokeColor}`)
 
-        if (this.viewModel.settings.axisSettings.bold) {
+        if (this.axisSettings.bold) {
           this.container.classed("xAxis", false);
         } else {
           this.container.attr('class', 'xAxis')
         }
 
-        if (this.viewModel.settings.axisSettings.axis === "None") {
+        if (this.axisSettings.axis === "None") {
           this.container.selectAll(".axis text").remove()
         }
         else {
-          this.container.selectAll(".axis text").style('font-size', this.viewModel.settings.axisSettings.fontSize)
-          this.container.selectAll(".axis text").style('fill', this.viewModel.settings.axisSettings.axisColor.solid.color)
-          this.container.selectAll(".axis text").style('font-family', this.viewModel.settings.axisSettings.fontFamily)
+          this.container.selectAll(".axis text").style('font-size', this.axisSettings.fontSize)
+          this.container.selectAll(".axis text").style('fill', this.axisSettings.axisColor.solid.color)
+          this.container.selectAll(".axis text").style('font-family', this.axisSettings.fontFamily)
 
         }
 
@@ -718,7 +743,7 @@ export class Visual implements IVisual {
           sandBox.on("scroll", (e) => {
             let firstXForm = axisSVG.property("transform").baseVal.getItem(0)
             axisSVG.remove()
-            if (this.viewModel.settings.style.minimalistAxis == "bottom") {
+            if (this.styleSettings.minimalistAxis == "bottom") {
               transparentContainer.remove()
               //Appent transparent container
               transparentContainer = this.container.append('rect')
@@ -734,25 +759,25 @@ export class Visual implements IVisual {
               .call(x_axis)
               .attr('class', 'axis')
 
-              .attr('style', `color :${this.viewModel.settings.axisSettings.axisColor.solid.color}`)
-              .attr('style', `stroke :${this.viewModel.settings.axisSettings.axisColor.solid.color}`)
+              .attr('style', `color :${this.axisSettings.axisColor.solid.color}`)
+              .attr('style', `stroke :${this.axisSettings.axisColor.solid.color}`)
 
             this.container.selectAll('path, line')
               .attr('style', `color :${strokeColor}`)
 
-            if (this.viewModel.settings.axisSettings.bold) {
+            if (this.axisSettings.bold) {
               this.container.classed("xAxis", false);
             } else {
               this.container.attr('class', 'xAxis')
             }
 
-            if (this.viewModel.settings.axisSettings.axis === "None") {
+            if (this.axisSettings.axis === "None") {
               this.container.selectAll(".axis text").remove()
             }
             else {
-              this.container.selectAll(".axis text").style('font-size', this.viewModel.settings.axisSettings.fontSize)
-              this.container.selectAll(".axis text").style('fill', this.viewModel.settings.axisSettings.axisColor.solid.color)
-              this.container.selectAll(".axis text").style('font-family', this.viewModel.settings.axisSettings.fontFamily)
+              this.container.selectAll(".axis text").style('font-size', this.axisSettings.fontSize)
+              this.container.selectAll(".axis text").style('fill', this.axisSettings.axisColor.solid.color)
+              this.container.selectAll(".axis text").style('font-family', this.axisSettings.fontFamily)
 
             }
             // }
@@ -771,7 +796,7 @@ export class Visual implements IVisual {
       }
       //append today icon
       let today= new Date
-      if (this.viewModel.settings.style.today && today >= this.minVal && today <= this.maxVal) {
+      if (this.styleSettings.today && today >= this.minVal && today <= this.maxVal) {
         let todayIcon = this.container
           .append('path')
           .attr("d", d3.symbol().type(d3.symbolTriangle).size(150))
@@ -781,18 +806,18 @@ export class Visual implements IVisual {
               todayMarginTop = axisMarginTop ? axisMarginTop : this.finalMarginTop,
               todayPadding = axisPadding ? axisPadding : this.padding
 
-            if (this.viewModel.settings.style.todayTop) {
+            if (this.styleSettings.todayTop) {
               todayIconY = todayMarginTop - 12
               transformStr = "translate(" + (todayPadding + scale(today)) + "," + (todayIconY) + ") rotate(180)"
             } else {
-              todayIconY = this.viewModel.settings.style.timelineStyle == "bar" ? todayMarginTop + 12 + this.barHeight : todayMarginTop + 12
+              todayIconY = this.styleSettings.timelineStyle == "bar" ? todayMarginTop + 12 + this.barHeight : todayMarginTop + 12
 
               transformStr = "translate(" + (todayPadding + scale(today)) + "," + (todayIconY) + ")"
             }
 
             return transformStr
           })
-          .style("fill", this.viewModel.settings.style.todayColor.solid.color);
+          .style("fill", this.styleSettings.todayColor.solid.color);
 
       }
 
@@ -819,20 +844,20 @@ export class Visual implements IVisual {
           element["x"] = this.padding + scale(element["date"])
 
           if (!element.customVertical) {
-            if (this.viewModel.settings.textSettings.stagger) {
+            if (this.textSettings.stagger) {
               if (counter > 0) {
-                element["dy"] = element.top ? this.viewModel.settings.textSettings.spacing * (-1 * (counter)) - 20 : this.viewModel.settings.textSettings.spacing * (counter) + 20
+                element["dy"] = element.top ? this.textSettings.spacing * (-1 * (counter)) - 20 : this.textSettings.spacing * (counter) + 20
 
               } else {
                 element["dy"] = element.top ? -20 : 20
               }
-              // element["dy"] = element.top ? this.viewModel.settings.textSettings.spacing * (-1 * countTop) : this.viewModel.settings.axisSettings.axis === "None" ? this.viewModel.settings.textSettings.spacing * countBottom : this.viewModel.settings.textSettings.spacing * countBottom + 20;
+              // element["dy"] = element.top ? this.textSettings.spacing * (-1 * countTop) : this.axisSettings.axis === "None" ? this.textSettings.spacing * countBottom : this.textSettings.spacing * countBottom + 20;
             }
             else {
               element["dy"] = element.top ? -20 : 20
             }
 
-            if (this.viewModel.settings.axisSettings.axis != "None" && this.viewModel.settings.style.timelineStyle !== "bar" && !element.top) {
+            if (this.axisSettings.axis != "None" && this.styleSettings.timelineStyle !== "bar" && !element.top) {
               element["dy"] += 20
             }
           } else {
@@ -859,13 +884,13 @@ export class Visual implements IVisual {
           element.alignment.note.align = orientation
           annotationsData = [{
             note: {
-              wrap: this.viewModel.settings.textSettings.wrap,
+              wrap: this.textSettings.wrap,
               title: element.labelText,
               label: element.description,
               bgPadding: 0
             },
             x: element["x"],
-            y: this.viewModel.settings.style.timelineStyle == "bar" && !element.top ? this.finalMarginTop + this.barHeight : this.finalMarginTop,
+            y: this.styleSettings.timelineStyle == "bar" && !element.top ? this.finalMarginTop + this.barHeight : this.finalMarginTop,
             dy: element["dy"],
             color: element.textColor,
             id: element.selectionId
@@ -899,12 +924,12 @@ export class Visual implements IVisual {
             }
             let imageY, imageX
 
-            switch (this.viewModel.settings.imageSettings.style) {
+            switch (this.imageSettings.style) {
               case "default":
                 imageY = !element.top ? (this.finalMarginTop + element.dy) + element.textHeight - imagesHeight : (this.finalMarginTop + element.dy) - element.textHeight - 5
 
 
-                if (this.viewModel.settings.style.timelineStyle == "bar" && !element.top) { imageY += this.barHeight }
+                if (this.styleSettings.timelineStyle == "bar" && !element.top) { imageY += this.barHeight }
 
                 if (orientation == "middle") { imageX = element.x - (this.imagesWidth / 2) }
                 else if (orientation == "left") { imageX = element.x }
@@ -914,7 +939,7 @@ export class Visual implements IVisual {
               case "straight":
                 imageY = element.top ? this.finalMarginTop + 20 : this.finalMarginTop - 20 - imagesHeight
 
-                if (this.viewModel.settings.style.timelineStyle == "bar" && element.top) { imageY += this.barHeight }
+                if (this.styleSettings.timelineStyle == "bar" && element.top) { imageY += this.barHeight }
                 break;
 
               // case "image":
@@ -932,7 +957,7 @@ export class Visual implements IVisual {
                   imageY += imagesHeight
                 }
 
-                if (this.viewModel.settings.style.timelineStyle == "bar" && element.top) { imageY += this.barHeight }
+                if (this.styleSettings.timelineStyle == "bar" && element.top) { imageY += this.barHeight }
 
                 break;
 
@@ -942,12 +967,12 @@ export class Visual implements IVisual {
             imageX = !imageX ? element.x - (this.imagesWidth / 2) : imageX
 
 
-            if (this.viewModel.settings.imageSettings.style != "default") {
+            if (this.imageSettings.style != "default") {
               let connector = this.container.append("line")
                 .attr("x1", element.x)
                 .attr("y1", () => {
                   let result = this.finalMarginTop
-                  if (this.viewModel.settings.style.timelineStyle == "bar" && element.top) {
+                  if (this.styleSettings.timelineStyle == "bar" && element.top) {
                     result += this.barHeight
                   }
                   return result
@@ -991,7 +1016,7 @@ export class Visual implements IVisual {
                   d3.select(`.selector_${element.selectionId.key.replace(/\W/g, '')}`).style('fill-opacity', 1)
                   this.container.selectAll('.annotationSelector').style('font-weight', "normal")
 
-                  if (!this.viewModel.settings.textSettings.boldTitles) {
+                  if (!this.textSettings.boldTitles) {
                     this.container.selectAll('.annotationSelector  .annotation-note-title ').style('font-weight', "normal")
                   }
 
@@ -1008,7 +1033,7 @@ export class Visual implements IVisual {
                   // this.container.selectAll('.bar').style('fill-opacity', 1)
                   this.container.selectAll('.annotationSelector').style('font-weight', "normal")
 
-                  if (!this.viewModel.settings.textSettings.boldTitles) {
+                  if (!this.textSettings.boldTitles) {
                     this.container.selectAll('.annotationSelector .annotation-note-title').style('font-weight', "normal")
                   }
                 }
@@ -1033,7 +1058,7 @@ export class Visual implements IVisual {
         finalHeight += 35
       }
 
-      this.width = Math.max(filteredData.length * (this.viewModel.settings.textSettings.wrap + 10) + 20, this.width - 4)
+      this.width = Math.max(filteredData.length * (this.textSettings.wrap + 10) + 20, this.width - 4)
 
       this.svg.attr("height", finalHeight);
       this.svg.attr("width", this.width);
@@ -1049,7 +1074,7 @@ export class Visual implements IVisual {
         }
 
 
-        element["x"] = i == 0 ? this.padding : this.padding + ((this.viewModel.settings.textSettings.wrap + 10) * i)
+        element["x"] = i == 0 ? this.padding : this.padding + ((this.textSettings.wrap + 10) * i)
         element["dy"] = imagesHeight / 2 + 10
         orientation = "left"
 
@@ -1061,7 +1086,7 @@ export class Visual implements IVisual {
         }
         element.alignment.note.align = orientation
 
-        if (this.viewModel.settings.axisSettings.axis == "Values") {
+        if (this.axisSettings.axis == "Values") {
           dateStyle = svgAnnotations['annotationLabel']
           dateType = new svgAnnotations.annotationCustomType(
             dateStyle,
@@ -1071,14 +1096,14 @@ export class Visual implements IVisual {
 
           datesData = [{
             note: {
-              wrap: this.viewModel.settings.textSettings.wrap,
+              wrap: this.textSettings.wrap,
               title: axisValueFormatter.format(element.date),
               bgPadding: 0
             },
             x: element["x"],
             y: this.finalMarginTop,
             dy: 1,
-            color: this.viewModel.settings.axisSettings.axisColor.solid.color
+            color: this.axisSettings.axisColor.solid.color
           }]
 
           makeDates = svgAnnotations.annotation()
@@ -1090,13 +1115,13 @@ export class Visual implements IVisual {
 
           let newAxis = this.container
             .append("g")
-            .style('font-size', this.viewModel.settings.axisSettings.fontSize + "px")
-            .style('font-family', this.viewModel.settings.axisSettings.fontFamily)
+            .style('font-size', this.axisSettings.fontSize + "px")
+            .style('font-family', this.axisSettings.fontFamily)
             .style('background-color', 'transparent')
             .call(makeDates)
 
 
-          if (this.viewModel.settings.axisSettings.bold) {
+          if (this.axisSettings.bold) {
             newAxis.attr('class', 'bold')
             newAxis.classed('notBold', false)
           } else {
@@ -1115,7 +1140,7 @@ export class Visual implements IVisual {
         element.alignment.note.align = orientation
         annotationsData = [{
           note: {
-            wrap: this.viewModel.settings.textSettings.wrap,
+            wrap: this.textSettings.wrap,
             title: element.labelText,
             label: element.description,
             bgPadding: 0
@@ -1184,7 +1209,7 @@ export class Visual implements IVisual {
                 d3.select(`.selector_${element.selectionId.key.replace(/\W/g, '')}`).style('fill-opacity', 1)
                 this.container.selectAll('.annotationSelector').style('font-weight', "normal")
 
-                if (!this.viewModel.settings.textSettings.boldTitles) {
+                if (!this.textSettings.boldTitles) {
                   this.container.selectAll('.annotationSelector  .annotation-note-title ').style('font-weight', "normal")
                 }
 
@@ -1200,7 +1225,7 @@ export class Visual implements IVisual {
               } else {
                 // this.container.selectAll('.bar').style('fill-opacity', 1)
                 this.container.selectAll('.annotationSelector').style('font-weight', "normal")
-                if (!this.viewModel.settings.textSettings.boldTitles) {
+                if (!this.textSettings.boldTitles) {
                   this.container.selectAll('.annotationSelector .annotation-note-title').style('font-weight', "normal")
                 }
               }
@@ -1211,7 +1236,7 @@ export class Visual implements IVisual {
     }
 
     //remove default bold if bold titles is off
-    if (!this.viewModel.settings.textSettings.boldTitles) {
+    if (!this.textSettings.boldTitles) {
       this.container.selectAll('.annotationSelector  .annotation-note-title ').style('font-weight', "normal")
     }
 
@@ -1237,13 +1262,13 @@ export class Visual implements IVisual {
 
       } else {
         this.selectionManager.clear().then(() => {
-          if (this.viewModel.settings.style.timelineStyle == "minimalist") {
+          if (this.styleSettings.timelineStyle == "minimalist") {
             d3.selectAll('.annotationSelector').style('opacity', 1)
             d3.selectAll('.minIconSelector').style('opacity', 1)
           } else {
             this.container.selectAll('.annotationSelector').style('font-weight', "normal")
 
-            if (!this.viewModel.settings.textSettings.boldTitles) {
+            if (!this.textSettings.boldTitles) {
               this.container.selectAll('.annotationSelector  .annotation-note-title ').style('font-weight', "normal")
             }
           }
@@ -1285,17 +1310,17 @@ export class Visual implements IVisual {
 
 
 
-    if (this.viewModel.settings.download.downloadCalendar) {
+    if (this.downloadSettings.downloadCalendar) {
 
       const ics = require('ics')
-      // let orientationVertical = this.viewModel.settings.download.position.split(",")[0]
-      let orientationHorizontal = this.viewModel.settings.download.position.split(",")[1]
+      // let orientationVertical = this.downloadSettings.position.split(",")[0]
+      let orientationHorizontal = this.downloadSettings.position.split(",")[1]
       let calX
       if (orientationHorizontal == "LEFT") {
         calX = 2
       } else {
         calX = this.width - 35
-        if (this.viewModel.settings.style.timelineStyle == "minimalist") {
+        if (this.styleSettings.timelineStyle == "minimalist") {
           calX -= 20
         }
       }
@@ -1323,7 +1348,7 @@ export class Visual implements IVisual {
 
           blob = new Blob([value]);
 
-          FileSaver.saveAs(blob, `${this.viewModel.settings.download.calendarName != "" ? this.viewModel.settings.download.calendarName : 'calendar'}.ics`);
+          FileSaver.saveAs(blob, `${this.downloadSettings.calendarName != "" ? this.downloadSettings.calendarName : 'calendar'}.ics`);
         });
     }
 
@@ -1345,31 +1370,31 @@ export class Visual implements IVisual {
     switch (objectName) {
       case 'textSettings':
 
-        if (this.viewModel.settings.style.timelineStyle !== "minimalist" && this.viewModel.settings.style.timelineStyle !== "image") {
+        if (this.styleSettings.timelineStyle !== "minimalist" && this.styleSettings.timelineStyle !== "image") {
           objectEnumeration.push({
             objectName: objectName,
             properties: {
-              stagger: this.viewModel.settings.textSettings.stagger
+              stagger: this.textSettings.stagger
             },
             selector: null
           });
 
-          if (this.viewModel.settings.textSettings.stagger) {
+          if (this.textSettings.stagger) {
 
             objectEnumeration.push({
               objectName: objectName,
               properties: {
-                autoStagger: this.viewModel.settings.textSettings.autoStagger
+                autoStagger: this.textSettings.autoStagger
               },
               selector: null
             });
 
-            if (!this.viewModel.settings.textSettings.autoStagger) {
+            if (!this.textSettings.autoStagger) {
 
               objectEnumeration.push({
                 objectName: objectName,
                 properties: {
-                  spacing: this.viewModel.settings.textSettings.spacing
+                  spacing: this.textSettings.spacing
                 },
                 selector: null
               });
@@ -1382,26 +1407,26 @@ export class Visual implements IVisual {
           objectEnumeration.push({
             objectName: objectName,
             properties: {
-              wrap: this.viewModel.settings.textSettings.wrap,
-              separator: this.viewModel.settings.textSettings.separator,
-              labelOrientation: this.viewModel.settings.textSettings.labelOrientation,
-              top: this.viewModel.settings.textSettings.top,
-              annotationStyle: this.viewModel.settings.textSettings.annotationStyle,
-              boldTitles: this.viewModel.settings.textSettings.boldTitles,
-              fontFamily: this.viewModel.settings.textSettings.fontFamily,
-              textSize: this.viewModel.settings.textSettings.textSize,
-              textColor: this.viewModel.settings.textSettings.textColor,
-              dateFormat: this.viewModel.settings.textSettings.dateFormat
+              wrap: this.textSettings.wrap,
+              separator: this.textSettings.separator,
+              labelOrientation: this.textSettings.labelOrientation,
+              top: this.textSettings.top,
+              annotationStyle: this.textSettings.annotationStyle,
+              boldTitles: this.textSettings.boldTitles,
+              fontFamily: this.textSettings.fontFamily,
+              textSize: this.textSettings.textSize,
+              textColor: this.textSettings.textColor,
+              dateFormat: this.textSettings.dateFormat
             },
             selector: null
           });
         } else {
-          if (this.viewModel.settings.style.timelineStyle == "image") {
+          if (this.styleSettings.timelineStyle == "image") {
             objectEnumeration.push({
               objectName: objectName,
               properties: {
-                wrap: this.viewModel.settings.textSettings.wrap,
-                annotationStyle: this.viewModel.settings.textSettings.annotationStyle
+                wrap: this.textSettings.wrap,
+                annotationStyle: this.textSettings.annotationStyle
               },
               selector: null
             });
@@ -1410,11 +1435,11 @@ export class Visual implements IVisual {
           objectEnumeration.push({
             objectName: objectName,
             properties: {
-              boldTitles: this.viewModel.settings.textSettings.boldTitles,
-              fontFamily: this.viewModel.settings.textSettings.fontFamily,
-              textSize: this.viewModel.settings.textSettings.textSize,
-              textColor: this.viewModel.settings.textSettings.textColor,
-              dateFormat: this.viewModel.settings.textSettings.dateFormat
+              boldTitles: this.textSettings.boldTitles,
+              fontFamily: this.textSettings.fontFamily,
+              textSize: this.textSettings.textSize,
+              textColor: this.textSettings.textColor,
+              dateFormat: this.textSettings.dateFormat
             },
             selector: null
           });
@@ -1422,11 +1447,11 @@ export class Visual implements IVisual {
 
         }
 
-        if (this.viewModel.settings.textSettings.dateFormat == "customJS") {
+        if (this.textSettings.dateFormat == "customJS") {
           objectEnumeration.push({
             objectName: objectName,
             properties: {
-              customJS: this.viewModel.settings.textSettings.customJS
+              customJS: this.textSettings.customJS
             },
             selector: null
           });
@@ -1437,22 +1462,22 @@ export class Visual implements IVisual {
         objectEnumeration.push({
           objectName: objectName,
           properties: {
-            axis: this.viewModel.settings.axisSettings.axis,
-            axisColor: this.viewModel.settings.axisSettings.axisColor
+            axis: this.axisSettings.axis,
+            axisColor: this.axisSettings.axisColor
 
           },
           selector: null
         });
 
-        if (this.viewModel.settings.axisSettings.axis !== "None") {
+        if (this.axisSettings.axis !== "None") {
           objectEnumeration.push({
             objectName: objectName,
             properties: {
 
-              fontSize: this.viewModel.settings.axisSettings.fontSize,
-              fontFamily: this.viewModel.settings.axisSettings.fontFamily,
-              bold: this.viewModel.settings.axisSettings.bold,
-              dateFormat: this.viewModel.settings.axisSettings.dateFormat
+              fontSize: this.axisSettings.fontSize,
+              fontFamily: this.axisSettings.fontFamily,
+              bold: this.axisSettings.bold,
+              dateFormat: this.axisSettings.dateFormat
             },
             selector: null
           });
@@ -1460,19 +1485,19 @@ export class Visual implements IVisual {
           objectEnumeration.push({
             objectName: objectName,
             properties: {
-              manualScale: this.viewModel.settings.axisSettings.manualScale
+              manualScale: this.axisSettings.manualScale
 
             },
             selector: null
           });
 
-          if (this.viewModel.settings.axisSettings.manualScale) {
+          if (this.axisSettings.manualScale) {
 
             objectEnumeration.push({
               objectName: objectName,
               properties: {
-                barMin: this.viewModel.settings.axisSettings.barMin,
-                barMax: this.viewModel.settings.axisSettings.barMax
+                barMin: this.axisSettings.barMin,
+                barMax: this.axisSettings.barMax
               },
               selector: null
             });
@@ -1481,11 +1506,11 @@ export class Visual implements IVisual {
           }
 
 
-          if (this.viewModel.settings.axisSettings.dateFormat == "customJS") {
+          if (this.axisSettings.dateFormat == "customJS") {
             objectEnumeration.push({
               objectName: objectName,
               properties: {
-                customJS: this.viewModel.settings.axisSettings.customJS
+                customJS: this.axisSettings.customJS
               },
               selector: null
             });
@@ -1496,18 +1521,18 @@ export class Visual implements IVisual {
         objectEnumeration.push({
           objectName: objectName,
           properties: {
-            manualScalePixel: this.viewModel.settings.axisSettings.manualScalePixel
+            manualScalePixel: this.axisSettings.manualScalePixel
 
           },
           selector: null
         });
 
-        if (this.viewModel.settings.axisSettings.manualScalePixel) {
+        if (this.axisSettings.manualScalePixel) {
 
           objectEnumeration.push({
             objectName: objectName,
             properties: {
-              customPixel: this.viewModel.settings.axisSettings.customPixel
+              customPixel: this.axisSettings.customPixel
 
             },
             selector: null
@@ -1532,7 +1557,7 @@ export class Visual implements IVisual {
 
 
           if (dataElement.customFormat) {
-            if (this.viewModel.settings.style.timelineStyle !== "minimalist") {
+            if (this.styleSettings.timelineStyle !== "minimalist") {
               objectEnumeration.push({
                 objectName: objectName,
                 displayName: dataElement.label + " Text on top",
@@ -1631,58 +1656,58 @@ export class Visual implements IVisual {
         objectEnumeration.push({
           objectName: objectName,
           properties: {
-            timelineStyle: this.viewModel.settings.style.timelineStyle
+            timelineStyle: this.styleSettings.timelineStyle
           },
           selector: null
         });
 
 
-        if (this.viewModel.settings.style.timelineStyle == "line") {
+        if (this.styleSettings.timelineStyle == "line") {
           objectEnumeration.push({
             objectName: objectName,
             properties: {
-              lineColor: this.viewModel.settings.style.lineColor,
-              lineThickness: this.viewModel.settings.style.lineThickness
+              lineColor: this.styleSettings.lineColor,
+              lineThickness: this.styleSettings.lineThickness
             },
             selector: null
           });
 
-        } else if (this.viewModel.settings.style.timelineStyle == "bar") {
+        } else if (this.styleSettings.timelineStyle == "bar") {
           objectEnumeration.push({
             objectName: objectName,
             properties: {
-              barColor: this.viewModel.settings.style.barColor,
-              barHeight: this.viewModel.settings.style.barHeight
+              barColor: this.styleSettings.barColor,
+              barHeight: this.styleSettings.barHeight
             },
             selector: null
           });
-        } else if (this.viewModel.settings.style.timelineStyle == "minimalist") {
+        } else if (this.styleSettings.timelineStyle == "minimalist") {
           objectEnumeration.push({
             objectName: objectName,
             properties: {
-              minimalistAxis: this.viewModel.settings.style.minimalistAxis,
-              iconsColor: this.viewModel.settings.style.iconsColor,
-              minimalistStyle: this.viewModel.settings.style.minimalistStyle,
-              minimalistConnect: this.viewModel.settings.style.minimalistConnect
+              minimalistAxis: this.styleSettings.minimalistAxis,
+              iconsColor: this.styleSettings.iconsColor,
+              minimalistStyle: this.styleSettings.minimalistStyle,
+              minimalistConnect: this.styleSettings.minimalistConnect
             },
             selector: null
           });
 
-          if (this.viewModel.settings.style.minimalistConnect) {
+          if (this.styleSettings.minimalistConnect) {
             objectEnumeration.push({
               objectName: objectName,
               properties: {
-                connectColor: this.viewModel.settings.style.connectColor
+                connectColor: this.styleSettings.connectColor
               },
               selector: null
             });
           }
 
-          if (this.viewModel.settings.style.minimalistStyle !== "thinBar" && this.viewModel.settings.style.minimalistStyle !== "dot") {
+          if (this.styleSettings.minimalistStyle !== "thinBar" && this.styleSettings.minimalistStyle !== "dot") {
             objectEnumeration.push({
               objectName: objectName,
               properties: {
-                minimalistSize: this.viewModel.settings.style.minimalistSize
+                minimalistSize: this.styleSettings.minimalistSize
               },
               selector: null
             });
@@ -1693,18 +1718,18 @@ export class Visual implements IVisual {
         objectEnumeration.push({
           objectName: objectName,
           properties: {
-            today: this.viewModel.settings.style.today
+            today: this.styleSettings.today
           },
           selector: null
         });
 
 
-        if (this.viewModel.settings.style.today) {
+        if (this.styleSettings.today) {
           objectEnumeration.push({
             objectName: objectName,
             properties: {
-              todayColor: this.viewModel.settings.style.todayColor,
-              todayTop: this.viewModel.settings.style.todayTop
+              todayColor: this.styleSettings.todayColor,
+              todayTop: this.styleSettings.todayTop
             },
             selector: null
           });
@@ -1714,19 +1739,19 @@ export class Visual implements IVisual {
         objectEnumeration.push({
           objectName: objectName,
           properties: {
-            imagesHeight: this.viewModel.settings.imageSettings.imagesHeight,
-            imagesWidth: this.viewModel.settings.imageSettings.imagesWidth,
-            // style: this.viewModel.settings.imageSettings.style
+            imagesHeight: this.imageSettings.imagesHeight,
+            imagesWidth: this.imageSettings.imagesWidth,
+            // style: this.imageSettings.style
           },
           selector: null
         });
 
-        if (this.viewModel.settings.style.timelineStyle !== "minimalist" && this.viewModel.settings.style.timelineStyle !== "image") {
+        if (this.styleSettings.timelineStyle !== "minimalist" && this.styleSettings.timelineStyle !== "image") {
           objectEnumeration.push({
             objectName: objectName,
             properties: {
 
-              style: this.viewModel.settings.imageSettings.style
+              style: this.imageSettings.style
             },
             selector: null
           });
@@ -1737,17 +1762,17 @@ export class Visual implements IVisual {
         objectEnumeration.push({
           objectName: objectName,
           properties: {
-            downloadCalendar: this.viewModel.settings.download.downloadCalendar,
+            downloadCalendar: this.downloadSettings.downloadCalendar,
           },
           selector: null
         });
 
-        if (this.viewModel.settings.download.downloadCalendar) {
+        if (this.downloadSettings.downloadCalendar) {
           objectEnumeration.push({
             objectName: objectName,
             properties: {
-              calendarName: this.viewModel.settings.download.calendarName,
-              position: this.viewModel.settings.download.position
+              calendarName: this.downloadSettings.calendarName,
+              position: this.downloadSettings.position
             },
             selector: null
           });
@@ -1791,7 +1816,7 @@ export class Visual implements IVisual {
 
   //       return "white"
   //     })
-  //   return Math.min(textWidth, this.viewModel.settings.textSettings.wrap)
+  //   return Math.min(textWidth, this.textSettings.wrap)
   // }
 
   private getAnnotationHeight(element) {
@@ -1807,7 +1832,7 @@ export class Visual implements IVisual {
     // element.alignment.note.align = orientation
     annotationsData = [{
       note: {
-        wrap: this.viewModel.settings.textSettings.wrap,
+        wrap: this.textSettings.wrap,
         title: element.labelText,
         label: element.description,
         bgPadding: 0
@@ -1860,7 +1885,7 @@ export class Visual implements IVisual {
       .attr("y", 1)
       .attr("x", 1)
     if (wrappedText) {
-      txt.call(wrap, this.viewModel.settings.textSettings.wrap)
+      txt.call(wrap, this.textSettings.wrap)
     }
     txt.attr("color", function (d) {
       //Irrelevant color. ".EACH" does not work on IE and we need to iterate over the elements after they have been appended to dom.
