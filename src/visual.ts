@@ -404,7 +404,7 @@ export class Visual implements IVisual {
         if (this.styleSettings.timelineStyle !== "image") {
             this.finalMarginTop = !this.textSettings.stagger || this.styleSettings.timelineStyle == "minimalist" ? this.marginTop : marginTopStagger
 
-            if (this.styleSettings.timelineStyle != "minimalist" && filteredData.filter(el => el.top & el.customVertical).length > 0) {
+            if (this.styleSettings.timelineStyle != "minimalist" && filteredData.filter(el => el.top && el.customVertical).length > 0) {
                 //case user input offset is > than margin
                 this.finalMarginTop = Math.max(this.finalMarginTop, maxOffsetTop + this.textSettings.spacing)
             }
