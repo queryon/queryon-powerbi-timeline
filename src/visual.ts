@@ -34,6 +34,7 @@ import { color, text, timeThursday } from "d3";
 import { ViewModel } from '@/interfaces';
 import { AxisSettings, DownloadSettings, ImageSettings, Settings, StyleSettings, TextSettings } from "./settings";
 import { DataPoint } from "./dataPoint";
+import { DataPointAlignment } from "./dataPointAlignment";
 
 
 type Selection<T extends d3.BaseType> = d3.Selection<T, any, any, any>;
@@ -171,7 +172,7 @@ export class Visual implements IVisual {
     }
 
     /** Determines the Min & Max date values for the timeline */
-    private setDateRange(data: DataPoint[]) {
+    private setDataRange(data: DataPoint[]) {
         let minFromData = d3.min(data, function (d: any) { return d.date })
         let maxFromData = d3.max(data, function (d: any) { return d.date })
 
@@ -191,7 +192,6 @@ export class Visual implements IVisual {
                     this.maxVal = maxFromInput
                 }
             }
-
 
             this.maxVal = !this.maxVal ? maxFromData : this.maxVal
             this.minVal = !this.minVal ? minFromData : this.minVal
@@ -240,9 +240,9 @@ export class Visual implements IVisual {
             dataPoint["top"] = dataPoint.customFormat ? dataPoint.top : top
             dataPoint["labelOrientation"] = dataPoint.customFormat ? dataPoint.labelOrientation : labelOrientation
             dataPoint["annotationStyle"] = dataPoint.customFormat ? dataPoint.annotationStyle : annotationStyle
-            dataPoint["textWidth"] = this.styleSettings.timelineStyle == "minimalist" ? false : Math.min(this.textSettings.wrap, BrowserText.getWidth(dataPoint["labelText"], dataPoint["textSize"], fontFamily));  // this.getTextWidth(dataPoint["labelText"], dataPoint["textSize"], fontFamily)
+            dataPoint["textWidth"] = this.styleSettings.timelineStyle == "minimalist" ? 0 : Math.min(this.textSettings.wrap, BrowserText.getWidth(dataPoint["labelText"], dataPoint["textSize"], fontFamily));  // this.getTextWidth(dataPoint["labelText"], dataPoint["textSize"], fontFamily)
             // dataPoint["textHeight"] = this.getTextHeight(dataPoint["labelText"], dataPoint["textSize"], fontFamily, true) + 3
-            dataPoint["textHeight"] = this.styleSettings.timelineStyle == "minimalist" ? false : this.getAnnotationHeight(dataPoint)
+            dataPoint["textHeight"] = this.styleSettings.timelineStyle == "minimalist" ? 0 : this.getAnnotationHeight(dataPoint)
 
             let startTime = [dataPoint.date.getFullYear(), dataPoint.date.getMonth() + 1, dataPoint.date.getDate(), dataPoint.date.getHours(), dataPoint.date.getMinutes()];
 
@@ -342,7 +342,7 @@ export class Visual implements IVisual {
 
         this.setEmptyCanvas();
         this.setDefaultGlobals();
-        this.setDateRange(this.viewModel.dataPoints); // Set the date range of the timeline based on the data
+        this.setDataRange(this.viewModel.dataPoints); // Set the date range of the timeline based on the data
 
         const addToMargin = this.getAdditionalMargin();
         const dateValueFormatter = this.createDateFormatter(options);
@@ -408,7 +408,6 @@ export class Visual implements IVisual {
                 //case user input offset is > than margin
                 this.finalMarginTop = Math.max(this.finalMarginTop, maxOffsetTop + this.textSettings.spacing)
             }
-
 
         } else {
             this.finalMarginTop = 20 //+ imagesHeight / 2
@@ -602,27 +601,27 @@ export class Visual implements IVisual {
                             }
                             return result
                         })
-                        .attr('font-family', element => element["fontFamily"])
-                        .attr('font-size', element => element["textSize"])
-                        .attr("fill", el => el["textColor"])
+                        .attr('font-family', element => element.fontFamily)
+                        .attr('font-size', element => element.textSize)
+                        .attr("fill", el => el.textColor)
 
-                        .attr("id", (element) => element["selectionId"])
-                        .text(element => element["label"])
-                        .attr('class', element => `annotation_selector_${element["selectionId"].key.replace(/\W/g, '')} annotationSelector`)
+                        .attr("id", (element) => element.selectionId.getKey())
+                        .text(element => element.label)
+                        .attr('class', element => `annotation_selector_${element.selectionId.getKey().replace(/\W/g, '')} annotationSelector`)
                         .on('click', element => {
 
                             //manage highlighted formating and open links
-                            this.selectionManager.select(element["selectionId"]).then((ids: ISelectionId[]) => {
+                            this.selectionManager.select(element.selectionId).then((ids: ISelectionId[]) => {
                                 if (ids.length > 0) {
                                     d3.selectAll('.annotationSelector').style('opacity', "0.1")
                                     d3.selectAll('.minIconSelector').style('opacity', "0.1")
 
-                                    d3.selectAll(`.annotation_selector_${element["selectionId"].key.replace(/\W/g, '')}`).style('opacity', "1")
-                                    d3.selectAll(`.min_icon_selector_${element["selectionId"].key.replace(/\W/g, '')}`).style('opacity', "1")
+                                    d3.selectAll(`.annotation_selector_${element["selectionId"].getKey().replace(/\W/g, '')}`).style('opacity', "1")
+                                    d3.selectAll(`.min_icon_selector_${element["selectionId"].getKey().replace(/\W/g, '')}`).style('opacity', "1")
 
                                     //Open link 
-                                    if (element["URL"]) {
-                                        this.host.launchUrl(element["URL"])
+                                    if (element.URL) {
+                                        this.host.launchUrl(element.URL)
                                     }
 
                                 }
@@ -731,9 +730,6 @@ export class Visual implements IVisual {
                     minIcons = minIcons.merge(enterIcons)
                         .style("fill", element => element["iconColor"]);
 
-
-
-
                     //Add line
                     if (this.styleSettings.minimalistConnect) {
                         this.container.append("path")
@@ -749,7 +745,7 @@ export class Visual implements IVisual {
                                         y += 35
                                     }
                                     return y
-                                }))
+                                }) as any) //TODO: The any cast is a workaround to avoid this showing as an error due to d3.Line<[number, number]> not bing a valid type here
                     }
 
 
@@ -950,11 +946,7 @@ export class Visual implements IVisual {
 
                     // svgHeightTracking = Math.max(svgHeightTracking, element["y"] + element["dy"])
 
-                    element["alignment"] = {
-                        "className": "custom",
-                        "connector": { "end": "dot" },
-                        "note": { "align": "dynamic" }
-                    }
+                    element.alignment = new DataPointAlignment();
 
                     element.alignment.note.align = orientation
                     annotationsData = [{
@@ -971,16 +963,11 @@ export class Visual implements IVisual {
                         id: element.selectionId
                     }]
 
-                    element["style"] = element.annotationStyle !== "textOnly" ? svgAnnotations[element.annotationStyle] : svgAnnotations['annotationLabel']
-
-                    element["type"] = new svgAnnotations.annotationCustomType(
-                        element.style,
-                        element.alignment
-                    )
+                    element.style = element.annotationStyle !== "textOnly" ? svgAnnotations[element.annotationStyle] : svgAnnotations['annotationLabel']
 
                     makeAnnotations = svgAnnotations.annotation()
                         .annotations(annotationsData)
-                        .type(new svgAnnotations.annotationCustomType(element.type, element.alignment))
+                        .type(new svgAnnotations.annotationCustomType(element.style, element.alignment)) //NOTE: THis used to be (element.type, element.alignment) for some reason, which is an error?
 
                     if (element.annotationStyle === 'textOnly') {
                         makeAnnotations
@@ -1078,7 +1065,7 @@ export class Visual implements IVisual {
 
                     this.container
                         .append("g")
-                        .attr('class', `annotation_selector_${element.selectionId.key.replace(/\W/g, '')} annotationSelector`)
+                        .attr('class', `annotation_selector_${element.selectionId.getKey().replace(/\W/g, '')} annotationSelector`)
                         .style('font-size', element.textSize + "px")
                         .style('font-family', element.fontFamily)
                         .style('background-color', 'transparent')
@@ -1088,15 +1075,15 @@ export class Visual implements IVisual {
                             this.selectionManager.select(element.selectionId).then((ids: ISelectionId[]) => {
                                 if (ids.length > 0) {
                                     // this.container.selectAll('.bar').style('fill-opacity', 0.1)
-                                    d3.select(`.selector_${element.selectionId.key.replace(/\W/g, '')}`).style('fill-opacity', 1)
+                                    d3.select(`.selector_${element.selectionId.getKey().replace(/\W/g, '')}`).style('fill-opacity', 1)
                                     this.container.selectAll('.annotationSelector').style('font-weight', "normal")
 
                                     if (!this.textSettings.boldTitles) {
                                         this.container.selectAll('.annotationSelector  .annotation-note-title ').style('font-weight', "normal")
                                     }
 
-                                    d3.selectAll(`.annotation_selector_${element.selectionId.key.replace(/\W/g, '')}`).style('font-weight', "bold")
-                                    d3.selectAll(`.annotation_selector_${element.selectionId.key.replace(/\W/g, '')}  .annotation-note-title `).style('font-weight', "bold")
+                                    d3.selectAll(`.annotation_selector_${element.selectionId.getKey().replace(/\W/g, '')}`).style('font-weight', "bold")
+                                    d3.selectAll(`.annotation_selector_${element.selectionId.getKey().replace(/\W/g, '')}  .annotation-note-title `).style('font-weight', "bold")
 
 
                                     //Open link 
@@ -1154,11 +1141,7 @@ export class Visual implements IVisual {
                 orientation = "left"
 
 
-                element["alignment"] = {
-                    "className": "custom",
-                    "connector": { "end": "dot" },
-                    "note": { "align": "dynamic" }
-                }
+                element.alignment = new DataPointAlignment();
                 element.alignment.note.align = orientation
 
                 if (this.axisSettings.axis == "Values") {
@@ -1206,12 +1189,7 @@ export class Visual implements IVisual {
 
                 }
 
-                element["alignment"] = {
-                    "className": "custom",
-                    "connector": { "end": "dot" },
-                    "note": { "align": "dynamic" }
-                }
-
+                element.alignment = new DataPointAlignment();
                 element.alignment.note.align = orientation
                 annotationsData = [{
                     note: {
@@ -1236,7 +1214,7 @@ export class Visual implements IVisual {
 
                 makeAnnotations = svgAnnotations.annotation()
                     .annotations(annotationsData)
-                    .type(new svgAnnotations.annotationCustomType(element.type, element.alignment))
+                    .type(new svgAnnotations.annotationCustomType(element.style, element.alignment))
 
 
                 makeAnnotations
@@ -1272,7 +1250,7 @@ export class Visual implements IVisual {
 
                 this.container
                     .append("g")
-                    .attr('class', `annotation_selector_${element.selectionId.key.replace(/\W/g, '')} annotationSelector`)
+                    .attr('class', `annotation_selector_${element.selectionId.getKey().replace(/\W/g, '')} annotationSelector`)
                     .style('font-size', element.textSize + "px")
                     .style('font-family', element.fontFamily)
                     .style('background-color', 'transparent')
@@ -1281,15 +1259,15 @@ export class Visual implements IVisual {
                         this.selectionManager.select(element.selectionId).then((ids: ISelectionId[]) => {
                             if (ids.length > 0) {
                                 // this.container.selectAll('.bar').style('fill-opacity', 0.1)
-                                d3.select(`.selector_${element.selectionId.key.replace(/\W/g, '')}`).style('fill-opacity', 1)
+                                d3.select(`.selector_${element.selectionId.getKey().replace(/\W/g, '')}`).style('fill-opacity', 1)
                                 this.container.selectAll('.annotationSelector').style('font-weight', "normal")
 
                                 if (!this.textSettings.boldTitles) {
                                     this.container.selectAll('.annotationSelector  .annotation-note-title ').style('font-weight', "normal")
                                 }
 
-                                d3.selectAll(`.annotation_selector_${element.selectionId.key.replace(/\W/g, '')}`).style('font-weight', "bold")
-                                d3.selectAll(`.annotation_selector_${element.selectionId.key.replace(/\W/g, '')}  .annotation-note-title `).style('font-weight', "bold")
+                                d3.selectAll(`.annotation_selector_${element.selectionId.getKey().replace(/\W/g, '')}`).style('font-weight', "bold")
+                                d3.selectAll(`.annotation_selector_${element.selectionId.getKey().replace(/\W/g, '')}  .annotation-note-title `).style('font-weight', "bold")
 
                                 //Open link 
                                 if (element.URL) {
@@ -1894,15 +1872,11 @@ export class Visual implements IVisual {
     //   return Math.min(textWidth, this.textSettings.wrap)
     // }
 
-    private getAnnotationHeight(element) {
+    private getAnnotationHeight(element: DataPoint) {
         //annotations config
         let annotationsData, makeAnnotations
 
-        element["alignment"] = {
-            "className": "custom",
-            "connector": { "end": "dot" },
-            "note": { "align": "dynamic" }
-        }
+        element.alignment = new DataPointAlignment();
 
         // element.alignment.note.align = orientation
         annotationsData = [{
@@ -1918,21 +1892,14 @@ export class Visual implements IVisual {
             color: element.textColor
         }]
 
-
-
-        element["type"] = new svgAnnotations.annotationCustomType(
-            svgAnnotations['annotationLabel'],
-            element.alignment
-        )
-
         makeAnnotations = svgAnnotations.annotation()
             .annotations(annotationsData)
-            .type(new svgAnnotations.annotationCustomType(element.type, element.alignment))
+            .type(new svgAnnotations.annotationCustomType(svgAnnotations['annotationLabel'], element.alignment))
 
 
         let anno = this.container
             .append("g")
-            .attr('class', `annotation_selector_${element.selectionId.key.replace(/\W/g, '')} annotationSelector`)
+            .attr('class', `annotation_selector_${element.selectionId.getKey().replace(/\W/g, '')} annotationSelector`)
             .style('font-size', element.textSize + "px")
             .style('font-family', element.fontFamily)
             .style('background-color', 'transparent')
@@ -1978,7 +1945,7 @@ export class Visual implements IVisual {
 
         return textHeight
     }
-    private getAnnotationOrientation(element) {
+    private getAnnotationOrientation(element: DataPoint) {
         if (element.textWidth + element.x > this.width - this.padding * 2) {
             return "right"
         } else {

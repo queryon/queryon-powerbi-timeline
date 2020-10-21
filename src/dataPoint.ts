@@ -1,13 +1,17 @@
+import { annotationCustomType } from "d3-svg-annotation";
 import powerbi from "powerbi-visuals-api";
+import { DataPointAlignment } from "./dataPointAlignment";
+import * as svgAnnotations from "d3-svg-annotation";
 
 
 export class DataPoint {
     public label: string = '';
     public date: Date;
-    public URL: string | boolean = false;
+    public URL: string = '';
     public image: string | boolean = false;
     public description: string = '';
-    public labelColumn: string;
+    public labelColumn: string = '';
+    public labelText: string = '';
     public dateColumn: string;
     public descriptionColumn: string | boolean;
 
@@ -25,5 +29,15 @@ export class DataPoint {
     public annotationStyle: string = 'annotationLabel';
     public labelOrientation: string = 'Auto';
 
+    public style: typeof svgAnnotations.Type;
+
+    public alignment: DataPointAlignment = new DataPointAlignment();
+
+    public textWidth: number = 0;
+    public textHeight: number = 0;
     
+    public x: number = 0; // ??
+    public dy: number = 0; // ??
 }
+
+
