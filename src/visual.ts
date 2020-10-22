@@ -54,7 +54,6 @@ export class Visual implements IVisual {
     private height: number;
     private barHeight: number;
     private marginTop: number = 10;
-    private finalMarginTop: number;
     private minVal: any;
     private maxVal: any;
     private viewModel: ViewModel;
@@ -126,9 +125,9 @@ export class Visual implements IVisual {
         // this.svg.selectAll("defs").remove();
     }
 
-    private setPadding(filteredDataWithImage: DataPoint[]) {
+    private setPadding(state: ChartDrawingState) {
         //increment padding based on image
-        if (filteredDataWithImage.length > 0 && this.styleSettings.timelineStyle !== "minimalist") {
+        if (state.filteredWithImage.length > 0 && this.styleSettings.timelineStyle !== "minimalist") {
             let dynamicPadding = Math.max(this.padding, this.imageSettings.imagesWidth / 2)
             this.padding = dynamicPadding
         }
@@ -140,7 +139,7 @@ export class Visual implements IVisual {
         }
 
         //increment padding in case scroll bar 
-        if (this.finalMarginTop > this.height) {
+        if (state.finalMarginTop > this.height) {
             this.padding = Math.max(this.padding, this.maxPadding)
         }
     }
@@ -171,7 +170,7 @@ export class Visual implements IVisual {
         return createFormatter(format);
     }
 
-    /** Determines the Min & Max date values for the timeline */
+    /** Determines the Min & Max date or numeric values for the timeline */
     private setDataRange(data: DataPoint[]) {
         let minFromData = d3.min(data, function (d: any) { return d.date })
         let maxFromData = d3.max(data, function (d: any) { return d.date })
@@ -205,7 +204,7 @@ export class Visual implements IVisual {
         }
     }
 
-    private filterAndProcessData(data: DataPoint[], dateValueFormatter: any, addToMargin: number) {
+    private filterAndProcessData(state: ChartDrawingState) {
         const textSize = this.textSettings.textSize;
         const textColor = this.textSettings.textColor.solid.color;
         const fontFamily = this.textSettings.fontFamily;
@@ -214,24 +213,16 @@ export class Visual implements IVisual {
         const labelOrientation = this.textSettings.labelOrientation;
         const annotationStyle = this.textSettings.annotationStyle;
 
-
-        let filteredData: DataPoint[];
-
         //filter data out of axis range, reverse order if axis is in decremental order
         if (this.minVal > this.maxVal) {
-            filteredData = data.filter(element => element.date <= this.minVal && element.date >= this.maxVal)
+            state.filteredData = state.data.filter(element => element.date <= this.minVal && element.date >= this.maxVal)
             // data.reverse() //removed reverse so user can do their own sorting
         } else {
-            filteredData = data.filter(element => element.date >= this.minVal && element.date <= this.maxVal)
+            state.filteredData = state.data.filter(element => element.date >= this.minVal && element.date <= this.maxVal)
         }
 
-        let spacing = 0;
-        let maxOffsetTop = 0;
-        let maxOffsetBottom = 0;
-        let ICSevents = [];
-
-        filteredData.forEach((dataPoint, i) => {
-            dataPoint["formatted"] = dateValueFormatter.format(dataPoint["date"])
+        state.filteredData.forEach((dataPoint, i) => {
+            dataPoint["formatted"] = state.dateValueFormatter.format(dataPoint["date"])
             dataPoint["labelText"] = this.styleSettings.timelineStyle != "image" ? `${dataPoint["formatted"]}${this.textSettings.separator} ${dataPoint["label"]}` : dataPoint["label"]
             dataPoint["textColor"] = dataPoint.customFormat ? dataPoint.textColor : textColor
             dataPoint["iconColor"] = dataPoint.customFormat ? dataPoint.iconColor : iconsColor
@@ -246,7 +237,7 @@ export class Visual implements IVisual {
 
             let startTime = [dataPoint.date.getFullYear(), dataPoint.date.getMonth() + 1, dataPoint.date.getDate(), dataPoint.date.getHours(), dataPoint.date.getMinutes()];
 
-            ICSevents.push({
+            state.ICSevents.push({
                 title: dataPoint.label,
                 description: dataPoint.description,
                 // startInputType: 'utc',
@@ -262,8 +253,8 @@ export class Visual implements IVisual {
 
             //add heights to margin conditionally:
             if (this.styleSettings.timelineStyle !== "minimalist") {
-                if (!spacing || spacing < dataPoint["textHeight"]) {
-                    spacing = dataPoint["textHeight"]
+                if (!state.spacing || state.spacing < dataPoint["textHeight"]) {
+                    state.spacing = dataPoint["textHeight"]
                 }
 
                 if (this.styleSettings.timelineStyle !== "image") {
@@ -271,15 +262,15 @@ export class Visual implements IVisual {
                         this.marginTop = Math.max(this.marginTop, dataPoint["textHeight"] + 30)
 
                         if (dataPoint.customVertical) {
-                            maxOffsetTop = Math.max(maxOffsetTop, dataPoint.verticalOffset)
+                            state.maxOffsetTop = Math.max(state.maxOffsetTop, dataPoint.verticalOffset)
                         }
                     } else {
                         if (dataPoint.customVertical) {
-                            maxOffsetBottom = Math.max(maxOffsetBottom, dataPoint.verticalOffset)
+                            state.maxOffsetBottom = Math.max(state.maxOffsetBottom, dataPoint.verticalOffset)
                         }
                         //add to margin case text is bottom and image is on top (alternate and straight styles)
                         if (dataPoint.image) {
-                            this.marginTop = Math.max(this.marginTop, addToMargin)
+                            this.marginTop = Math.max(this.marginTop, state.addToMargin)
                         }
                     }
 
@@ -293,18 +284,10 @@ export class Visual implements IVisual {
                     this.fontHeightLib[`${dataPoint["textSize"]}${fontFamily}`] = this.getTextHeight(dataPoint["labelText"], dataPoint["textSize"], fontFamily, false) + 3
                 }
                 itemHeight = this.fontHeightLib[`${dataPoint["textSize"]}${fontFamily}`]
-                spacing = Math.max(itemHeight, spacing)
+                state.spacing = Math.max(itemHeight, state.spacing)
             }
 
         });
-
-        return {
-            filteredData: filteredData,
-            spacing: spacing,
-            maxOffsetTop: maxOffsetTop,
-            maxOffsetBottom: maxOffsetBottom,
-            ICSevents: ICSevents
-        }
     }
 
     /** If the data size is too large for the view type, this notified the user 
@@ -327,6 +310,10 @@ export class Visual implements IVisual {
         return false;
     }
 
+    private drawChart() {
+
+    }
+
     /** Sets the defalt global values, executed on every update() call */
     private setDefaultGlobals() {
         this.marginTop = this.defaultMarginTop;
@@ -336,23 +323,21 @@ export class Visual implements IVisual {
 
     public update(options: VisualUpdateOptions) {
         this.viewModel = generateViewModel(options, this.host)
-        const data = this.viewModel.dataPoints
+        const state: ChartDrawingState = new ChartDrawingState();
+        state.data = this.viewModel.dataPoints
 
-        if(this.validateDataSizeConstraints(data, options)) return; // Short circuit if data size is too large for view type
+        if(this.validateDataSizeConstraints(state.data, options)) return; // Short circuit if data size is too large for view type
 
         this.setEmptyCanvas();
         this.setDefaultGlobals();
         this.setDataRange(this.viewModel.dataPoints); // Set the date range of the timeline based on the data
 
-        const addToMargin = this.getAdditionalMargin();
-        const dateValueFormatter = this.createDateFormatter(options);
-        const processedDataResults = this.filterAndProcessData(data, dateValueFormatter, addToMargin);
+        state.addToMargin = this.getAdditionalMargin();
+        state.dateValueFormatter = this.createDateFormatter(options);
+        this.filterAndProcessData(state);
+        state.filteredWithImage = state.filteredData.filter(el => el.image)
 
-        const filteredData = processedDataResults.filteredData;
-        let spacing = processedDataResults.spacing;
-        const maxOffsetTop = processedDataResults.maxOffsetTop;
-        const maxOffsetBottom = processedDataResults.maxOffsetBottom;
-        const ICSevents = processedDataResults.ICSevents;
+        const filteredData = state.filteredData; // Array Refernece used to reduce call length
 
         //min label width from annotation plugin
         if (this.textSettings.wrap < 90) {
@@ -367,71 +352,67 @@ export class Visual implements IVisual {
 
         this.height = options.viewport.height;
         this.barHeight = this.styleSettings.barHeight;
-        let marginTopStagger = 20;
-        let svgHeightTracking, finalHeight, needScroll = false;
 
         //sort so staggering works in right order
         // data = data.sort((a, b) => (a.date > b.date) ? 1 : -1)
 
         if (this.textSettings.annotationStyle === 'annotationCallout' || this.textSettings.annotationStyle === 'annotationCalloutCurve') {
             //annotation styles that add to text height, increment spacing
-            spacing += 10
+            state.spacing += 10
         }
 
         //work around not limiting minimum spacing
         if (this.textSettings.autoStagger || !this.textSettings.spacing) {
-            this.textSettings.spacing = spacing
+            this.textSettings.spacing = state.spacing
             this.host.persistProperties({
                 merge: [{
                     objectName: 'textSettings',
                     selector: null,
-                    properties: { spacing: spacing }
+                    properties: { spacing: state.spacing }
                 }]
             });
         }
 
-        marginTopStagger += ((filteredData.filter(element => element.top).length) * this.textSettings.spacing) + 20
+        state.marginTopStagger += ((filteredData.filter(element => element.top).length) * this.textSettings.spacing) + 20
 
         //case margintopstagger wasn't incremented - no top staggered items:
-        marginTopStagger = Math.max(this.marginTop, marginTopStagger)
+        state.marginTopStagger = Math.max(this.marginTop, state.marginTopStagger)
 
 
         if (this.imageSettings.style !== "default" && filteredData.filter(el => !el.top && el.image).length > 0) {
-            marginTopStagger = Math.max(marginTopStagger, addToMargin)
+            state.marginTopStagger = Math.max(state.marginTopStagger, state.addToMargin)
         }
 
         //define "official" margin top to start drawing graph
         if (this.styleSettings.timelineStyle !== "image") {
-            this.finalMarginTop = !this.textSettings.stagger || this.styleSettings.timelineStyle == "minimalist" ? this.marginTop : marginTopStagger
+            state.finalMarginTop = !this.textSettings.stagger || this.styleSettings.timelineStyle == "minimalist" ? this.marginTop : state.marginTopStagger
 
             if (this.styleSettings.timelineStyle != "minimalist" && filteredData.filter(el => el.top && el.customVertical).length > 0) {
                 //case user input offset is > than margin
-                this.finalMarginTop = Math.max(this.finalMarginTop, maxOffsetTop + this.textSettings.spacing)
+                state.finalMarginTop = Math.max(state.finalMarginTop, state.maxOffsetTop + this.textSettings.spacing)
             }
 
         } else {
-            this.finalMarginTop = 20 //+ imagesHeight / 2
+            state.finalMarginTop = 20 //+ imagesHeight / 2
         }
 
 
-        let downloadTop = this.downloadSettings.downloadCalendar && this.downloadSettings.position.split(",")[0] == "TOP",
-            downloadBottom = this.downloadSettings.downloadCalendar && this.downloadSettings.position.split(",")[0] !== "TOP"
+        state.downloadTop = this.downloadSettings.downloadCalendar && this.downloadSettings.position.split(",")[0] == "TOP";
+        state.downloadBottom = this.downloadSettings.downloadCalendar && this.downloadSettings.position.split(",")[0] !== "TOP"
 
         //download calendar icon is enabled and positioned at top
-        if (downloadTop) {
-            this.finalMarginTop += 35
+        if (state.downloadTop) {
+            state.finalMarginTop += 35
         }
 
 
 
         //axis format
-        let axisFormat = this.axisSettings.dateFormat != "customJS" ? this.axisSettings.dateFormat : this.axisSettings.customJS
-        let axisValueFormatter = axisFormat == "same" ? dateValueFormatter : createFormatter(axisFormat);
-
-        let filteredWithImage = filteredData.filter(el => el.image)
+        state.axisFormat = this.axisSettings.dateFormat != "customJS" ? this.axisSettings.dateFormat : this.axisSettings.customJS;
+        state.axisValueFormatter = state.axisFormat == "same" ? state.dateValueFormatter : createFormatter(state.axisFormat);      
 
         //increment padding based on image
-        if (filteredWithImage.length > 0 && this.styleSettings.timelineStyle !== "minimalist") {
+        if (state.filteredWithImage.length > 0 && this.styleSettings.timelineStyle !== "minimalist") {
             let dynamicPadding = Math.max(this.padding, this.imageSettings.imagesWidth / 2)
             this.padding = dynamicPadding
         }
@@ -443,136 +424,136 @@ export class Visual implements IVisual {
         }
 
         //increment padding in case scroll bar 
-        if (this.finalMarginTop > this.height) {
+        if (state.finalMarginTop > this.height) {
             this.padding = Math.max(this.padding, this.maxPadding)
         }
 
-        let scale = d3.scaleTime()
+        state.scale = d3.scaleTime()
             .domain([this.minVal, this.maxVal]) //min and max data 
             .range([0, this.width - (this.padding * 2)]); //min and max width in px           
 
 
         if (this.styleSettings.timelineStyle !== "image") {
             //all styles, not image focus:
-            let bar, axisMarginTop, enabledAnnotations, strokeColor, width, axisPadding
+            //let bar, axisMarginTop, enabledAnnotations, strokeColor, width, axisPadding
 
 
             this.svg.attr("width", this.width - 4);
             switch (this.styleSettings.timelineStyle) {
                 case "line":
-                    axisMarginTop = this.finalMarginTop;
-                    enabledAnnotations = true;
-                    axisPadding = this.padding;
-                    strokeColor = this.axisSettings.axisColor.solid.color
+                    state.axisMarginTop = state.finalMarginTop;
+                    state.enabledAnnotations = true;
+                    state.axisPadding = this.padding;
+                    state.strokeColor = this.axisSettings.axisColor.solid.color
 
                     // svgHeightTracking = this.height
-                    svgHeightTracking = this.finalMarginTop + 20
+                    state.svgHeightTracking = state.finalMarginTop + 20
 
                     if (this.textSettings.stagger) {
-                        svgHeightTracking += (filteredData.filter(el => !el.top).length) * this.textSettings.spacing + 20
+                        state.svgHeightTracking += (filteredData.filter(el => !el.top).length) * this.textSettings.spacing + 20
                     } else {
-                        svgHeightTracking += this.textSettings.spacing
+                        state.svgHeightTracking += this.textSettings.spacing
                     }
 
                     if (filteredData.filter(el => el.top && el.image).length > 0) {
-                        svgHeightTracking = Math.max(svgHeightTracking, axisMarginTop + addToMargin)
+                        state.svgHeightTracking = Math.max(state.svgHeightTracking, state.axisMarginTop + state.addToMargin)
                     }
 
 
-                    svgHeightTracking = Math.max(svgHeightTracking, axisMarginTop + maxOffsetBottom + this.textSettings.spacing)
+                    state.svgHeightTracking = Math.max(state.svgHeightTracking, state.axisMarginTop + state.maxOffsetBottom + this.textSettings.spacing)
 
-                    if (svgHeightTracking > this.height) {
+                    if (state.svgHeightTracking > this.height) {
                         // this.width -= 20
                     }
-                    width = this.width
+                    state.width = this.width
 
 
-                    bar = this.container.append("line")
+                    state.bar = this.container.append("line")
                         .attr("x1", this.padding)
-                        .attr("y1", this.finalMarginTop)
+                        .attr("y1", state.finalMarginTop)
                         .attr("x2", this.width - this.padding)
-                        .attr("y2", this.finalMarginTop)
+                        .attr("y2", state.finalMarginTop)
                         .attr("stroke-width", this.styleSettings.lineThickness)
                         .attr("stroke", this.styleSettings.lineColor.solid.color);
                     break;
 
                 case "bar":
-                    axisMarginTop = this.finalMarginTop
-                    enabledAnnotations = true;
-                    strokeColor = "transparent"
-                    axisPadding = this.padding;
-                    svgHeightTracking = this.finalMarginTop + this.barHeight + 20;
+                    state.axisMarginTop = state.finalMarginTop
+                    state.enabledAnnotations = true;
+                    state.strokeColor = "transparent"
+                    state.axisPadding = this.padding;
+                    state.svgHeightTracking = state.finalMarginTop + this.barHeight + 20;
 
                     if (this.textSettings.stagger) {
-                        svgHeightTracking += (filteredData.filter(el => !el.top).length) * this.textSettings.spacing
+                        state.svgHeightTracking += (filteredData.filter(el => !el.top).length) * this.textSettings.spacing
                     } else {
-                        svgHeightTracking += this.textSettings.spacing
+                        state.svgHeightTracking += this.textSettings.spacing
                     }
 
                     if (filteredData.filter(el => el.top && el.image).length > 0) {
                         // svgHeightTracking = Math.max(svgHeightTracking, axisMarginTop + this.barHeight + addToMargin)
-                        svgHeightTracking = Math.max(svgHeightTracking, axisMarginTop + addToMargin)
+                        state.svgHeightTracking = Math.max(state.svgHeightTracking, state.axisMarginTop + state.addToMargin)
 
                     }
 
-                    svgHeightTracking = Math.max(svgHeightTracking, axisMarginTop + this.barHeight + maxOffsetBottom + this.textSettings.spacing)
+                    state.svgHeightTracking = Math.max(state.svgHeightTracking, state.axisMarginTop + this.barHeight + state.maxOffsetBottom + this.textSettings.spacing)
 
 
-                    if (svgHeightTracking > this.height) {
+                    if (state.svgHeightTracking > this.height) {
                         // this.width -= 20
                     }
-                    width = this.width
+                    state.width = this.width
 
-                    bar = this.container.append('rect')
+                    state.bar = this.container.append('rect')
                         .attr('width', this.width)
                         .attr('x', 0)//this.padding)
                         .attr('fill', this.styleSettings.barColor.solid.color)
-                        .attr('y', this.finalMarginTop)
+                        .attr('y', state.finalMarginTop)
                         .attr('height', this.barHeight)
-                    bar.exit().remove()
+                        state.bar.exit().remove()
                     break;
 
                 case "minimalist":
-                    enabledAnnotations = false;
+                    state.enabledAnnotations = false;
 
                     if (this.styleSettings.minimalistAxis == "bottom") {
-                        axisMarginTop = 10 + this.finalMarginTop + this.textSettings.spacing * (filteredData.length)
-                        svgHeightTracking = axisMarginTop + 30
+                        state.axisMarginTop = 10 + state.finalMarginTop + this.textSettings.spacing * (filteredData.length)
+                        state.svgHeightTracking = state.axisMarginTop + 30
 
-                        if (svgHeightTracking > this.height) {
+                        if (state.svgHeightTracking > this.height) {
                             //  this.width -= 20
-                            needScroll = true
-                            axisMarginTop = this.height - 40
+                            state.needScroll = true
+                            state.axisMarginTop = this.height - 40
 
 
                         }
                     } else {
-                        axisMarginTop = this.finalMarginTop
-                        svgHeightTracking = this.finalMarginTop + this.textSettings.spacing * (filteredData.length)
+                        state.axisMarginTop = state.finalMarginTop
+                        state.svgHeightTracking = state.finalMarginTop + this.textSettings.spacing * (filteredData.length)
 
-                        if (svgHeightTracking > this.height) {
-                            needScroll = true
+                        if (state.svgHeightTracking > this.height) {
+                            state.needScroll = true
                         }
                     }
 
 
 
 
-                    if (downloadTop) {
+                    if (state.downloadTop) {
 
-                        svgHeightTracking += 35
-                        if (!needScroll) {
-                            axisMarginTop += 35
+                        state.svgHeightTracking += 35
+                        if (!state.needScroll) {
+                            state.axisMarginTop += 35
                         }
                     }
-                    strokeColor = this.axisSettings.axisColor.solid.color
+                    state.strokeColor = this.axisSettings.axisColor.solid.color
 
                     //split screen for minimalist view
                     let newWidth = (this.width * 0.70)
-                    axisPadding = this.width - newWidth - this.padding;
+                    state.axisPadding = this.width - newWidth - this.padding;
 
                     //re-do scale
-                    scale = d3.scaleTime()
+                    state.scale = d3.scaleTime()
                         .domain([this.minVal, this.maxVal]) //min and max data 
                         .range([0, newWidth]); //min and max width in px    
 
@@ -580,7 +561,7 @@ export class Visual implements IVisual {
                         .attr("id", "clip")
                         .append("rect")
                         .attr("width", this.width - newWidth - this.padding - 10)
-                        .attr("height", svgHeightTracking);
+                        .attr("height", state.svgHeightTracking);
 
                     //append points and annotations
                     let textLateral = this.container.selectAll(".text-lateral")
@@ -596,7 +577,7 @@ export class Visual implements IVisual {
                         .attr("x", 0)
                         .attr("y", (element, i) => {
                             let result = 10 + this.marginTop + this.textSettings.spacing * i
-                            if (downloadTop) {
+                            if (state.downloadTop) {
                                 result += 35
                             }
                             return result
@@ -657,10 +638,10 @@ export class Visual implements IVisual {
                             .attr("d", shapeOptions[this.styleSettings.minimalistStyle])
                             .attr("transform", (element, i) => {
                                 let pointY = 10 + (this.marginTop + this.textSettings.spacing * i) - shapeSize
-                                if (downloadTop) {
+                                if (state.downloadTop) {
                                     pointY += 35
                                 }
-                                return "translate(" + (axisPadding + scale(element["date"])) + "," + pointY + ") rotate(180)"
+                                return "translate(" + (state.axisPadding + state.scale(element["date"])) + "," + pointY + ") rotate(180)"
 
                                 // return "translate(" + (axisPadding + scale(element["date"]) - shapeSize) + "," + pointY + ") rotate(180)"
                             })
@@ -691,12 +672,12 @@ export class Visual implements IVisual {
                         enterIcons = minIcons.enter()
                             .append("g").attr("class", "min-icons");
                         enterIcons.append('rect')
-                            .attr("x", element => axisPadding + scale(element["date"]))
+                            .attr("x", element => state.axisPadding + state.scale(element["date"]))
 
                             // .attr("x", element => axisPadding + scale(element["date"]) - shapeSize)
                             .attr("y", (element, i) => {
                                 let y = 10 + (this.marginTop + this.textSettings.spacing * i) - shapeSize
-                                if (downloadTop) {
+                                if (state.downloadTop) {
                                     y += 35
                                 }
                                 return y
@@ -738,10 +719,10 @@ export class Visual implements IVisual {
                             .attr("stroke", this.styleSettings.connectColor.solid.color)//"#69b3a2")
                             .attr("stroke-width", 1)
                             .attr("d", d3.line()
-                                .x(element => axisPadding + scale(element["date"]))
+                                .x(element => state.axisPadding + state.scale(element["date"]))
                                 .y((el, i) => {
                                     let y = 10 + (this.marginTop + this.textSettings.spacing * (i)) - shapeSize
-                                    if (downloadTop) {
+                                    if (state.downloadTop) {
                                         y += 35
                                     }
                                     return y
@@ -752,32 +733,32 @@ export class Visual implements IVisual {
                     break;
             }
 
-            finalHeight = Math.max(this.height - 4, svgHeightTracking)
+            state.finalHeight = Math.max(this.height - 4, state.svgHeightTracking)
 
-            this.svg.attr("height", finalHeight);
+            this.svg.attr("height", state.finalHeight);
 
             let transparentContainer
-            if (needScroll && this.styleSettings.minimalistAxis == "bottom") {
+            if (state.needScroll && this.styleSettings.minimalistAxis == "bottom") {
                 transparentContainer = this.container.append('rect')
                     .attr('width', this.width)
                     .attr('x', 0)//this.padding)
                     .attr('fill', "white")
-                    .attr('y', axisMarginTop)
+                    .attr('y', state.axisMarginTop)
                     .attr('height', this.height)
             }
             //axis setup
 
-            if (axisMarginTop) {
-                let x_axis = d3.axisBottom(scale)
+            if (state.axisMarginTop) {
+                let x_axis = d3.axisBottom(state.scale)
                     .tickFormat(d => {
-                        return axisValueFormatter.format(new Date(<any>d))
+                        return state.axisValueFormatter.format(new Date(<any>d))
                     })
 
 
                 let sandBox: any = d3.select('#sandbox-host')
                 //Append group and insert axis
                 let axisSVG = this.container.append("g")
-                    .attr("transform", "translate(" + axisPadding + "," + (needScroll ? axisMarginTop + sandBox.property("scrollTop") : axisMarginTop) + ")")
+                    .attr("transform", "translate(" + state.axisPadding + "," + (state.needScroll ? state.axisMarginTop + sandBox.property("scrollTop") : state.axisMarginTop) + ")")
                     .call(x_axis)
                     .attr('class', 'axis')
 
@@ -785,7 +766,7 @@ export class Visual implements IVisual {
                     .attr('style', `stroke :${this.axisSettings.axisColor.solid.color}`)
 
                 this.container.selectAll('path, line')
-                    .attr('style', `color :${strokeColor}`)
+                    .attr('style', `color :${state.strokeColor}`)
 
                 if (this.axisSettings.bold) {
                     this.container.classed("xAxis", false);
@@ -803,7 +784,7 @@ export class Visual implements IVisual {
 
                 }
 
-                if (needScroll) {
+                if (state.needScroll) {
                     //on scroll event delete and re-write axis on better position
                     // https://github.com/wbkd/d3-extended
                     d3.selection.prototype.moveToFront = function () {
@@ -821,12 +802,12 @@ export class Visual implements IVisual {
                                 .attr('width', this.width)
                                 .attr('x', 0)//this.padding)
                                 .attr('fill', "white")
-                                .attr('y', axisMarginTop + sandBox.property("scrollTop"))
+                                .attr('y', state.axisMarginTop + sandBox.property("scrollTop"))
                                 .attr('height', this.height)
                         }
                         //Append group and insert axis
                         axisSVG = this.container.append("g")
-                            .attr("transform", "translate(" + axisPadding + "," + (axisMarginTop + sandBox.property("scrollTop")) + ")")
+                            .attr("transform", "translate(" + state.axisPadding + "," + (state.axisMarginTop + sandBox.property("scrollTop")) + ")")
                             .call(x_axis)
                             .attr('class', 'axis')
 
@@ -834,7 +815,7 @@ export class Visual implements IVisual {
                             .attr('style', `stroke :${this.axisSettings.axisColor.solid.color}`)
 
                         this.container.selectAll('path, line')
-                            .attr('style', `color :${strokeColor}`)
+                            .attr('style', `color :${state.strokeColor}`)
 
                         if (this.axisSettings.bold) {
                             this.container.classed("xAxis", false);
@@ -874,16 +855,16 @@ export class Visual implements IVisual {
                     .attr("class", "symbol today-symbol")
                     .attr("transform", (d) => {
                         let transformStr, todayIconY,
-                            todayMarginTop = axisMarginTop ? axisMarginTop : this.finalMarginTop,
-                            todayPadding = axisPadding ? axisPadding : this.padding
+                            todayMarginTop = state.axisMarginTop ? state.axisMarginTop : state.finalMarginTop,
+                            todayPadding = state.axisPadding ? state.axisPadding : this.padding
 
                         if (this.styleSettings.todayTop) {
                             todayIconY = todayMarginTop - 12
-                            transformStr = "translate(" + (todayPadding + scale(today)) + "," + (todayIconY) + ") rotate(180)"
+                            transformStr = "translate(" + (todayPadding + state.scale(today)) + "," + (todayIconY) + ") rotate(180)"
                         } else {
                             todayIconY = this.styleSettings.timelineStyle == "bar" ? todayMarginTop + 12 + this.barHeight : todayMarginTop + 12
 
-                            transformStr = "translate(" + (todayPadding + scale(today)) + "," + (todayIconY) + ")"
+                            transformStr = "translate(" + (todayPadding + state.scale(today)) + "," + (todayIconY) + ")"
                         }
 
                         return transformStr
@@ -892,7 +873,7 @@ export class Visual implements IVisual {
 
             }
 
-            if (enabledAnnotations) {
+            if (state.enabledAnnotations) {
                 //annotations config
                 let annotationsData, makeAnnotations
                 let countTop = -1, countBottom = -1, counter
@@ -912,7 +893,7 @@ export class Visual implements IVisual {
                         counter = countBottom
                     }
 
-                    element["x"] = this.padding + scale(element["date"])
+                    element["x"] = this.padding + state.scale(element["date"])
 
                     if (!element.customVertical) {
                         if (this.textSettings.stagger) {
@@ -957,7 +938,7 @@ export class Visual implements IVisual {
                             bgPadding: 0
                         },
                         x: element["x"],
-                        y: this.styleSettings.timelineStyle == "bar" && !element.top ? this.finalMarginTop + this.barHeight : this.finalMarginTop,
+                        y: this.styleSettings.timelineStyle == "bar" && !element.top ? state.finalMarginTop + this.barHeight : state.finalMarginTop,
                         dy: element["dy"],
                         color: element.textColor,
                         id: element.selectionId
@@ -988,7 +969,7 @@ export class Visual implements IVisual {
 
                         switch (this.imageSettings.style) {
                             case "default":
-                                imageY = !element.top ? (this.finalMarginTop + element.dy) + element.textHeight - this.imageSettings.imagesHeight : (this.finalMarginTop + element.dy) - element.textHeight - 5
+                                imageY = !element.top ? (state.finalMarginTop + element.dy) + element.textHeight - this.imageSettings.imagesHeight : (state.finalMarginTop + element.dy) - element.textHeight - 5
 
 
                                 if (this.styleSettings.timelineStyle == "bar" && !element.top) { imageY += this.barHeight }
@@ -999,7 +980,7 @@ export class Visual implements IVisual {
                                 break;
 
                             case "straight":
-                                imageY = element.top ? this.finalMarginTop + 20 : this.finalMarginTop - 20 - this.imageSettings.imagesHeight
+                                imageY = element.top ? state.finalMarginTop + 20 : state.finalMarginTop - 20 - this.imageSettings.imagesHeight
 
                                 if (this.styleSettings.timelineStyle == "bar" && element.top) { imageY += this.barHeight }
                                 break;
@@ -1011,8 +992,8 @@ export class Visual implements IVisual {
                             //   break;
 
                             default:
-                                imageY = element.top ? this.finalMarginTop + 20 : 0
-                                if (downloadTop) {
+                                imageY = element.top ? state.finalMarginTop + 20 : 0
+                                if (state.downloadTop) {
                                     imageY += 35
                                 }
                                 if (imgCounter % 2 == 0) {
@@ -1033,7 +1014,7 @@ export class Visual implements IVisual {
                             let connector = this.container.append("line")
                                 .attr("x1", element.x)
                                 .attr("y1", () => {
-                                    let result = this.finalMarginTop
+                                    let result = state.finalMarginTop
                                     if (this.styleSettings.timelineStyle == "bar" && element.top) {
                                         result += this.barHeight
                                     }
@@ -1114,15 +1095,16 @@ export class Visual implements IVisual {
             let countTop = 0, countBottom = 0, counter
             let imgCountTop = 0, imgCountBottom = 0, imgCounter
 
-            finalHeight = filteredWithImage.length > 0 ? this.finalMarginTop + this.imageSettings.imagesHeight + 30 + spacing : this.finalMarginTop + 30 + spacing
 
-            if (downloadBottom) {
-                finalHeight += 35
+            state.finalHeight = state.filteredWithImage.length > 0 ? state.finalMarginTop + this.imageSettings.imagesHeight + 30 + state.spacing : state.finalMarginTop + 30 + state.spacing
+
+            if (state.downloadBottom) {
+                state.finalHeight += 35
             }
 
             this.width = Math.max(filteredData.length * (this.textSettings.wrap + 10) + 20, this.width - 4)
 
-            this.svg.attr("height", finalHeight);
+            this.svg.attr("height", state.finalHeight);
             this.svg.attr("width", this.width);
 
             filteredData.forEach((element, i) => {
@@ -1155,11 +1137,11 @@ export class Visual implements IVisual {
                     datesData = [{
                         note: {
                             wrap: this.textSettings.wrap,
-                            title: axisValueFormatter.format(element.date),
+                            title: state.axisValueFormatter.format(element.date),
                             bgPadding: 0
                         },
                         x: element["x"],
-                        y: this.finalMarginTop,
+                        y: state.finalMarginTop,
                         dy: 1,
                         color: this.axisSettings.axisColor.solid.color
                     }]
@@ -1199,7 +1181,7 @@ export class Visual implements IVisual {
                         bgPadding: 0
                     },
                     x: element["x"],
-                    y: element.image ? this.finalMarginTop + this.imageSettings.imagesHeight : this.finalMarginTop,
+                    y: element.image ? state.finalMarginTop + this.imageSettings.imagesHeight : state.finalMarginTop,
                     dy: 30,
                     color: element.textColor,
                     id: element.selectionId
@@ -1230,7 +1212,7 @@ export class Visual implements IVisual {
                     }
 
                     // let imageY = this.finalMarginTop - imagesHeight / 2
-                    let imageY = this.finalMarginTop + 25
+                    let imageY = state.finalMarginTop + 25
                     let imageX = element.x
 
                     let image = this.container.append('image')
@@ -1377,7 +1359,7 @@ export class Visual implements IVisual {
                     calX -= 20
                 }
             }
-            let calY = downloadTop ? 2 : finalHeight - 35
+            let calY = state.downloadTop ? 2 : state.finalHeight - 35
 
 
 
@@ -1392,7 +1374,7 @@ export class Visual implements IVisual {
                 .attr('x', calX)
                 .attr('y', calY)
                 .on("click", () => {
-                    const { error, value } = ics.createEvents(ICSevents)
+                    const { error, value } = ics.createEvents(state.ICSevents)
 
                     if (error) {
                         return
@@ -2213,3 +2195,49 @@ var BrowserText = (function () {
         getWidth: getWidth
     };
 })();
+
+// Quickly formed data model to handle the mess of state-tracking variables scattered about
+// This is a known set of fields that facuilitates breaking things into separate functions
+class ChartDrawingState {
+    public data: DataPoint[] = [];
+    public filteredData: DataPoint[] = [];
+    public filteredWithImage: DataPoint[] = []; // FIltered data that have images
+
+    public dateValueFormatter: vf.IValueFormatter;
+
+    public axisFormat: string;
+    public axisValueFormatter: vf.IValueFormatter;
+
+    public scale: d3.ScaleTime<number, number>;
+
+    public axisMarginTop: number;
+    public addToMargin: number;
+    public enabledAnnotations: boolean;
+    public axisPadding: number;
+    public strokeColor: string;
+
+    public finalMarginTop: number = 0;
+    public marginTopStagger: number = 20;
+    public svgHeightTracking: number = 0;
+    public finalHeight: number = 0;
+    public needScroll: boolean = false;
+
+    public spacing: number = 0;
+    public maxOffsetTop: number = 0;
+    public maxOffsetBottom: number = 0;
+    public ICSevents: ICSEvent[] = [];
+
+    public width: number = 0;
+    public bar: d3.Selection<SVGLineElement, any, any, any> | d3.Selection<SVGRectElement, any, any, any>;
+
+    public downloadTop: boolean = false;
+    public downloadBottom: boolean = false;
+
+}
+
+interface ICSEvent {
+    title: string;
+    description: string;
+    start: number[];
+    duration: {minutes: number};
+}
