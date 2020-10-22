@@ -314,6 +314,298 @@ export class Visual implements IVisual {
 
     }
 
+    private configureLineChart(state: ChartDrawingState) {
+        state.axisMarginTop = state.finalMarginTop;
+        state.enabledAnnotations = true;
+        state.axisPadding = this.padding;
+        state.strokeColor = this.axisSettings.axisColor.solid.color
+
+        // svgHeightTracking = this.height
+        state.svgHeightTracking = state.finalMarginTop + 20
+
+        if (this.textSettings.stagger) {
+            state.svgHeightTracking += (state.filteredData.filter(el => !el.top).length) * this.textSettings.spacing + 20
+        } else {
+            state.svgHeightTracking += this.textSettings.spacing
+        }
+
+        if (state.filteredData.filter(el => el.top && el.image).length > 0) {
+            state.svgHeightTracking = Math.max(state.svgHeightTracking, state.axisMarginTop + state.addToMargin)
+        }
+
+
+        state.svgHeightTracking = Math.max(state.svgHeightTracking, state.axisMarginTop + state.maxOffsetBottom + this.textSettings.spacing)
+
+        if (state.svgHeightTracking > this.height) {
+            // this.width -= 20
+        }
+        state.width = this.width
+
+
+        state.bar = this.container.append("line")
+            .attr("x1", this.padding)
+            .attr("y1", state.finalMarginTop)
+            .attr("x2", this.width - this.padding)
+            .attr("y2", state.finalMarginTop)
+            .attr("stroke-width", this.styleSettings.lineThickness)
+            .attr("stroke", this.styleSettings.lineColor.solid.color);
+    }
+
+    private configureBarChart(state: ChartDrawingState) {
+        state.axisMarginTop = state.finalMarginTop
+        state.enabledAnnotations = true;
+        state.strokeColor = "transparent"
+        state.axisPadding = this.padding;
+        state.svgHeightTracking = state.finalMarginTop + this.barHeight + 20;
+
+        if (this.textSettings.stagger) {
+            state.svgHeightTracking += (state.filteredData.filter(el => !el.top).length) * this.textSettings.spacing
+        } else {
+            state.svgHeightTracking += this.textSettings.spacing
+        }
+
+        if (state.filteredData.filter(el => el.top && el.image).length > 0) {
+            // svgHeightTracking = Math.max(svgHeightTracking, axisMarginTop + this.barHeight + addToMargin)
+            state.svgHeightTracking = Math.max(state.svgHeightTracking, state.axisMarginTop + state.addToMargin)
+
+        }
+
+        state.svgHeightTracking = Math.max(state.svgHeightTracking, state.axisMarginTop + this.barHeight + state.maxOffsetBottom + this.textSettings.spacing)
+
+
+        if (state.svgHeightTracking > this.height) {
+            // this.width -= 20
+        }
+        state.width = this.width
+
+        state.bar = this.container.append('rect')
+            .attr('width', this.width)
+            .attr('x', 0)//this.padding)
+            .attr('fill', this.styleSettings.barColor.solid.color)
+            .attr('y', state.finalMarginTop)
+            .attr('height', this.barHeight)
+            state.bar.exit().remove()
+    }
+    
+    private configureMinimalistView(state: ChartDrawingState) {
+        state.enabledAnnotations = false;
+
+        if (this.styleSettings.minimalistAxis == "bottom") {
+            state.axisMarginTop = 10 + state.finalMarginTop + this.textSettings.spacing * (state.filteredData.length)
+            state.svgHeightTracking = state.axisMarginTop + 30
+
+            if (state.svgHeightTracking > this.height) {
+                //  this.width -= 20
+                state.needScroll = true
+                state.axisMarginTop = this.height - 40
+
+
+            }
+        } else {
+            state.axisMarginTop = state.finalMarginTop
+            state.svgHeightTracking = state.finalMarginTop + this.textSettings.spacing * (state.filteredData.length)
+
+            if (state.svgHeightTracking > this.height) {
+                state.needScroll = true
+            }
+        }
+
+
+
+
+        if (state.downloadTop) {
+
+            state.svgHeightTracking += 35
+            if (!state.needScroll) {
+                state.axisMarginTop += 35
+            }
+        }
+        state.strokeColor = this.axisSettings.axisColor.solid.color
+
+        //split screen for minimalist view
+        let newWidth = (this.width * 0.70)
+        state.axisPadding = this.width - newWidth - this.padding;
+
+        //re-do scale
+        state.scale = d3.scaleTime()
+            .domain([this.minVal, this.maxVal]) //min and max data 
+            .range([0, newWidth]); //min and max width in px    
+
+        this.svg.append("defs").append("clipPath")
+            .attr("id", "clip")
+            .append("rect")
+            .attr("width", this.width - newWidth - this.padding - 10)
+            .attr("height", state.svgHeightTracking);
+
+        //append points and annotations
+        let textLateral = this.container.selectAll(".text-lateral")
+            .data(state.filteredData)
+
+        textLateral.exit().remove();
+
+        var enter = textLateral.enter()
+            .append("g").attr("class", "text-lateral")
+            .attr("clip-path", "url(#clip)")
+
+        enter.append("text")
+            .attr("x", 0)
+            .attr("y", (element, i) => {
+                let result = 10 + this.marginTop + this.textSettings.spacing * i
+                if (state.downloadTop) {
+                    result += 35
+                }
+                return result
+            })
+            .attr('font-family', element => element.fontFamily)
+            .attr('font-size', element => element.textSize)
+            .attr("fill", el => el.textColor)
+
+            .attr("id", (element) => element.selectionId.getKey())
+            .text(element => element.label)
+            .attr('class', element => `annotation_selector_${element.selectionId.getKey().replace(/\W/g, '')} annotationSelector`)
+            .on('click', element => {
+
+                //manage highlighted formating and open links
+                this.selectionManager.select(element.selectionId).then((ids: ISelectionId[]) => {
+                    if (ids.length > 0) {
+                        d3.selectAll('.annotationSelector').style('opacity', "0.1")
+                        d3.selectAll('.minIconSelector').style('opacity', "0.1")
+
+                        d3.selectAll(`.annotation_selector_${element["selectionId"].getKey().replace(/\W/g, '')}`).style('opacity', "1")
+                        d3.selectAll(`.min_icon_selector_${element["selectionId"].getKey().replace(/\W/g, '')}`).style('opacity', "1")
+
+                        //Open link 
+                        if (element.URL) {
+                            this.host.launchUrl(element.URL)
+                        }
+
+                    }
+                })
+            })
+
+        if (this.textSettings.boldTitles) {
+            enter.attr("font-weight", "bold")
+        }
+
+        textLateral = textLateral.merge(enter);
+
+        let minIcons = this.container.selectAll(".min-icons")
+            .data(state.filteredData)
+        minIcons.exit().remove();
+
+        let enterIcons, shapeSize = 8
+
+        //Add dots
+        if (this.styleSettings.minimalistStyle !== "thinBar") {
+            let size = 150 / this.styleSettings.minimalistSize
+            let shapeOptions = {
+                "diamond": d3.symbol().type(d3.symbolDiamond).size(size),
+                "circle": d3.symbol().type(d3.symbolCircle).size(size),
+                "square": d3.symbol().type(d3.symbolSquare).size(size),
+                "dot": d3.symbol().type(d3.symbolCircle).size(10),
+            }
+
+
+            enterIcons = minIcons.enter()
+                .append("g").attr("class", "min-icons");
+            enterIcons.append('path')
+                .attr("d", shapeOptions[this.styleSettings.minimalistStyle])
+                .attr("transform", (element, i) => {
+                    let pointY = 10 + (this.marginTop + this.textSettings.spacing * i) - shapeSize
+                    if (state.downloadTop) {
+                        pointY += 35
+                    }
+                    return "translate(" + (state.axisPadding + state.scale(element["date"])) + "," + pointY + ") rotate(180)"
+
+                    // return "translate(" + (axisPadding + scale(element["date"]) - shapeSize) + "," + pointY + ") rotate(180)"
+                })
+
+                .attr("class", element => `minIconSelector min_icon_selector_${element["selectionId"].key.replace(/\W/g, '')}`)
+                .attr("id", element => element["selectionId"])
+
+                .on("click", (element) => {
+                    this.selectionManager.select(element["selectionId"]).then((ids: ISelectionId[]) => {
+                        if (ids.length > 0) {
+                            d3.selectAll('.annotationSelector').style('opacity', "0.1")
+                            d3.selectAll('.minIconSelector').style('opacity', "0.1")
+
+                            d3.selectAll(`.annotation_selector_${element["selectionId"].key.replace(/\W/g, '')}`).style('opacity', "1")
+                            d3.selectAll(`.min_icon_selector_${element["selectionId"].key.replace(/\W/g, '')}`).style('opacity', "1")
+
+                            //Open link 
+                            if (element["URL"]) {
+                                this.host.launchUrl(element["URL"])
+                            }
+
+                        }
+                    })
+                })
+
+
+        } else {
+            enterIcons = minIcons.enter()
+                .append("g").attr("class", "min-icons");
+            enterIcons.append('rect')
+                .attr("x", element => state.axisPadding + state.scale(element["date"]))
+
+                // .attr("x", element => axisPadding + scale(element["date"]) - shapeSize)
+                .attr("y", (element, i) => {
+                    let y = 10 + (this.marginTop + this.textSettings.spacing * i) - shapeSize
+                    if (state.downloadTop) {
+                        y += 35
+                    }
+                    return y
+                })
+                .attr("width", 2)
+                .attr("height", this.textSettings.spacing)
+                .attr("class", element => `minIconSelector min_icon_selector_${element["selectionId"].key.replace(/\W/g, '')}`)
+                .attr("id", element => element["selectionId"])
+                .on("click", (element) => {
+                    this.selectionManager.select(element["selectionId"]).then((ids: ISelectionId[]) => {
+                        if (ids.length > 0) {
+                            d3.selectAll('.annotationSelector').style('opacity', "0.1")
+                            d3.selectAll('.minIconSelector').style('opacity', "0.1")
+
+                            d3.selectAll(`.annotation_selector_${element["selectionId"].key.replace(/\W/g, '')}`).style('opacity', "1")
+                            d3.selectAll(`.min_icon_selector_${element["selectionId"].key.replace(/\W/g, '')}`).style('opacity', "1")
+
+                            //Open link 
+                            if (element["URL"]) {
+                                this.host.launchUrl(element["URL"])
+                            }
+
+                        }
+                    })
+                })
+
+        }
+
+
+
+        minIcons = minIcons.merge(enterIcons)
+            .style("fill", element => element["iconColor"]);
+
+        //Add line
+        if (this.styleSettings.minimalistConnect) {
+            this.container.append("path")
+                .datum(state.filteredData)
+                .attr("fill", "none")
+                .attr("stroke", this.styleSettings.connectColor.solid.color)//"#69b3a2")
+                .attr("stroke-width", 1)
+                .attr("d", d3.line()
+                    .x(element => state.axisPadding + state.scale(element["date"]))
+                    .y((el, i) => {
+                        let y = 10 + (this.marginTop + this.textSettings.spacing * (i)) - shapeSize
+                        if (state.downloadTop) {
+                            y += 35
+                        }
+                        return y
+                    }) as any) //TODO: The any cast is a workaround to avoid this showing as an error due to d3.Line<[number, number]> not bing a valid type here
+        }
+
+
+    }
+
     /** Sets the defalt global values, executed on every update() call */
     private setDefaultGlobals() {
         this.marginTop = this.defaultMarginTop;
@@ -441,295 +733,15 @@ export class Visual implements IVisual {
             this.svg.attr("width", this.width - 4);
             switch (this.styleSettings.timelineStyle) {
                 case "line":
-                    state.axisMarginTop = state.finalMarginTop;
-                    state.enabledAnnotations = true;
-                    state.axisPadding = this.padding;
-                    state.strokeColor = this.axisSettings.axisColor.solid.color
-
-                    // svgHeightTracking = this.height
-                    state.svgHeightTracking = state.finalMarginTop + 20
-
-                    if (this.textSettings.stagger) {
-                        state.svgHeightTracking += (filteredData.filter(el => !el.top).length) * this.textSettings.spacing + 20
-                    } else {
-                        state.svgHeightTracking += this.textSettings.spacing
-                    }
-
-                    if (filteredData.filter(el => el.top && el.image).length > 0) {
-                        state.svgHeightTracking = Math.max(state.svgHeightTracking, state.axisMarginTop + state.addToMargin)
-                    }
-
-
-                    state.svgHeightTracking = Math.max(state.svgHeightTracking, state.axisMarginTop + state.maxOffsetBottom + this.textSettings.spacing)
-
-                    if (state.svgHeightTracking > this.height) {
-                        // this.width -= 20
-                    }
-                    state.width = this.width
-
-
-                    state.bar = this.container.append("line")
-                        .attr("x1", this.padding)
-                        .attr("y1", state.finalMarginTop)
-                        .attr("x2", this.width - this.padding)
-                        .attr("y2", state.finalMarginTop)
-                        .attr("stroke-width", this.styleSettings.lineThickness)
-                        .attr("stroke", this.styleSettings.lineColor.solid.color);
+                    this.configureLineChart(state);
                     break;
 
                 case "bar":
-                    state.axisMarginTop = state.finalMarginTop
-                    state.enabledAnnotations = true;
-                    state.strokeColor = "transparent"
-                    state.axisPadding = this.padding;
-                    state.svgHeightTracking = state.finalMarginTop + this.barHeight + 20;
-
-                    if (this.textSettings.stagger) {
-                        state.svgHeightTracking += (filteredData.filter(el => !el.top).length) * this.textSettings.spacing
-                    } else {
-                        state.svgHeightTracking += this.textSettings.spacing
-                    }
-
-                    if (filteredData.filter(el => el.top && el.image).length > 0) {
-                        // svgHeightTracking = Math.max(svgHeightTracking, axisMarginTop + this.barHeight + addToMargin)
-                        state.svgHeightTracking = Math.max(state.svgHeightTracking, state.axisMarginTop + state.addToMargin)
-
-                    }
-
-                    state.svgHeightTracking = Math.max(state.svgHeightTracking, state.axisMarginTop + this.barHeight + state.maxOffsetBottom + this.textSettings.spacing)
-
-
-                    if (state.svgHeightTracking > this.height) {
-                        // this.width -= 20
-                    }
-                    state.width = this.width
-
-                    state.bar = this.container.append('rect')
-                        .attr('width', this.width)
-                        .attr('x', 0)//this.padding)
-                        .attr('fill', this.styleSettings.barColor.solid.color)
-                        .attr('y', state.finalMarginTop)
-                        .attr('height', this.barHeight)
-                        state.bar.exit().remove()
+                    this.configureBarChart(state);
                     break;
 
                 case "minimalist":
-                    state.enabledAnnotations = false;
-
-                    if (this.styleSettings.minimalistAxis == "bottom") {
-                        state.axisMarginTop = 10 + state.finalMarginTop + this.textSettings.spacing * (filteredData.length)
-                        state.svgHeightTracking = state.axisMarginTop + 30
-
-                        if (state.svgHeightTracking > this.height) {
-                            //  this.width -= 20
-                            state.needScroll = true
-                            state.axisMarginTop = this.height - 40
-
-
-                        }
-                    } else {
-                        state.axisMarginTop = state.finalMarginTop
-                        state.svgHeightTracking = state.finalMarginTop + this.textSettings.spacing * (filteredData.length)
-
-                        if (state.svgHeightTracking > this.height) {
-                            state.needScroll = true
-                        }
-                    }
-
-
-
-
-                    if (state.downloadTop) {
-
-                        state.svgHeightTracking += 35
-                        if (!state.needScroll) {
-                            state.axisMarginTop += 35
-                        }
-                    }
-                    state.strokeColor = this.axisSettings.axisColor.solid.color
-
-                    //split screen for minimalist view
-                    let newWidth = (this.width * 0.70)
-                    state.axisPadding = this.width - newWidth - this.padding;
-
-                    //re-do scale
-                    state.scale = d3.scaleTime()
-                        .domain([this.minVal, this.maxVal]) //min and max data 
-                        .range([0, newWidth]); //min and max width in px    
-
-                    this.svg.append("defs").append("clipPath")
-                        .attr("id", "clip")
-                        .append("rect")
-                        .attr("width", this.width - newWidth - this.padding - 10)
-                        .attr("height", state.svgHeightTracking);
-
-                    //append points and annotations
-                    let textLateral = this.container.selectAll(".text-lateral")
-                        .data(filteredData)
-
-                    textLateral.exit().remove();
-
-                    var enter = textLateral.enter()
-                        .append("g").attr("class", "text-lateral")
-                        .attr("clip-path", "url(#clip)")
-
-                    enter.append("text")
-                        .attr("x", 0)
-                        .attr("y", (element, i) => {
-                            let result = 10 + this.marginTop + this.textSettings.spacing * i
-                            if (state.downloadTop) {
-                                result += 35
-                            }
-                            return result
-                        })
-                        .attr('font-family', element => element.fontFamily)
-                        .attr('font-size', element => element.textSize)
-                        .attr("fill", el => el.textColor)
-
-                        .attr("id", (element) => element.selectionId.getKey())
-                        .text(element => element.label)
-                        .attr('class', element => `annotation_selector_${element.selectionId.getKey().replace(/\W/g, '')} annotationSelector`)
-                        .on('click', element => {
-
-                            //manage highlighted formating and open links
-                            this.selectionManager.select(element.selectionId).then((ids: ISelectionId[]) => {
-                                if (ids.length > 0) {
-                                    d3.selectAll('.annotationSelector').style('opacity', "0.1")
-                                    d3.selectAll('.minIconSelector').style('opacity', "0.1")
-
-                                    d3.selectAll(`.annotation_selector_${element["selectionId"].getKey().replace(/\W/g, '')}`).style('opacity', "1")
-                                    d3.selectAll(`.min_icon_selector_${element["selectionId"].getKey().replace(/\W/g, '')}`).style('opacity', "1")
-
-                                    //Open link 
-                                    if (element.URL) {
-                                        this.host.launchUrl(element.URL)
-                                    }
-
-                                }
-                            })
-                        })
-
-                    if (this.textSettings.boldTitles) {
-                        enter.attr("font-weight", "bold")
-                    }
-
-                    textLateral = textLateral.merge(enter);
-
-                    let minIcons = this.container.selectAll(".min-icons")
-                        .data(filteredData)
-                    minIcons.exit().remove();
-
-                    let enterIcons, shapeSize = 8
-
-                    //Add dots
-                    if (this.styleSettings.minimalistStyle !== "thinBar") {
-                        let size = 150 / this.styleSettings.minimalistSize
-                        let shapeOptions = {
-                            "diamond": d3.symbol().type(d3.symbolDiamond).size(size),
-                            "circle": d3.symbol().type(d3.symbolCircle).size(size),
-                            "square": d3.symbol().type(d3.symbolSquare).size(size),
-                            "dot": d3.symbol().type(d3.symbolCircle).size(10),
-                        }
-
-
-                        enterIcons = minIcons.enter()
-                            .append("g").attr("class", "min-icons");
-                        enterIcons.append('path')
-                            .attr("d", shapeOptions[this.styleSettings.minimalistStyle])
-                            .attr("transform", (element, i) => {
-                                let pointY = 10 + (this.marginTop + this.textSettings.spacing * i) - shapeSize
-                                if (state.downloadTop) {
-                                    pointY += 35
-                                }
-                                return "translate(" + (state.axisPadding + state.scale(element["date"])) + "," + pointY + ") rotate(180)"
-
-                                // return "translate(" + (axisPadding + scale(element["date"]) - shapeSize) + "," + pointY + ") rotate(180)"
-                            })
-
-                            .attr("class", element => `minIconSelector min_icon_selector_${element["selectionId"].key.replace(/\W/g, '')}`)
-                            .attr("id", element => element["selectionId"])
-
-                            .on("click", (element) => {
-                                this.selectionManager.select(element["selectionId"]).then((ids: ISelectionId[]) => {
-                                    if (ids.length > 0) {
-                                        d3.selectAll('.annotationSelector').style('opacity', "0.1")
-                                        d3.selectAll('.minIconSelector').style('opacity', "0.1")
-
-                                        d3.selectAll(`.annotation_selector_${element["selectionId"].key.replace(/\W/g, '')}`).style('opacity', "1")
-                                        d3.selectAll(`.min_icon_selector_${element["selectionId"].key.replace(/\W/g, '')}`).style('opacity', "1")
-
-                                        //Open link 
-                                        if (element["URL"]) {
-                                            this.host.launchUrl(element["URL"])
-                                        }
-
-                                    }
-                                })
-                            })
-
-
-                    } else {
-                        enterIcons = minIcons.enter()
-                            .append("g").attr("class", "min-icons");
-                        enterIcons.append('rect')
-                            .attr("x", element => state.axisPadding + state.scale(element["date"]))
-
-                            // .attr("x", element => axisPadding + scale(element["date"]) - shapeSize)
-                            .attr("y", (element, i) => {
-                                let y = 10 + (this.marginTop + this.textSettings.spacing * i) - shapeSize
-                                if (state.downloadTop) {
-                                    y += 35
-                                }
-                                return y
-                            })
-                            .attr("width", 2)
-                            .attr("height", this.textSettings.spacing)
-                            .attr("class", element => `minIconSelector min_icon_selector_${element["selectionId"].key.replace(/\W/g, '')}`)
-                            .attr("id", element => element["selectionId"])
-                            .on("click", (element) => {
-                                this.selectionManager.select(element["selectionId"]).then((ids: ISelectionId[]) => {
-                                    if (ids.length > 0) {
-                                        d3.selectAll('.annotationSelector').style('opacity', "0.1")
-                                        d3.selectAll('.minIconSelector').style('opacity', "0.1")
-
-                                        d3.selectAll(`.annotation_selector_${element["selectionId"].key.replace(/\W/g, '')}`).style('opacity', "1")
-                                        d3.selectAll(`.min_icon_selector_${element["selectionId"].key.replace(/\W/g, '')}`).style('opacity', "1")
-
-                                        //Open link 
-                                        if (element["URL"]) {
-                                            this.host.launchUrl(element["URL"])
-                                        }
-
-                                    }
-                                })
-                            })
-
-                    }
-
-
-
-                    minIcons = minIcons.merge(enterIcons)
-                        .style("fill", element => element["iconColor"]);
-
-                    //Add line
-                    if (this.styleSettings.minimalistConnect) {
-                        this.container.append("path")
-                            .datum(filteredData)
-                            .attr("fill", "none")
-                            .attr("stroke", this.styleSettings.connectColor.solid.color)//"#69b3a2")
-                            .attr("stroke-width", 1)
-                            .attr("d", d3.line()
-                                .x(element => state.axisPadding + state.scale(element["date"]))
-                                .y((el, i) => {
-                                    let y = 10 + (this.marginTop + this.textSettings.spacing * (i)) - shapeSize
-                                    if (state.downloadTop) {
-                                        y += 35
-                                    }
-                                    return y
-                                }) as any) //TODO: The any cast is a workaround to avoid this showing as an error due to d3.Line<[number, number]> not bing a valid type here
-                    }
-
-
+                    this.configureMinimalistView(state);
                     break;
             }
 
