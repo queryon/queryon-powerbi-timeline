@@ -110,6 +110,71 @@ export class Visual implements IVisual {
         this.spacing = false
     }
 
+    /** Handle context menu - right click */
+    private handleContextMenuRightClick() {
+        const mouseEvent: MouseEvent = d3.event as MouseEvent;
+        const eventTarget: EventTarget = mouseEvent.target;
+        let dataPoint: any = d3.select(<Element>eventTarget).datum();
+        this.selectionManager.showContextMenu(dataPoint ? dataPoint.selectionId : {}, {
+            x: mouseEvent.clientX,
+            y: mouseEvent.clientY
+        });
+        mouseEvent.preventDefault();
+    }
+
+    /** Handle click on/out bar  */
+    private handleSvgClick() {
+        const mouseEvent: MouseEvent = d3.event as MouseEvent;
+        const eventTarget: EventTarget = mouseEvent.target;
+        let dataPoint: any = d3.select(<Element>eventTarget).datum();
+        if (dataPoint) {
+
+        } else {
+            this.selectionManager.clear().then(() => {
+                if (this.styleSettings.timelineStyle == "minimalist") {
+                    d3.selectAll('.annotationSelector').style('opacity', 1)
+                    d3.selectAll('.minIconSelector').style('opacity', 1)
+                } else {
+                    this.container.selectAll('.annotationSelector').style('font-weight', "normal")
+
+                    if (!this.textSettings.boldTitles) {
+                        this.container.selectAll('.annotationSelector  .annotation-note-title ').style('font-weight', "normal")
+                    }
+                }
+            })
+        }
+    }
+
+    private handleMouseOver() {
+        const mouseEvent: MouseEvent = d3.event as MouseEvent;
+        const eventTarget: EventTarget = mouseEvent.target;
+        let args = []
+        let dataPoint: any = d3.select(<Element>eventTarget).datum();
+
+        if (dataPoint && dataPoint.labelColumn) {
+
+            args = [{
+                displayName: dataPoint.dateColumn,
+                value: dataPoint.formatted
+            },
+            {
+                displayName: dataPoint.labelColumn,
+                value: dataPoint.label
+            }]
+
+            if (dataPoint.description) {
+                args.push({
+                    displayName: dataPoint.descriptionColumn,
+                    value: dataPoint.description
+                })
+            }
+            this.tooltipServiceWrapper.addTooltip(d3.select(<Element>eventTarget),
+                (tooltipEvent: TooltipEventArgs<number>) => args,
+                (tooltipEvent: TooltipEventArgs<number>) => null);
+        }
+    }
+
+
     // Douglas 2020-10-20: Unknown what the purpose of this is, just refactored it out of update()
     /** Empties the canvas to remove lingering elements */
     private setEmptyCanvas() {
@@ -308,10 +373,6 @@ export class Visual implements IVisual {
         }
 
         return false;
-    }
-
-    private drawChart() {
-
     }
 
     private configureLineChart(state: ChartDrawingState) {
@@ -1093,28 +1154,11 @@ export class Visual implements IVisual {
             state.finalMarginTop += 35
         }
 
-
-
         //axis format
         state.axisFormat = this.axisSettings.dateFormat != "customJS" ? this.axisSettings.dateFormat : this.axisSettings.customJS;
         state.axisValueFormatter = state.axisFormat == "same" ? state.dateValueFormatter : createFormatter(state.axisFormat);      
 
-        //increment padding based on image
-        if (state.filteredWithImage.length > 0 && this.styleSettings.timelineStyle !== "minimalist") {
-            let dynamicPadding = Math.max(this.padding, this.imageSettings.imagesWidth / 2)
-            this.padding = dynamicPadding
-        }
-
-        //increment padding based on values on axis
-        if (this.axisSettings.axis === "Values" || this.styleSettings.timelineStyle == "minimalist") {
-            let dynamicPadding = Math.max(this.padding, this.maxPadding)
-            this.padding = dynamicPadding
-        }
-
-        //increment padding in case scroll bar 
-        if (state.finalMarginTop > this.height) {
-            this.padding = Math.max(this.padding, this.maxPadding)
-        }
+        this.setPadding(state);
 
         state.scale = d3.scaleTime()
             .domain([this.minVal, this.maxVal]) //min and max data 
@@ -1296,71 +1340,10 @@ export class Visual implements IVisual {
 
 
         //Handle context menu - right click
-        this.container.on('contextmenu', () => {
-            const mouseEvent: MouseEvent = d3.event as MouseEvent;
-            const eventTarget: EventTarget = mouseEvent.target;
-            let dataPoint: any = d3.select(<Element>eventTarget).datum();
-            this.selectionManager.showContextMenu(dataPoint ? dataPoint.selectionId : {}, {
-                x: mouseEvent.clientX,
-                y: mouseEvent.clientY
-            });
-            mouseEvent.preventDefault();
-        });
-
+        this.container.on('contextmenu', this.handleContextMenuRightClick);
         //Handles click on/out bar
-        this.svg.on('click', () => {
-            const mouseEvent: MouseEvent = d3.event as MouseEvent;
-            const eventTarget: EventTarget = mouseEvent.target;
-            let dataPoint: any = d3.select(<Element>eventTarget).datum();
-            if (dataPoint) {
-
-            } else {
-                this.selectionManager.clear().then(() => {
-                    if (this.styleSettings.timelineStyle == "minimalist") {
-                        d3.selectAll('.annotationSelector').style('opacity', 1)
-                        d3.selectAll('.minIconSelector').style('opacity', 1)
-                    } else {
-                        this.container.selectAll('.annotationSelector').style('font-weight', "normal")
-
-                        if (!this.textSettings.boldTitles) {
-                            this.container.selectAll('.annotationSelector  .annotation-note-title ').style('font-weight', "normal")
-                        }
-                    }
-                })
-            }
-
-        });
-
-
-        this.svg.on('mouseover', el => {
-
-            const mouseEvent: MouseEvent = d3.event as MouseEvent;
-            const eventTarget: EventTarget = mouseEvent.target;
-            let args = []
-            let dataPoint: any = d3.select(<Element>eventTarget).datum();
-
-            if (dataPoint && dataPoint.labelColumn) {
-
-                args = [{
-                    displayName: dataPoint.dateColumn,
-                    value: dataPoint.formatted
-                },
-                {
-                    displayName: dataPoint.labelColumn,
-                    value: dataPoint.label
-                }]
-
-                if (dataPoint.description) {
-                    args.push({
-                        displayName: dataPoint.descriptionColumn,
-                        value: dataPoint.description
-                    })
-                }
-                this.tooltipServiceWrapper.addTooltip(d3.select(<Element>eventTarget),
-                    (tooltipEvent: TooltipEventArgs<number>) => args,
-                    (tooltipEvent: TooltipEventArgs<number>) => null);
-            }
-        })
+        this.svg.on('click', this.handleSvgClick);
+        this.svg.on('mouseover', this.handleMouseOver)
 
 
 
