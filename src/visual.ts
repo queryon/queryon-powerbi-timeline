@@ -4,6 +4,7 @@ import "core-js/stable";
 import "./../style/visual.less";
 import powerbi from "powerbi-visuals-api";
 import VisualConstructorOptions = powerbi.extensibility.visual.VisualConstructorOptions;
+import IVisualEventService = powerbi.extensibility.IVisualEventService;
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import IVisual = powerbi.extensibility.visual.IVisual;
 import EnumerateVisualObjectInstancesOptions = powerbi.EnumerateVisualObjectInstancesOptions;
@@ -43,8 +44,9 @@ export class Visual implements IVisual {
 
     private readonly defaultPadding = 15; // Extracted implicitly from use
     private readonly maxPadding = 30; // Extracted implicitly from use
-
     private readonly defaultMarginTop = 10; // Extracted implicitly from use
+
+    private events: IVisualEventService;
 
     private host: IVisualHost;
     private svg: Selection<SVGElement>;
@@ -62,12 +64,6 @@ export class Visual implements IVisual {
     private tooltipServiceWrapper: ITooltipServiceWrapper;
     //private imagesWidth: number; // is this.imageSettings.imagesWidth
     private fontHeightLib: any;
-    private spacing: any;
-
-    // Filled in when processing filtered data
-    private maxOffsetTop = 0;
-    private maxOffsetBottom = 0;
-    private ICSevents = [];
 
 
     /* Settings Getters for cleaner and less verbose code */
@@ -96,6 +92,7 @@ export class Visual implements IVisual {
     }
 
     constructor(options: VisualConstructorOptions) {
+        this.events = options.host.eventService;
         options.element.style["overflow"] = 'auto';
         this.svg = d3.select(options.element)
             .append('svg')
@@ -107,7 +104,6 @@ export class Visual implements IVisual {
             options.host.tooltipService,
             options.element);
         this.fontHeightLib = {}
-        this.spacing = false
     }
 
     /** Handle context menu - right click */
@@ -1071,11 +1067,16 @@ export class Visual implements IVisual {
 
 
     public update(options: VisualUpdateOptions) {
+        this.events.renderingStarted(options); // Rendering Events API START
+
         this.viewModel = generateViewModel(options, this.host)
         const state: ChartDrawingState = new ChartDrawingState();
         state.data = this.viewModel.dataPoints
 
-        if(this.validateDataSizeConstraints(state.data, options)) return; // Short circuit if data size is too large for view type
+        if(this.validateDataSizeConstraints(state.data, options)) { // Short circuit if data size is too large for view type
+            this.events.renderingFailed(options); // Rendering Events API FAIL
+            return;
+        }
 
         this.setEmptyCanvas();
         this.setDefaultGlobals();
@@ -1389,8 +1390,7 @@ export class Visual implements IVisual {
                 });
         }
 
-
-
+        this.events.renderingFinished(options); // Rendering Events API FINISH
     }
 
     /**
