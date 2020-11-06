@@ -901,7 +901,7 @@
                         }
                     }
                 },
-                "barHeight": {
+                "barH": {
                     "displayName": "Bar height",
                     "type": {
                         "numeric": true

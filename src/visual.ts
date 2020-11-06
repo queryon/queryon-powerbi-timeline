@@ -40,7 +40,7 @@ export class Visual implements IVisual {
   private padding: number;
   private width: number;
   private height: number;
-  private barHeight: number;
+  private barH: number;
   private marginTop: number;
   private finalMarginTop: number;
   private minVal: any;
@@ -147,7 +147,7 @@ export class Visual implements IVisual {
 
     this.height = options.viewport.height;
     this.marginTop = 10;
-    this.barHeight = this.viewModel.settings.style.barHeight;
+    this.barH = this.viewModel.settings.style.barH;
     let marginTopStagger = 20;
     let svgHeightTracking, finalHeight, needScroll = false;
 
@@ -395,7 +395,7 @@ export class Visual implements IVisual {
           enabledAnnotations = true;
           strokeColor = "transparent"
           axisPadding = this.padding;
-          svgHeightTracking = this.finalMarginTop + this.barHeight + 20;
+          svgHeightTracking = this.finalMarginTop + this.barH + 20;
 
           if (this.viewModel.settings.textSettings.stagger) {
             svgHeightTracking += (filteredData.filter(el => !el.top).length) * this.viewModel.settings.textSettings.spacing
@@ -404,12 +404,12 @@ export class Visual implements IVisual {
           }
 
           if (filteredData.filter(el => el.top && el.image).length > 0) {
-            // svgHeightTracking = Math.max(svgHeightTracking, axisMarginTop + this.barHeight + addToMargin)
+            // svgHeightTracking = Math.max(svgHeightTracking, axisMarginTop + this.barH + addToMargin)
             svgHeightTracking = Math.max(svgHeightTracking, axisMarginTop + addToMargin)
 
           }
 
-          svgHeightTracking = Math.max(svgHeightTracking, axisMarginTop + this.barHeight + maxOffsetBottom + this.viewModel.settings.textSettings.spacing)
+          svgHeightTracking = Math.max(svgHeightTracking, axisMarginTop + this.barH + maxOffsetBottom + this.viewModel.settings.textSettings.spacing)
 
 
           if (svgHeightTracking > this.height) {
@@ -422,7 +422,7 @@ export class Visual implements IVisual {
             .attr('x', 0)//this.padding)
             .attr('fill', this.viewModel.settings.style.barColor.solid.color)
             .attr('y', this.finalMarginTop)
-            .attr('height', this.barHeight)
+            .attr('height', this.barH)
           bar.exit().remove()
           break;
 
@@ -778,7 +778,7 @@ export class Visual implements IVisual {
               todayIconY = todayMarginTop - 12
               transformStr = "translate(" + (todayPadding + scale(today)) + "," + (todayIconY) + ") rotate(180)"
             } else {
-              todayIconY = this.viewModel.settings.style.timelineStyle == "bar" ? todayMarginTop + 12 + this.barHeight : todayMarginTop + 12
+              todayIconY = this.viewModel.settings.style.timelineStyle == "bar" ? todayMarginTop + 12 + this.barH : todayMarginTop + 12
 
               transformStr = "translate(" + (todayPadding + scale(today)) + "," + (todayIconY) + ")"
             }
@@ -858,7 +858,7 @@ export class Visual implements IVisual {
               bgPadding: 0
             },
             x: element["x"],
-            y: this.viewModel.settings.style.timelineStyle == "bar" && !element.top ? this.finalMarginTop + this.barHeight : this.finalMarginTop,
+            y: this.viewModel.settings.style.timelineStyle == "bar" && !element.top ? this.finalMarginTop + this.barH : this.finalMarginTop,
             dy: element["dy"],
             color: element.textColor,
             id: element.selectionId
@@ -897,7 +897,7 @@ export class Visual implements IVisual {
                 imageY = !element.top ? (this.finalMarginTop + element.dy) + element.textHeight - imagesHeight : (this.finalMarginTop + element.dy) - element.textHeight - 5
 
 
-                if (this.viewModel.settings.style.timelineStyle == "bar" && !element.top) { imageY += this.barHeight }
+                if (this.viewModel.settings.style.timelineStyle == "bar" && !element.top) { imageY += this.barH }
 
                 if (orientation == "middle") { imageX = element.x - (this.imagesWidth / 2) }
                 else if (orientation == "left") { imageX = element.x }
@@ -907,7 +907,7 @@ export class Visual implements IVisual {
               case "straight":
                 imageY = element.top ? this.finalMarginTop + 20 : this.finalMarginTop - 20 - imagesHeight
 
-                if (this.viewModel.settings.style.timelineStyle == "bar" && element.top) { imageY += this.barHeight }
+                if (this.viewModel.settings.style.timelineStyle == "bar" && element.top) { imageY += this.barH }
                 break;
 
               // case "image":
@@ -925,7 +925,7 @@ export class Visual implements IVisual {
                   imageY += imagesHeight
                 }
 
-                if (this.viewModel.settings.style.timelineStyle == "bar" && element.top) { imageY += this.barHeight }
+                if (this.viewModel.settings.style.timelineStyle == "bar" && element.top) { imageY += this.barH }
 
                 break;
 
@@ -941,7 +941,7 @@ export class Visual implements IVisual {
                 .attr("y1", () => {
                   let result = this.finalMarginTop
                   if (this.viewModel.settings.style.timelineStyle == "bar" && element.top) {
-                    result += this.barHeight
+                    result += this.barH
                   }
                   return result
                 })
@@ -1645,7 +1645,7 @@ export class Visual implements IVisual {
             objectName: objectName,
             properties: {
               barColor: this.viewModel.settings.style.barColor,
-              barHeight: this.viewModel.settings.style.barHeight
+              barH: this.viewModel.settings.style.barH
             },
             selector: null
           });
@@ -1935,7 +1935,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
       connectColor: { solid: { color: 'gray' } },
       minimalistSize: 2,
       barColor: { solid: { color: 'rgb(186,215,57)' } },
-      barHeight: 30,
+      barH: 30,
       today: false,
       todayTop: true,
       todayColor: { solid: { color: 'red' } }
@@ -2079,7 +2079,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost) {
       connectColor: getValue(objects, 'style', 'connectColor', defaultSettings.style.connectColor),
       minimalistSize: getValue(objects, 'style', 'minimalistSize', defaultSettings.style.minimalistSize),
       barColor: getValue(objects, 'style', 'barColor', defaultSettings.style.barColor),
-      barHeight: getValue(objects, 'style', 'barHeight', defaultSettings.style.barHeight),
+      barH: getValue(objects, 'style', 'barH', defaultSettings.style.barH),
       today: getValue(objects, 'style', 'today', defaultSettings.style.today),
       todayTop: getValue(objects, 'style', 'todayTop', defaultSettings.style.todayTop),
       todayColor: getValue(objects, 'style', 'todayColor', defaultSettings.style.todayColor)
