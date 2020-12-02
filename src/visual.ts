@@ -54,7 +54,7 @@ export class Visual implements IVisual {
     private padding: number = this.defaultPadding;
     private width: number;
     private height: number;
-    private barHeight: number;
+    private barHt: number;
     private marginTop: number = 10;
     private minVal: any;
     private maxVal: any;
@@ -84,7 +84,7 @@ export class Visual implements IVisual {
     }
 
     get styleSettings(): StyleSettings {
-        return this.settings.style;
+        return this.settings.styleSettings;
     }
 
     get imageSettings(): ImageSettings {
@@ -212,6 +212,7 @@ export class Visual implements IVisual {
         } else if (this.imageSettings.style == "straight") {
             return this.imageSettings.imagesHeight + 20
         }
+        return this.imageSettings.imagesHeight + 20 
     }
 
     /** Determines the Date format and generated a formatter for it */
@@ -317,7 +318,6 @@ export class Visual implements IVisual {
                 if (!state.spacing || state.spacing < dataPoint["textHeight"]) {
                     state.spacing = dataPoint["textHeight"]
                 }
-
                 if (this.styleSettings.timelineStyle !== "image") {
                     if (dataPoint["top"]) {
                         this.marginTop = Math.max(this.marginTop, dataPoint["textHeight"] + 30)
@@ -413,7 +413,7 @@ export class Visual implements IVisual {
         state.enabledAnnotations = true;
         state.strokeColor = "transparent"
         state.axisPadding = this.padding;
-        state.svgHeightTracking = state.finalMarginTop + this.barHeight + 20;
+        state.svgHeightTracking = state.finalMarginTop + this.barHt + 20;
 
         if (this.textSettings.stagger) {
             state.svgHeightTracking += (state.filteredData.filter(el => !el.top).length) * this.textSettings.spacing
@@ -422,12 +422,12 @@ export class Visual implements IVisual {
         }
 
         if (state.filteredData.filter(el => el.top && el.image).length > 0) {
-            // svgHeightTracking = Math.max(svgHeightTracking, axisMarginTop + this.barHeight + addToMargin)
+            // svgHeightTracking = Math.max(svgHeightTracking, axisMarginTop + this.barHt + addToMargin)
             state.svgHeightTracking = Math.max(state.svgHeightTracking, state.axisMarginTop + state.addToMargin)
 
         }
 
-        state.svgHeightTracking = Math.max(state.svgHeightTracking, state.axisMarginTop + this.barHeight + state.maxOffsetBottom + this.textSettings.spacing)
+        state.svgHeightTracking = Math.max(state.svgHeightTracking, state.axisMarginTop + this.barHt + state.maxOffsetBottom + this.textSettings.spacing)
 
 
         if (state.svgHeightTracking > this.height) {
@@ -440,7 +440,7 @@ export class Visual implements IVisual {
             .attr('x', 0)//this.padding)
             .attr('fill', this.styleSettings.barColor.solid.color)
             .attr('y', state.finalMarginTop)
-            .attr('height', this.barHeight)
+            .attr('height', this.barHt)
             state.bar.exit().remove()
     }
 
@@ -729,7 +729,7 @@ export class Visual implements IVisual {
                     bgPadding: 0
                 },
                 x: element["x"],
-                y: this.styleSettings.timelineStyle == "bar" && !element.top ? state.finalMarginTop + this.barHeight : state.finalMarginTop,
+                y: this.styleSettings.timelineStyle == "bar" && !element.top ? state.finalMarginTop + this.barHt : state.finalMarginTop,
                 dy: element["dy"],
                 color: element.textColor,
                 id: element.selectionId
@@ -757,13 +757,12 @@ export class Visual implements IVisual {
                     imgCounter = imgCountBottom
                 }
                 let imageY, imageX
-
                 switch (this.imageSettings.style) {
                     case "default":
                         imageY = !element.top ? (state.finalMarginTop + element.dy) + element.textHeight - this.imageSettings.imagesHeight : (state.finalMarginTop + element.dy) - element.textHeight - 5
 
 
-                        if (this.styleSettings.timelineStyle == "bar" && !element.top) { imageY += this.barHeight }
+                        if (this.styleSettings.timelineStyle == "bar" && !element.top) { imageY += this.barHt }
 
                         if (orientation == "middle") { imageX = element.x - (this.imageSettings.imagesWidth / 2) }
                         else if (orientation == "left") { imageX = element.x }
@@ -773,7 +772,7 @@ export class Visual implements IVisual {
                     case "straight":
                         imageY = element.top ? state.finalMarginTop + 20 : state.finalMarginTop - 20 - this.imageSettings.imagesHeight
 
-                        if (this.styleSettings.timelineStyle == "bar" && element.top) { imageY += this.barHeight }
+                        if (this.styleSettings.timelineStyle == "bar" && element.top) { imageY += this.barHt }
                         break;
 
                     // case "image":
@@ -791,7 +790,7 @@ export class Visual implements IVisual {
                             imageY += this.imageSettings.imagesHeight
                         }
 
-                        if (this.styleSettings.timelineStyle == "bar" && element.top) { imageY += this.barHeight }
+                        if (this.styleSettings.timelineStyle == "bar" && element.top) { imageY += this.barHt }
 
                         break;
 
@@ -807,7 +806,7 @@ export class Visual implements IVisual {
                         .attr("y1", () => {
                             let result = state.finalMarginTop
                             if (this.styleSettings.timelineStyle == "bar" && element.top) {
-                                result += this.barHeight
+                                result += this.barHt
                             }
                             return result
                         })
@@ -1101,7 +1100,7 @@ export class Visual implements IVisual {
         }
 
         this.height = options.viewport.height;
-        this.barHeight = this.styleSettings.barHeight;
+        this.barHt = this.styleSettings.barHt;
 
         //sort so staggering works in right order
         // data = data.sort((a, b) => (a.date > b.date) ? 1 : -1)
@@ -1132,7 +1131,6 @@ export class Visual implements IVisual {
         if (this.imageSettings.style !== "default" && filteredData.filter(el => !el.top && el.image).length > 0) {
             state.marginTopStagger = Math.max(state.marginTopStagger, state.addToMargin)
         }
-
         //define "official" margin top to start drawing graph
         if (this.styleSettings.timelineStyle !== "image") {
             state.finalMarginTop = !this.textSettings.stagger || this.styleSettings.timelineStyle == "minimalist" ? this.marginTop : state.marginTopStagger
@@ -1315,7 +1313,7 @@ export class Visual implements IVisual {
                             todayIconY = todayMarginTop - 12
                             transformStr = "translate(" + (todayPadding + state.scale(today)) + "," + (todayIconY) + ") rotate(180)"
                         } else {
-                            todayIconY = this.styleSettings.timelineStyle == "bar" ? todayMarginTop + 12 + this.barHeight : todayMarginTop + 12
+                            todayIconY = this.styleSettings.timelineStyle == "bar" ? todayMarginTop + 12 + this.barHt : todayMarginTop + 12
 
                             transformStr = "translate(" + (todayPadding + state.scale(today)) + "," + (todayIconY) + ")"
                         }
@@ -1714,7 +1712,7 @@ export class Visual implements IVisual {
                         objectName: objectName,
                         properties: {
                             barColor: this.styleSettings.barColor,
-                            barHeight: this.styleSettings.barHeight
+                            barHt: this.styleSettings.barHt
                         },
                         selector: null
                     });
@@ -1945,6 +1943,8 @@ export class Visual implements IVisual {
 function generateViewModel(options: VisualUpdateOptions, host: IVisualHost) {
     const dataViews = options.dataViews;
     const dataObjects = dataViews[0].metadata.objects;
+
+
     const viewModel: ViewModel = {
         dataPoints: [],
         settings: new Settings(dataObjects)

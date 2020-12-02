@@ -18,12 +18,12 @@
             "es2015",
             "dom"
         ]
-    },
-    //"files": [
-    //    "./src/visual.ts"
-    //],
+    },    
+    "files": [
+        "./src/visual.ts"
+    ],
     "include": [
-        "src/**/*.ts",
+        "src/**/*.ts"
     ],
     "exclude": [
         "node_modules",
@@ -31,6 +31,6 @@
         "assets",
         ".tmp",
         "vscode"
-    ],
+    ]
 
 }

@@ -5,7 +5,7 @@ export class Settings {
     public download: DownloadSettings;
     public textSettings: TextSettings;
     public axisSettings: AxisSettings;
-    public style: StyleSettings;
+    public styleSettings: StyleSettings;
     public imageSettings: ImageSettings;
 
     /** Constructs the default settings, and fills in and explicitly defined settings
@@ -15,18 +15,19 @@ export class Settings {
         this.download = DownloadSettings.FromViewObjects(dataObjects);
         this.textSettings = TextSettings.FromViewObjects(dataObjects);
         this.axisSettings = AxisSettings.FromViewObjects(dataObjects);
-        this.style = StyleSettings.FromViewObjects(dataObjects);
+        this.styleSettings = StyleSettings.FromViewObjects(dataObjects);
         this.imageSettings = ImageSettings.FromViewObjects(dataObjects);
     }
 }
 
 /** Base class for all settings */
 export class SettingBase {
-
+    public settingName: string = "";
     /** Generates this setting object from the provided view objects. Typically called from child class, not external callers */
     public static GenerateSettingsObj<TSetting extends SettingBase>(type: (new () => TSetting), objects?: powerbi.DataViewObjects, ) : TSetting {
-        const settingName = 'download';
+        
         const settingsInstance = new type();
+        const settingName = settingsInstance.settingName;
 
         // Objects[settingsName] keys corresponds the property values on the settings classes
         // Only continue if it is defined
@@ -44,6 +45,7 @@ export class SettingBase {
 }
 
 export class DownloadSettings extends SettingBase {
+    settingName = "download"
     public downloadCalendar: boolean = false;
     public position: string = 'TOP,LEFT';
     public calendarName: string = '';
@@ -54,6 +56,7 @@ export class DownloadSettings extends SettingBase {
 }
 
 export class TextSettings extends SettingBase {
+    settingName = "textSettings"
     public stagger: boolean = true;
     public autoStagger: boolean =  true;
     public spacing: number =  0;
@@ -75,6 +78,7 @@ export class TextSettings extends SettingBase {
 }
 
 export class AxisSettings extends SettingBase {
+    settingName = "axisSettings"
     public axis: string = "None";
     public dateFormat: string = "same";
     public manualScale: boolean = false;
@@ -93,7 +97,8 @@ export class AxisSettings extends SettingBase {
     }
 }
 
-export class StyleSettings extends SettingBase {
+export class StyleSettings extends SettingBase {    
+    settingName = "style"
     public timelineStyle: string = "line";
     public lineColor: powerbi.Fill = { solid: { color: 'black' } };
     public lineThickness: number = 2;
@@ -104,7 +109,7 @@ export class StyleSettings extends SettingBase {
     public connectColor: powerbi.Fill = { solid: { color: 'gray' } };
     public minimalistSize: number = 2;
     public barColor: powerbi.Fill = { solid: { color: 'rgb(186;215;57)' } };
-    public barHeight: number = 30;
+    public barHt: number = 30;
     public today: boolean = false;
     public todayTop: boolean = true;
     public todayColor: powerbi.Fill = { solid: { color: 'red' } }
@@ -115,6 +120,7 @@ export class StyleSettings extends SettingBase {
 }
 
 export class ImageSettings extends SettingBase {
+    settingName = "imageSettings"
     public imagesHeight: number = 100;
     public imagesWidth: number = 100;
     public style: string = 'straight';
