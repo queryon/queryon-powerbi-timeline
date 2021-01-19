@@ -1961,23 +1961,28 @@ function generateViewModel(options: VisualUpdateOptions, host: IVisualHost) {
         let categoryName = Object.keys(category.source.roles)[0]
         categoricalData[categoryName] = category
     })
+    let valueData: Record<string, powerbi.DataViewValueColumn> = {}
+    dataViews[0].categorical.values.forEach(value => {
+        let valueName = Object.keys(value.source.roles)[0]
+        valueData[valueName] = value
+    })
 
     const category = categoricalData["label"]
 
     const labelData = categoricalData["label"].values
     const labelColumn = categoricalData["label"].source.displayName
 
-    const dateData = categoricalData["date"].values
-    const dateColumn = categoricalData["date"].source.displayName
+    const dateData = valueData["date"].values
+    const dateColumn = valueData["date"].source.displayName
 
-    const linkData = categoricalData["link"] ? categoricalData["link"].values : false
-    const linkColumn = categoricalData["link"] ? categoricalData["link"].source.displayName : false
+    const linkData = valueData["link"] ? valueData["link"].values : false
+    const linkColumn = valueData["link"] ? valueData["link"].source.displayName : false
 
-    const descriptionData = categoricalData["description"] ? categoricalData["description"].values : false
-    const descriptionColumn = categoricalData["description"] ? categoricalData["description"].source.displayName : false
+    const descriptionData = valueData["description"] ? valueData["description"].values : false
+    const descriptionColumn = valueData["description"] ? valueData["description"].source.displayName : false
 
-    const imageData = categoricalData["image_url"] ? categoricalData["image_url"].values : false
-    const imageColumn = categoricalData["image_url"] ? categoricalData["image_url"].source.displayName : false
+    const imageData = valueData["image_url"] ? valueData["image_url"].values : false
+    const imageColumn = valueData["image_url"] ? valueData["image_url"].source.displayName : false
 
     const dataLength = Math.min(dateData.length, labelData.length);
     for (let i = 0; i < dataLength; i++) {

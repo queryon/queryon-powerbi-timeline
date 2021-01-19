@@ -8,22 +8,22 @@
         {
             "displayName": "Date/Time",
             "name": "date",
-            "kind": "GroupingOrMeasure"
+            "kind": "Measure"
         },
         {
             "displayName": "Optional URL",
             "name": "link",
-            "kind": "GroupingOrMeasure"
+            "kind": "Measure"
         },
         {
             "displayName": "Optional image",
             "name": "image_url",
-            "kind": "GroupingOrMeasure"
+            "kind": "Measure"
         },
         {
             "displayName": "Optional Description",
             "name": "description",
-            "kind": "GroupingOrMeasure"
+            "kind": "Measure"
         }
     ],
     "objects": {
@@ -974,35 +974,19 @@
             ],
             "categorical": {
                 "categories": {
-                    "select": [
-                        {
                             "for": {
                                 "in": "label"
                             }
                         },
-                        {
-                            "for": {
-                                "in": "date"
-                            }
-                        },
-                        {
-                            "for": {
-                                "in": "link"
-                            }
-                        },
-                        {
-                            "for": {
-                                "in": "image_url"
-                            }
-                        },
-                        {
-                            "for": {
-                                "in": "description"
-                            }
+                        "values": {
+                            "select": [
+                                {"bind": {"to": "date"}},
+                                {"bind": {"to": "link"}},
+                                {"bind": {"to": "image_url"}},
+                                {"bind": {"to": "description"}}
+                            ]
                         }
-                    ]
                 }
-            }
         }
     ]
 }

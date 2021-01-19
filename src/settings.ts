@@ -108,7 +108,7 @@ export class StyleSettings extends SettingBase {
     public minimalistConnect: boolean = false;
     public connectColor: powerbi.Fill = { solid: { color: 'gray' } };
     public minimalistSize: number = 2;
-    public barColor: powerbi.Fill = { solid: { color: 'rgb(186;215;57)' } };
+    public barColor: powerbi.Fill = { solid: { color: 'rgb(186,215,57)' } };
     public barHt: number = 30;
     public today: boolean = false;
     public todayTop: boolean = true;
