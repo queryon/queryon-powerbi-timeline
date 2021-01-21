@@ -148,7 +148,6 @@ export class Visual implements IVisual {
         let dataPoint: any = d3.select(<Element>eventTarget).datum();
 
         if (dataPoint && dataPoint.labelColumn) {
-
             args = [{
                 displayName: dataPoint.dateColumn,
                 value: dataPoint.formatted
@@ -285,7 +284,7 @@ export class Visual implements IVisual {
 
         state.filteredData.forEach((dataPoint, i) => {
             dataPoint["formatted"] = state.dateValueFormatter.format(dataPoint["date"])
-            dataPoint["labelText"] = this.styleSettings.timelineStyle != "image" ? `${dataPoint["formatted"]}${this.textSettings.separator} ${dataPoint["label"]}` : dataPoint["label"]
+            dataPoint["labelText"] = this.styleSettings.timelineStyle != "image" ? `${dataPoint["formatted"]}${this.textSettings.separator} ${dataPoint.getDisplayName()}` : dataPoint.getDisplayName()
             dataPoint["textColor"] = dataPoint.customFormat ? dataPoint.textColor : textColor
             dataPoint["iconColor"] = dataPoint.customFormat ? dataPoint.iconColor : iconsColor
             dataPoint["fontFamily"] = dataPoint.customFormat ? dataPoint.fontFamily : fontFamily
@@ -518,7 +517,7 @@ export class Visual implements IVisual {
             .attr("fill", el => el.textColor)
 
             .attr("id", (element) => element.selectionId.getKey())
-            .text(element => element.label)
+            .text(element => element.getDisplayName())
             .attr('class', element => `annotation_selector_${element.selectionId.getKey().replace(/\W/g, '')} annotationSelector`)
             .on('click', element => {
 
@@ -1949,7 +1948,6 @@ function generateViewModel(options: VisualUpdateOptions, host: IVisualHost) {
         dataPoints: [],
         settings: new Settings(dataObjects)
     };
-
     // If no data views, return early
     if (!dataViews || !dataViews[0] || !dataViews[0].categorical) {
         return viewModel;
@@ -1972,17 +1970,20 @@ function generateViewModel(options: VisualUpdateOptions, host: IVisualHost) {
     const labelData = categoricalData["label"].values
     const labelColumn = categoricalData["label"].source.displayName
 
+    const displayNameData =valueData["displayName"]  ? valueData["displayName"].values : false
+    //const displayNameColumn = valueData["displayName"] ? valueData["displayName"].source.displayName : false
+
     const dateData = valueData["date"].values
     const dateColumn = valueData["date"].source.displayName
 
     const linkData = valueData["link"] ? valueData["link"].values : false
-    const linkColumn = valueData["link"] ? valueData["link"].source.displayName : false
+    //const linkColumn = valueData["link"] ? valueData["link"].source.displayName : false
 
     const descriptionData = valueData["description"] ? valueData["description"].values : false
     const descriptionColumn = valueData["description"] ? valueData["description"].source.displayName : false
 
     const imageData = valueData["image_url"] ? valueData["image_url"].values : false
-    const imageColumn = valueData["image_url"] ? valueData["image_url"].source.displayName : false
+    //const imageColumn = valueData["image_url"] ? valueData["image_url"].source.displayName : false
 
     const dataLength = Math.min(dateData.length, labelData.length);
     for (let i = 0; i < dataLength; i++) {
@@ -1992,6 +1993,7 @@ function generateViewModel(options: VisualUpdateOptions, host: IVisualHost) {
             .createSelectionId();
 
         element.label = labelData[i] ? (labelData[i] as string).replace(/(\r\n|\n|\r)/gm, " ") : element.label;
+        element.displayName = displayNameData[i] ? (displayNameData[i] as string).replace(/(\r\n|\n|\r)/gm, " ") : element.displayName;
         element.date = new Date(dateData[i] as any); //any because primitive can be a boolean
         element.URL = linkData[i] ? linkData[i] : element.URL;
         element.image = imageData[i] ? imageData[i] : element.image;

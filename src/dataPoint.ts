@@ -6,6 +6,7 @@ import * as svgAnnotations from "d3-svg-annotation";
 
 export class DataPoint {
     public label: string = '';
+    public displayName: string = null;
     public date: Date;
     public URL: string = '';
     public image: string | boolean = false;
@@ -38,6 +39,13 @@ export class DataPoint {
     
     public x: number = 0; // ??
     public dy: number = 0; // ??
+
+    public getDisplayName():string{
+        if (this.displayName != null)
+            return this.displayName;
+        else
+            return this.label;
+    }
 }
 
 

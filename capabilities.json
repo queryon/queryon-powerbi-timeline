@@ -6,6 +6,11 @@
             "kind": "Grouping"
         },
         {
+            "displayName": "Optional Display Name",
+            "name": "displayName",
+            "kind": "Measure"
+        },
+        {
             "displayName": "Date/Time",
             "name": "date",
             "kind": "Measure"
@@ -961,6 +966,9 @@
                     "label": {
                         "max": 1
                     },
+                    "displayName": {
+                        "max": 1
+                    },
                     "date": {
                         "max": 1
                     },
@@ -980,6 +988,7 @@
                         },
                         "values": {
                             "select": [
+                                {"bind": {"to": "displayName"}},
                                 {"bind": {"to": "date"}},
                                 {"bind": {"to": "link"}},
                                 {"bind": {"to": "image_url"}},
