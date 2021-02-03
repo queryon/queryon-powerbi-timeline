@@ -1339,7 +1339,7 @@ export class Visual implements IVisual {
 
 
         //Handle context menu - right click
-        this.container.on('contextmenu', this.handleContextMenuRightClick);
+        this.svg.on('contextmenu', contextFunction => { this.handleContextMenuRightClick() } );
         //Handles click on/out bar
         this.svg.on('click', this.handleSvgClick);
         this.svg.on('mouseover', this.handleMouseOver)
