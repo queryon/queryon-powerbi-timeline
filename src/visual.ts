@@ -282,7 +282,6 @@ export class Visual implements IVisual {
         } else {
             state.filteredData = state.data.filter(element => element.date >= this.minVal && element.date <= this.maxVal)
         }
-
         state.filteredData.forEach((dataPoint, i) => {
             dataPoint["formatted"] = state.dateValueFormatter.format(dataPoint["date"])
             dataPoint["labelText"] = this.styleSettings.timelineStyle != "image" ? `${dataPoint["formatted"]}${this.textSettings.separator} ${dataPoint["label"]}` : dataPoint["label"]
@@ -2003,7 +2002,7 @@ function generateViewModel(options: VisualUpdateOptions, host: IVisualHost) {
         element.textColor = getCategoricalObjectValue(category, i, 'dataPoint', 'textColor', { "solid": { "color": "black" } }).solid.color;
         element.iconColor = getCategoricalObjectValue(category, i, 'dataPoint', 'iconColor', { "solid": { "color": "black" } }).solid.color;
         element.top = getCategoricalObjectValue(category, i, 'dataPoint', 'top', element.top);
-        element.customVertical = element.customVertical ? getCategoricalObjectValue(category, i, 'dataPoint', 'customVertical', element.customVertical) : element.customVertical;
+        element.customVertical = getCategoricalObjectValue(category, i, 'dataPoint', 'customVertical', element.customVertical);
 
         element.verticalOffset = getCategoricalObjectValue(category, i, 'dataPoint', 'verticalOffset', element.verticalOffset);
 
