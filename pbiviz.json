@@ -2,10 +2,10 @@
     "visual": {
         "name": "Timeline by Queryon",
         "displayName": "Timeline by Queryon",
-        "guid": "timelineByQueryon2DD9A171C1CB4B148AA3DD23CEF5B002",
+        "guid": "timelineByQueryon2DD9A171C1CB4B148AA3DD23CEF5B004",
         "guidProd": "timelineByQueryon2DD9A171C1CB4B148AA3DD23CEF5B2F9",
         "visualClassName": "Visual",
-        "version": "1.1.0",
+        "version": "1.1.1",
         "description": "A single-axis timeline packed with features.",
         "supportUrl":  "https://queryon.com/pbiviz/timeline",
         "gitHubUrl": ""

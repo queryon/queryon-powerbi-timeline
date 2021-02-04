@@ -1,12 +1,12 @@
 {
     "dataRoles": [
         {
-            "displayName": "Title",
+            "displayName": "Unique Identifier",
             "name": "label",
             "kind": "Grouping"
         },
         {
-            "displayName": "Optional Display Name",
+            "displayName": "Optional Title",
             "name": "displayName",
             "kind": "Measure"
         },
