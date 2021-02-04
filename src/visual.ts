@@ -1338,7 +1338,7 @@ export class Visual implements IVisual {
 
 
         //Handle context menu - right click
-        this.container.on('contextmenu', this.handleContextMenuRightClick);
+        this.svg.on('contextmenu', this.handleContextMenuRightClick);
         //Handles click on/out bar
         this.svg.on('click', this.handleSvgClick);
         this.svg.on('mouseover', this.handleMouseOver)
@@ -2010,7 +2010,7 @@ function generateViewModel(options: VisualUpdateOptions, host: IVisualHost) {
         element.textColor = getCategoricalObjectValue(category, i, 'dataPoint', 'textColor', { "solid": { "color": "black" } }).solid.color;
         element.iconColor = getCategoricalObjectValue(category, i, 'dataPoint', 'iconColor', { "solid": { "color": "black" } }).solid.color;
         element.top = getCategoricalObjectValue(category, i, 'dataPoint', 'top', element.top);
-        element.customVertical = element.customVertical ? getCategoricalObjectValue(category, i, 'dataPoint', 'customVertical', element.customVertical) : element.customVertical;
+        element.customVertical = getCategoricalObjectValue(category, i, 'dataPoint', 'customVertical', element.customVertical);
 
         element.verticalOffset = getCategoricalObjectValue(category, i, 'dataPoint', 'verticalOffset', element.verticalOffset);
 
