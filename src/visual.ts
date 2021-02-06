@@ -299,7 +299,7 @@ export class Visual implements IVisual {
             let startTime = [dataPoint.date.getFullYear(), dataPoint.date.getMonth() + 1, dataPoint.date.getDate(), dataPoint.date.getHours(), dataPoint.date.getMinutes()];
 
             state.ICSevents.push({
-                title: dataPoint.label,
+                title: dataPoint.unique_identifier,
                 description: dataPoint.description,
                 // startInputType: 'utc',
                 start: startTime,
@@ -1066,7 +1066,7 @@ export class Visual implements IVisual {
 
     public update(options: VisualUpdateOptions) {
         this.events.renderingStarted(options); // Rendering Events API START
-
+        debugger;
         this.viewModel = generateViewModel(options, this.host)
         const state: ChartDrawingState = new ChartDrawingState();
         state.data = this.viewModel.dataPoints
@@ -1338,9 +1338,9 @@ export class Visual implements IVisual {
 
 
         //Handle context menu - right click
-        this.svg.on('contextmenu', this.handleContextMenuRightClick);
+        this.svg.on('contextmenu', contextFunction => { this.handleContextMenuRightClick() });
         //Handles click on/out bar
-        this.svg.on('click', this.handleSvgClick);
+        this.svg.on('click', clickFunction => {this.handleSvgClick()});
         this.svg.on('mouseover', this.handleMouseOver)
 
 
@@ -1581,7 +1581,7 @@ export class Visual implements IVisual {
                 for (let dataElement of this.viewModel.dataPoints) {//.sort((a, b) => (a.value > b.value) ? 1 : -1)) {
                     objectEnumeration.push({
                         objectName: objectName,
-                        displayName: dataElement.label + " custom format",
+                        displayName: dataElement.getDisplayName() + " custom format",
                         properties: {
                             customFormat: dataElement.customFormat
                         },
@@ -1594,7 +1594,7 @@ export class Visual implements IVisual {
                         if (this.styleSettings.timelineStyle !== "minimalist") {
                             objectEnumeration.push({
                                 objectName: objectName,
-                                displayName: dataElement.label + " Text on top",
+                                displayName: dataElement.getDisplayName() + " Text on top",
                                 properties: {
                                     top: dataElement.top
                                 },
@@ -1603,7 +1603,7 @@ export class Visual implements IVisual {
 
                             objectEnumeration.push({
                                 objectName: objectName,
-                                displayName: dataElement.label + " Text style",
+                                displayName: dataElement.getDisplayName() + " Text style",
                                 properties: {
                                     annotationStyle: dataElement.annotationStyle
                                 },
@@ -1613,7 +1613,7 @@ export class Visual implements IVisual {
 
                             objectEnumeration.push({
                                 objectName: objectName,
-                                displayName: dataElement.label + " Text orientation",
+                                displayName: dataElement.getDisplayName() + " Text orientation",
                                 properties: {
                                     labelOrientation: dataElement.labelOrientation
                                 },
@@ -1623,7 +1623,7 @@ export class Visual implements IVisual {
 
                             objectEnumeration.push({
                                 objectName: objectName,
-                                displayName: dataElement.label + " Custom Vertical Offset",
+                                displayName: dataElement.getDisplayName() + " Custom Vertical Offset",
                                 properties: {
                                     customVertical: dataElement.customVertical
                                 },
@@ -1633,7 +1633,7 @@ export class Visual implements IVisual {
                             if (dataElement.customVertical) {
                                 objectEnumeration.push({
                                     objectName: objectName,
-                                    displayName: dataElement.label + " Vertical Offset in px",
+                                    displayName: dataElement.getDisplayName() + " Vertical Offset in px",
                                     properties: {
                                         verticalOffset: dataElement.verticalOffset
                                     },
@@ -1645,7 +1645,7 @@ export class Visual implements IVisual {
 
                             objectEnumeration.push({
                                 objectName: objectName,
-                                displayName: dataElement.label + " Icon Color",
+                                displayName: dataElement.getDisplayName() + " Icon Color",
                                 properties: {
                                     iconColor: dataElement.iconColor
                                 },
@@ -1655,7 +1655,7 @@ export class Visual implements IVisual {
 
                         objectEnumeration.push({
                             objectName: objectName,
-                            displayName: dataElement.label + " Font Family",
+                            displayName: dataElement.getDisplayName() + " Font Family",
                             properties: {
                                 fontFamily: dataElement.fontFamily
                             },
@@ -1664,7 +1664,7 @@ export class Visual implements IVisual {
 
                         objectEnumeration.push({
                             objectName: objectName,
-                            displayName: dataElement.label + " Text Size",
+                            displayName: dataElement.getDisplayName() + " Text Size",
                             properties: {
                                 textSize: dataElement.textSize
                             },
@@ -1673,7 +1673,7 @@ export class Visual implements IVisual {
 
                         objectEnumeration.push({
                             objectName: objectName,
-                            displayName: dataElement.label + " Text Color",
+                            displayName: dataElement.getDisplayName() + " Text Color",
                             properties: {
                                 textColor: dataElement.textColor
                             },
@@ -1965,10 +1965,10 @@ function generateViewModel(options: VisualUpdateOptions, host: IVisualHost) {
         valueData[valueName] = value
     })
 
-    const category = categoricalData["label"]
+    const category = categoricalData["unique_identifier"]
 
-    const labelData = categoricalData["label"].values
-    const labelColumn = categoricalData["label"].source.displayName
+    const labelData = categoricalData["unique_identifier"].values
+    const labelColumn = categoricalData["unique_identifier"].source.displayName
 
     const displayNameData =valueData["displayName"]  ? valueData["displayName"].values : false
     //const displayNameColumn = valueData["displayName"] ? valueData["displayName"].source.displayName : false
@@ -1992,7 +1992,7 @@ function generateViewModel(options: VisualUpdateOptions, host: IVisualHost) {
             .withCategory(category, i)
             .createSelectionId();
 
-        element.label = labelData[i] ? (labelData[i] as string).replace(/(\r\n|\n|\r)/gm, " ") : element.label;
+        element.unique_identifier = labelData[i] ? (labelData[i] as string).replace(/(\r\n|\n|\r)/gm, " ") : element.unique_identifier;
         element.displayName = displayNameData[i] ? (displayNameData[i] as string).replace(/(\r\n|\n|\r)/gm, " ") : element.displayName;
         element.date = new Date(dateData[i] as any); //any because primitive can be a boolean
         element.URL = linkData[i] ? linkData[i] : element.URL;

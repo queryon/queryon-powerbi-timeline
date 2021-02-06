@@ -5,7 +5,7 @@ import * as svgAnnotations from "d3-svg-annotation";
 
 
 export class DataPoint {
-    public label: string = '';
+    public unique_identifier: string = '';
     public displayName: string = null;
     public date: Date;
     public URL: string = '';
@@ -44,7 +44,7 @@ export class DataPoint {
         if (this.displayName != null)
             return this.displayName;
         else
-            return this.label;
+            return this.unique_identifier;
     }
 }
 
