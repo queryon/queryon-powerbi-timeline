@@ -12,19 +12,20 @@ export class Settings {
      * @param dataObjects the data objects, or undefined if no data objects exist
      */
     public constructor(dataObjects?: powerbi.DataViewObjects) {
-        this.download = DownloadSettings.FromViewObjects(dataObjects);
-        this.textSettings = TextSettings.FromViewObjects(dataObjects);
-        this.axisSettings = AxisSettings.FromViewObjects(dataObjects);
-        this.styleSettings = StyleSettings.FromViewObjects(dataObjects);
-        this.imageSettings = ImageSettings.FromViewObjects(dataObjects);
+        this.download = DownloadSettings.FROMVIEWOBJECTS(dataObjects);
+        this.textSettings = TextSettings.FROMVIEWOBJECTS(dataObjects);
+        this.axisSettings = AxisSettings.FROMVIEWOBJECTS(dataObjects);
+        this.styleSettings = StyleSettings.FROMVIEWOBJECTS(dataObjects);
+        this.imageSettings = ImageSettings.FROMVIEWOBJECTS(dataObjects);
     }
 }
 
-/** Base class for all settings */
+// Base class for all settings 
 export class SettingBase {
     public settingName: string = "";
-    /** Generates this setting object from the provided view objects. Typically called from child class, not external callers */
-    public static GenerateSettingsObj<TSetting extends SettingBase>(type: (new () => TSetting), objects?: powerbi.DataViewObjects, ) : TSetting {
+    public settingList:string[];
+    // Generates this setting object from the provided view objects. Typically called from child class, not external callers
+    public static GENERATESETTINGSOBJ<TSetting extends SettingBase>(type: (new () => TSetting), objects?: powerbi.DataViewObjects, ) : TSetting {
         
         const settingsInstance = new type();
         const settingName = settingsInstance.settingName;
@@ -34,29 +35,36 @@ export class SettingBase {
         if(objects && objects[settingName]) {
 
             // Enumerate all properties, and check them against the DataViewObject keys
-            for(let key in settingsInstance) {
+            for (let key of settingsInstance.settingList){
                 if(objects[settingName][key] !== undefined) {
-                    settingsInstance[key] = objects[settingName][key] as any; // as any workaround for lack of type checking here
+                    settingsInstance[key] = <any>objects[settingName][key]; // as any workaround for lack of type checking here
                 }
             }
+            // for(let key in settingsInstance) {
+            //     if(objects[settingName][key] !== undefined) {
+            //         settingsInstance[key] = <any>objects[settingName][key]; // as any workaround for lack of type checking here
+            //     }
+            // }
         }
         return settingsInstance;
     }
 }
 
 export class DownloadSettings extends SettingBase {
-    settingName = "download"
+    settingName = "download";
+    settingList = ['downloadCalendar', 'position', 'calendarName'];
     public downloadCalendar: boolean = false;
     public position: string = 'TOP,LEFT';
     public calendarName: string = '';
 
-    public static FromViewObjects(objects?: powerbi.DataViewObjects) : DownloadSettings {
-        return SettingBase.GenerateSettingsObj(DownloadSettings, objects);
+    public static FROMVIEWOBJECTS(objects?: powerbi.DataViewObjects) : DownloadSettings {
+        return SettingBase.GENERATESETTINGSOBJ(DownloadSettings, objects);
     }
 }
 
 export class TextSettings extends SettingBase {
-    settingName = "textSettings"
+    settingName = "textSettings"    ;
+    settingList = ['stagger', 'autoStagger', 'spacing','separator','boldTitles','annotationStyle','labelOrientation','fontFamily','textSize','textColor','top','dateFormat','customJS','wrap'];
     public stagger: boolean = true;
     public autoStagger: boolean =  true;
     public spacing: number =  0;
@@ -72,13 +80,14 @@ export class TextSettings extends SettingBase {
     public customJS: string =  "MM/dd/yyyy";
     public wrap: number = 400;
 
-    public static FromViewObjects(objects?: powerbi.DataViewObjects) : TextSettings {
-        return SettingBase.GenerateSettingsObj(TextSettings, objects);
+    public static FROMVIEWOBJECTS(objects?: powerbi.DataViewObjects) : TextSettings {
+        return SettingBase.GENERATESETTINGSOBJ(TextSettings, objects);
     }
 }
 
 export class AxisSettings extends SettingBase {
-    settingName = "axisSettings"
+    settingName = "axisSettings";    
+    settingList = ['axis', 'dateFormat', 'manualScale','manualScalePixel','axisColor','fontSize','fontFamily','bold','barMin','barMax','customPixel','customJS'];
     public axis: string = "None";
     public dateFormat: string = "same";
     public manualScale: boolean = false;
@@ -92,13 +101,15 @@ export class AxisSettings extends SettingBase {
     public customPixel: number = 0;
     public customJS: string = "MM/dd/yyyy"
 
-    public static FromViewObjects(objects?: powerbi.DataViewObjects) : AxisSettings {
-        return SettingBase.GenerateSettingsObj(AxisSettings,  objects);
+    public static FROMVIEWOBJECTS(objects?: powerbi.DataViewObjects) : AxisSettings {
+        return SettingBase.GENERATESETTINGSOBJ(AxisSettings,  objects);
     }
 }
 
 export class StyleSettings extends SettingBase {    
-    settingName = "style"
+    settingName = "style";
+    
+    settingList = ['timelineStyle', 'lineColor', 'lineThickness','minimalistStyle','minimalistAxis','iconsColor','minimalistConnect','connectColor','minimalistSize','barColor','barHt','today','todayTop','todayColor'];
     public timelineStyle: string = "line";
     public lineColor: powerbi.Fill = { solid: { color: 'black' } };
     public lineThickness: number = 2;
@@ -114,18 +125,20 @@ export class StyleSettings extends SettingBase {
     public todayTop: boolean = true;
     public todayColor: powerbi.Fill = { solid: { color: 'red' } }
 
-    public static FromViewObjects(objects?: powerbi.DataViewObjects) : StyleSettings {
-        return SettingBase.GenerateSettingsObj(StyleSettings, objects);
+    public static FROMVIEWOBJECTS(objects?: powerbi.DataViewObjects) : StyleSettings {
+        return SettingBase.GENERATESETTINGSOBJ(StyleSettings, objects);
     }
 }
 
 export class ImageSettings extends SettingBase {
-    settingName = "imageSettings"
+    settingName = "imageSettings";
+    
+    settingList = ['imagesHeight', 'imagesWidth', 'style'];
     public imagesHeight: number = 100;
     public imagesWidth: number = 100;
     public style: string = 'straight';
 
-    public static FromViewObjects(objects?: powerbi.DataViewObjects) : ImageSettings {
-        return SettingBase.GenerateSettingsObj(ImageSettings, objects);
+    public static FROMVIEWOBJECTS(objects?: powerbi.DataViewObjects) : ImageSettings {
+        return SettingBase.GENERATESETTINGSOBJ(ImageSettings, objects);
     }
 }
