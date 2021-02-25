@@ -2,6 +2,8 @@ import { annotationCustomType } from "d3-svg-annotation";
 import powerbi from "powerbi-visuals-api";
 import { DataPointAlignment } from "./dataPointAlignment";
 import * as svgAnnotations from "d3-svg-annotation";
+import { stackOrderAscending } from "d3";
+import { stringifyAsPrettyJSON } from "powerbi-visuals-utils-formattingutils/lib/src/stringExtensions";
 
 
 export class DataPoint {
@@ -38,6 +40,13 @@ export class DataPoint {
     
     public x: number = 0; // ??
     public dy: number = 0; // ??
+
+    public isImageValid():boolean{
+debugger;
+        if (this.image.toString().length > 5 && this.image.toString().substring(0,5).toLowerCase() == "data:")
+            return true;
+        return false;
+    }
 }
 
 

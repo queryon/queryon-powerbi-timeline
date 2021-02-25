@@ -660,7 +660,8 @@ export class Visual implements IVisual {
                 makeAnnotations
                     .disable(["connector"])
             }//append images
-            if (element.image) {
+            if (element.isImageValid()){
+            //if (element.image) {
                 if (element.top) {imgCountTop++;imgCounter = imgCountTop;}
                  else {imgCountBottom++;imgCounter = imgCountBottom;}
                 let imageY, imageX
@@ -694,6 +695,7 @@ export class Visual implements IVisual {
                         .attr("stroke-width", 1)
                         .attr("stroke", element.textColor);}
                 let image = this.container.append('image')
+                    //.attr('src', element.image)
                     .attr('xlink:href', element.image)
                     .attr('width', this.imageSettings.imagesWidth)
                     .attr('height', this.imageSettings.imagesHeight)
@@ -779,12 +781,14 @@ export class Visual implements IVisual {
                 .type(new svgAnnotations.annotationCustomType(element.style, element.alignment))
             makeAnnotations
                 .disable(["connector"])
-            if (element.image) {
+            if (element.isImageValid()){
+            //if (element.image) {
                 if (element.top) {imgCountTop++;imgCounter = imgCountTop;}
                  else {imgCountBottom++;imgCounter = imgCountBottom;}
                 let imageY = state.finalMarginTop + 25
                 let imageX = element.x
                 let image = this.container.append('image')
+                    //.attr('src', element.image)
                     .attr('xlink:href', element.image)
                     .attr('width', this.imageSettings.imagesWidth)
                     .attr('height', this.imageSettings.imagesHeight)
