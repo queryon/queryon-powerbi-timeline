@@ -42,7 +42,6 @@ export class DataPoint {
     public dy: number = 0; // ??
 
     public isImageValid():boolean{
-debugger;
         if (this.image.toString().length > 5 && this.image.toString().substring(0,5).toLowerCase() == "data:")
             return true;
         return false;
