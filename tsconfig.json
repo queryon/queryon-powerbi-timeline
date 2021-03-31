@@ -1,5 +1,6 @@
 {
     "compilerOptions": {
+        "baseUrl": ".",
         "allowJs": false,
         "emitDecoratorMetadata": true,
         "experimentalDecorators": true,
@@ -8,12 +9,28 @@
         "outDir": "./.tmp/build/",
         "moduleResolution": "node",
         "declaration": true,
+        "paths": {
+            "@/*": [
+              "src/*"
+            ]
+        },
         "lib": [
             "es2015",
             "dom"
         ]
-    },
+    },    
     "files": [
         "./src/visual.ts"
+    ],
+    "include": [
+        "src/**/*.ts"
+    ],
+    "exclude": [
+        "node_modules",
+        "dist",
+        "assets",
+        ".tmp",
+        "vscode"
     ]
+
 }

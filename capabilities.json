@@ -351,7 +351,7 @@
                 "customPixel": {
                     "displayName": "Manual Scale Pixels Width",
                     "type": {
-                        "text": true
+                        "numeric": true
                     }
                 },
                 "barMin": {
@@ -901,7 +901,7 @@
                         }
                     }
                 },
-                "barH": {
+                "barHt": {
                     "displayName": "Bar height",
                     "type": {
                         "numeric": true
