@@ -11,3 +11,10 @@ Install `Trusted Root Certification Authorities`
 
 # Running
 `pbiviz start`
+
+# This command fixes any webpack errors
+`npm install --save-dev webpack` 
+# This command fixes and d3/event errors
+`npm i @types/d3` 
+# This command dixes any "field Browser" Errors
+`npm install --save-dev process` 

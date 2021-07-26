@@ -9,26 +9,30 @@
   "dependencies": {
     "@babel/runtime": "7.6.0",
     "@babel/runtime-corejs2": "7.6.0",
-    "@types/d3": "^5.0.0",
+    "@types/npm": "^2.0.32",
     "blob": "^0.1.0",
     "core-js": "^3.2.1",
     "d3": "^5.0.0",
     "d3-svg-annotation": "^2.5.1",
-    "regenerator-runtime": "^0.13.5",
     "file-saver": "^2.0.2",
     "fs": "0.0.1-security",
     "ics": "2.13.1",
     "net": "^1.0.2",
-    "powerbi-visuals-api": "^2.6.2",
     "powerbi-visuals-utils-dataviewutils": "2.2.1",
     "powerbi-visuals-utils-formattingutils": "^4.5.0",
-    "powerbi-visuals-utils-tooltiputils": "^2.3.1"
+    "powerbi-visuals-utils-tooltiputils": "^2.3.1",
+    "regenerator-runtime": "^0.13.5",
+    "webpack-dev-server": "^3.11.2"
   },
   "devDependencies": {
+    "@types/d3": "^5.16.4",
+    "powerbi-visuals-api": "^3.8.2",
+    "process": "^0.11.10",
     "ts-loader": "6.1.0",
     "tslint": "^5.18.0",
     "tslint-microsoft-contrib": "^6.2.0",
-    "typescript": "3.6.3"
+    "typescript": "3.6.3",
+    "webpack": "^5.46.0"
   },
   "browser": {
     "fs": false
