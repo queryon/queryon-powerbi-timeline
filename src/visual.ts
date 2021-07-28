@@ -313,6 +313,7 @@ export class Visual implements IVisual {
 
             }
 
+
             //add heights to margin conditionally:
             if (this.styleSettings.timelineStyle !== "minimalist") {
                 if (!state.spacing || state.spacing < dataPoint["textHeight"]) {
@@ -321,7 +322,6 @@ export class Visual implements IVisual {
                 if (this.styleSettings.timelineStyle !== "image") {
                     if (dataPoint["top"]) {
                         this.marginTop = Math.max(this.marginTop, dataPoint["textHeight"] + 30)
-
                         if (dataPoint.customVertical) {
                             state.maxOffsetTop = Math.max(state.maxOffsetTop, dataPoint.verticalOffset)
                         }
@@ -629,6 +629,10 @@ export class Visual implements IVisual {
         let annotationsData, makeAnnotations
         let countTop = -1, countBottom = -1, counter
         let imgCountTop = 0, imgCountBottom = 0, imgCounter
+
+        let imageXValues: number[] = [];
+        let imageYValues: number[] = [];
+
         state.filteredData.forEach((element, i) => {
             let orientation
             if (element.top) {countTop++;
@@ -666,8 +670,12 @@ export class Visual implements IVisual {
                 if (element.top) {imgCountTop++;imgCounter = imgCountTop;}
                  else {imgCountBottom++;imgCounter = imgCountBottom;}
                 let imageY, imageX
+
+
+
                 switch (this.imageSettings.style) {
                     case "default":
+                        console.log("Staggered")
                         imageY = !element.top ? (state.finalMarginTop + element.dy) + element.textHeight - this.imageSettings.imagesHeight : (state.finalMarginTop + element.dy) - element.textHeight - 5
                         if (this.styleSettings.timelineStyle == "bar" && !element.top) { imageY += this.barHt }
                         if (orientation == "middle") { imageX = element.x - (this.imageSettings.imagesWidth / 2) }
@@ -675,15 +683,34 @@ export class Visual implements IVisual {
                         else { imageX = element.x - this.imageSettings.imagesWidth }
                         break;
                     case "straight":
+                        console.log("straight")
                         imageY = element.top ? state.finalMarginTop + 20 : state.finalMarginTop - 20 - this.imageSettings.imagesHeight
                         if (this.styleSettings.timelineStyle == "bar" && element.top) { imageY += this.barHt }
                         break;
                     default:
+                        console.log("alternating")
+
                         imageY = element.top ? state.finalMarginTop + 20 : 0
                         if (state.downloadTop) {imageY += 35;}
                         if (imgCounter % 2 == 0) {imageY += this.imageSettings.imagesHeight;}
                         if (this.styleSettings.timelineStyle == "bar" && element.top) { imageY += this.barHt }
+                        if (orientation == "middle") { imageX = element.x - (this.imageSettings.imagesWidth / 2) }
+                        else if (orientation == "left") { imageX = element.x }
+                        else { imageX = element.x - this.imageSettings.imagesWidth }
+                        
+                        for(var i:number = 0; i < imageXValues.length; i++)
+                        {
+                            if(imageXValues[i] === element["x"] && imageYValues[i] === imageY)
+                            {
+                                imageY += this.imageSettings.imagesHeight;
+                            }
+                        }
+
+                        imageXValues.push(element["x"])
+                        imageYValues.push(imageY)
+
                         break;}
+
                 imageX = !imageX ? element.x - (this.imageSettings.imagesWidth / 2) : imageX
                 if (this.imageSettings.style != "default") {
                     let connector = this.container.append("line")
@@ -834,6 +861,7 @@ export class Visual implements IVisual {
 
 
     public update(options: VisualUpdateOptions) {
+        
         this.events.renderingStarted(options); // Rendering Events API START
         this.viewModel = generateViewModel(options, this.host)
         const state: ChartDrawingState = new ChartDrawingState();
@@ -842,6 +870,9 @@ export class Visual implements IVisual {
             this.events.renderingFailed(options); // Rendering Events API FAIL
             return;
         }
+
+        
+
         this.setEmptyCanvas();
         this.setDefaultGlobals();
         this.setDataRange(this.viewModel.dataPoints); // Set the date range of the timeline based on the data
@@ -870,6 +901,7 @@ export class Visual implements IVisual {
         state.marginTopStagger = Math.max(this.marginTop, state.marginTopStagger)
         if (this.imageSettings.style !== "default" && filteredData.filter(el => !el.top && el.image).length > 0) {
             state.marginTopStagger = Math.max(state.marginTopStagger, state.addToMargin)}
+            
         //define "official" margin top to start drawing graph
         if (this.styleSettings.timelineStyle !== "image") {
             state.finalMarginTop = !this.textSettings.stagger || this.styleSettings.timelineStyle == "minimalist" ? this.marginTop : state.marginTopStagger
@@ -877,17 +909,43 @@ export class Visual implements IVisual {
                 //case user input offset is > than margin
                 state.finalMarginTop = Math.max(state.finalMarginTop, state.maxOffsetTop + this.textSettings.spacing)}
         } else {state.finalMarginTop = 20;}
+        
         state.downloadTop = this.downloadSettings.downloadCalendar && this.downloadSettings.position.split(",")[0] == "TOP";
         state.downloadBottom = this.downloadSettings.downloadCalendar && this.downloadSettings.position.split(",")[0] !== "TOP"
         //download calendar icon is enabled and positioned at top
         if (state.downloadTop) {state.finalMarginTop += 35;}
+
+        
+        
         //axis format
         state.axisFormat = this.axisSettings.dateFormat != "customJS" ? this.axisSettings.dateFormat : this.axisSettings.customJS;
         state.axisValueFormatter = state.axisFormat == "same" ? state.dateValueFormatter : createFormatter(state.axisFormat);      
         this.setPadding(state);
         state.scale = d3.scaleTime()
             .domain([this.minVal, this.maxVal]) //min and max data 
-            .range([0, this.width - (this.padding * 2)]); //min and max width in px           
+            .range([0, this.width - (this.padding * 2)]); //min and max width in px  
+        
+        let last_date
+        let current_date
+
+        if(this.imageSettings.style === "alternate") 
+        {
+            state.filteredData.forEach((element, i) => 
+            {
+                current_date = element["dateAsInt"]
+
+                if(current_date === last_date)
+                {
+                    console.log("make taller")
+                    state.finalMarginTop += this.imageSettings.imagesHeight - this.imageSettings.imagesHeight;                   
+                }
+
+                last_date = element["dateAsInt"]
+            })
+                  
+        }
+        state.finalMarginTop = state.finalMarginTop + this.imageSettings.imagesHeight;         
+                 
         if (this.styleSettings.timelineStyle !== "image") {
             //all styles, not image focus:
             this.svg.attr("width", this.width - 4);
@@ -902,6 +960,9 @@ export class Visual implements IVisual {
                     this.configureMinimalistView(state);
                     break;
             }
+
+
+
             state.finalHeight = Math.max(this.height - 4, state.svgHeightTracking)
             this.svg.attr("height", state.finalHeight);
             let transparentContainer
@@ -913,9 +974,11 @@ export class Visual implements IVisual {
                     .attr('y', state.axisMarginTop)
                     .attr('height', this.height)
             }
+
             //axis setup
             this.axisSetup(state, transparentContainer);
             this.appendTodayIcon(state);
+            
             if (state.enabledAnnotations) {this.configureTimelineAnnotations(state);}
         }
         else {this.configureImagesTimeline(state);}//image focus config:  
@@ -928,6 +991,7 @@ export class Visual implements IVisual {
         this.svg.on('mouseover', mouseoverFunction => {this.handleMouseOver()})
         if (this.downloadSettings.downloadCalendar) {this.setupDownloadCalendar(state);}
         this.events.renderingFinished(options); // Rendering Events API FINISH
+
     }
     private appendTodayIcon(state:ChartDrawingState){
         let today = new Date
