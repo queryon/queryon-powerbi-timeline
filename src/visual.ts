@@ -800,7 +800,14 @@ export class Visual implements IVisual {
 
 
                 if (this.imageSettings.style != "default") {
-                    let connector = this.container.append("line")
+
+                    if(!element.image || element.image === "https://pbiontap.com/Transparent-Image-Placeholder.png")
+                    {
+                        
+                    }
+                    else
+                    {
+                        let connector = this.container.append("line")
                         .attr("x1", element.x)
                         .attr("y1", () => {
                             let result = state.finalMarginTop
@@ -813,6 +820,8 @@ export class Visual implements IVisual {
                         .attr("y2", element.top ? imageY : imageY + this.imageSettings.imagesHeight)
                         .attr("stroke-width", 1)
                         .attr("stroke", element.textColor);
+                    }
+
                 }
 
                 let image = this.container.append('image')
@@ -1108,7 +1117,7 @@ export class Visual implements IVisual {
             //annotation styles that add to text height, increment spacing
             state.spacing += 10
         }
-
+        
         //work around not limiting minimum spacing
         if (this.textSettings.autoStagger || !this.textSettings.spacing) {
             this.textSettings.spacing = state.spacing
@@ -2012,6 +2021,12 @@ function generateViewModel(options: VisualUpdateOptions, host: IVisualHost) {
         if (element.date) {
             viewModel.dataPoints.push(element)
         }
+
+        if(element.image === false || element.image === "https://pbiontap.com/Transparent-Image-Placeholder.png")
+        {
+            
+        }
+        
     }
 
     return viewModel;
