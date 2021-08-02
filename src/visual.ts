@@ -667,181 +667,108 @@ export class Visual implements IVisual {
         //annotations config
         let annotationsData, makeAnnotations
         let countTop = -1, countBottom = -1, counter
-
-        // let countTop = 1, countBottom = 1, counter
         let imgCountTop = 0, imgCountBottom = 0, imgCounter
 
-        // let pixelWidth = (this.width - this.padding * 2) / data.length
+        let imageXValues: number[] = [];
+        let imageYValues: number[] = [];
 
         state.filteredData.forEach((element, i) => {
             let orientation
-            if (element.top) {
-                countTop++;
-                counter = countTop
-            } else {
-                countBottom++;
-                counter = countBottom
-            }
-
+            if (element.top) {countTop++;
+                counter = countTop;}
+                 else {countBottom++;
+                counter = countBottom;}
             element["x"] = this.padding + state.scale(element["date"])
-
             if (!element.customVertical) {
                 if (this.textSettings.stagger) {
-                    if (counter > 0) {
-                        element["dy"] = element.top ? this.textSettings.spacing * (-1 * (counter)) - 20 : this.textSettings.spacing * (counter) + 20
-
-                    } else {
-                        element["dy"] = element.top ? -20 : 20
-                    }
-                    // element["dy"] = element.top ? this.textSettings.spacing * (-1 * countTop) : this.axisSettings.axis === "None" ? this.textSettings.spacing * countBottom : this.textSettings.spacing * countBottom + 20;
-                }
-                else {
-                    element["dy"] = element.top ? -20 : 20
-                }
-
-                if (this.axisSettings.axis != "None" && this.styleSettings.timelineStyle !== "bar" && !element.top) {
-                    element["dy"] += 20
-                }
-            } else {
-                element["dy"] = element.top ? element.verticalOffset * -1 : element.verticalOffset
-            }
-
-
-            if (element.labelOrientation !== "Auto") {
-                orientation = element.labelOrientation
-            } else {
-                orientation = this.getAnnotationOrientation(element)
-            }
-
-
-
-            // svgHeightTracking = Math.max(svgHeightTracking, element["y"] + element["dy"])
-
+                    if (counter > 0) {element["dy"] = element.top ? this.textSettings.spacing * (-1 * (counter)) - 20 : this.textSettings.spacing * (counter) + 20}
+                     else {element["dy"] = element.top ? -20 : 20}}
+                else {element["dy"] = element.top ? -20 : 20}
+                if (this.axisSettings.axis != "None" && this.styleSettings.timelineStyle !== "bar" && !element.top) {element["dy"] += 20}
+            } else {element["dy"] = element.top ? element.verticalOffset * -1 : element.verticalOffset}
+            if (element.labelOrientation !== "Auto") {orientation = element.labelOrientation}
+             else {orientation = this.getAnnotationOrientation(element)}
             element.alignment = new DataPointAlignment();
-
             element.alignment.note.align = orientation
             annotationsData = [{
-                note: {
-                    wrap: this.textSettings.wrap,
-                    title: element.labelText,
-                    label: element.description,
-                    bgPadding: 0
-                },
+                note: {wrap: this.textSettings.wrap,title: element.labelText,label: element.description,bgPadding: 0},
                 x: element["x"],
                 y: this.styleSettings.timelineStyle == "bar" && !element.top ? state.finalMarginTop + this.barHt : state.finalMarginTop,
-                dy: element["dy"],
-                color: element.textColor,
-                id: element.selectionId
+                dy: element["dy"], color: element.textColor, id: element.selectionId
             }]
-
             element.style = element.annotationStyle !== "textOnly" ? svgAnnotations[element.annotationStyle] : svgAnnotations['annotationLabel']
-
             makeAnnotations = svgAnnotations.annotation()
                 .annotations(annotationsData)
                 .type(new svgAnnotations.annotationCustomType(element.style, element.alignment)) //NOTE: THis used to be (element.type, element.alignment) for some reason, which is an error?
-
             if (element.annotationStyle === 'textOnly') {
                 makeAnnotations
                     .disable(["connector"])
-            }
-
-
-            //append images
-            if (element.image) {
-                if (element.top) {
-                    imgCountTop++
-                    imgCounter = imgCountTop
-                } else {
-                    imgCountBottom++
-                    imgCounter = imgCountBottom
-                }
+            }//append images
+            if (element.isImageValid()){
+            //if (element.image) {
+                if (element.top) {imgCountTop++;imgCounter = imgCountTop;}
+                 else {imgCountBottom++;imgCounter = imgCountBottom;}
                 let imageY, imageX
+
+
+
                 switch (this.imageSettings.style) {
                     case "default":
+                        console.log("Staggered")
                         imageY = !element.top ? (state.finalMarginTop + element.dy) + element.textHeight - this.imageSettings.imagesHeight : (state.finalMarginTop + element.dy) - element.textHeight - 5
-
-
                         if (this.styleSettings.timelineStyle == "bar" && !element.top) { imageY += this.barHt }
-
                         if (orientation == "middle") { imageX = element.x - (this.imageSettings.imagesWidth / 2) }
                         else if (orientation == "left") { imageX = element.x }
                         else { imageX = element.x - this.imageSettings.imagesWidth }
                         break;
-
                     case "straight":
+                        console.log("straight")
                         imageY = element.top ? state.finalMarginTop + 20 : state.finalMarginTop - 20 - this.imageSettings.imagesHeight
-
                         if (this.styleSettings.timelineStyle == "bar" && element.top) { imageY += this.barHt }
                         break;
-
-                    // case "image":
-                    //   imageY = this.finalMarginTop - imagesHeight / 2
-                    //   imageX = element.x
-
-                    //   break;
-
                     default:
+                        console.log("alternating")
+
                         imageY = element.top ? state.finalMarginTop + 20 : 0
-                        if (state.downloadTop) {
-                            imageY += 35
-                        }
-                        if (imgCounter % 2 == 0) {
-                            imageY += this.imageSettings.imagesHeight
-                        }
-
+                        if (state.downloadTop) {imageY += 35;}
+                        if (imgCounter % 2 == 0) {imageY += this.imageSettings.imagesHeight;}
                         if (this.styleSettings.timelineStyle == "bar" && element.top) { imageY += this.barHt }
+                        if (orientation == "middle") { imageX = element.x - (this.imageSettings.imagesWidth / 2) }
+                        else if (orientation == "left") { imageX = element.x }
+                        else { imageX = element.x - this.imageSettings.imagesWidth }
+                        
+                        for(var i:number = 0; i < imageXValues.length; i++)
+                        {
+                            if(imageXValues[i] === element["x"] && imageYValues[i] === imageY)
+                            {
+                                imageY += this.imageSettings.imagesHeight;
+                            }
+                        }
 
-                        break;
+                        imageXValues.push(element["x"])
+                        imageYValues.push(imageY)
 
-                }
-
+                        break;}
 
                 imageX = !imageX ? element.x - (this.imageSettings.imagesWidth / 2) : imageX
-
-
                 if (this.imageSettings.style != "default") {
-
-                    if(!element.image || element.image === "https://pbiontap.com/Transparent-Image-Placeholder.png")
-                    {
-                        
-                    }
-                    else
-                    {
-                        let connector = this.container.append("line")
+                    let connector = this.container.append("line")
                         .attr("x1", element.x)
-                        .attr("y1", () => {
-                            let result = state.finalMarginTop
-                            if (this.styleSettings.timelineStyle == "bar" && element.top) {
-                                result += this.barHt
-                            }
-                            return result
-                        })
+                        .attr("y1", () => {let result = state.finalMarginTop
+                            if (this.styleSettings.timelineStyle == "bar" && element.top) {result += this.barHt}
+                            return result})
                         .attr("x2", element.x)
                         .attr("y2", element.top ? imageY : imageY + this.imageSettings.imagesHeight)
                         .attr("stroke-width", 1)
-                        .attr("stroke", element.textColor);
-                    }
-
-                }
-
+                        .attr("stroke", element.textColor);}
                 let image = this.container.append('image')
+                    //.attr('src', element.image)
                     .attr('xlink:href', element.image)
                     .attr('width', this.imageSettings.imagesWidth)
                     .attr('height', this.imageSettings.imagesHeight)
                     .attr('x', imageX)
                     .attr('y', imageY)
-
-                    .on("click", () => {
-                        if (element.URL) {
-                            this.host.launchUrl(element.URL)
-                        }
-
-                    });
-            }
-
-
-
-
+                    .on("click", () => {if (element.URL) {this.host.launchUrl(element.URL);}});}
             this.container
                 .append("g")
                 .attr('class', `annotation_selector_${element.selectionId.getKey().replace(/\W/g, '')} annotationSelector`)
@@ -849,41 +776,21 @@ export class Visual implements IVisual {
                 .style('font-family', element.fontFamily)
                 .style('background-color', 'transparent')
                 .call(makeAnnotations)
-                .on('click', el => {
-                    //manage highlighted formating and open links
+                .on('click', el => {//manage highlighted formating and open links
                     this.selectionManager.select(element.selectionId).then((ids: ISelectionId[]) => {
                         if (ids.length > 0) {
-                            // this.container.selectAll('.bar').style('fill-opacity', 0.1)
                             d3.select(`.selector_${element.selectionId.getKey().replace(/\W/g, '')}`).style('fill-opacity', 1)
                             this.container.selectAll('.annotationSelector').style('font-weight', "normal")
-
-                            if (!this.textSettings.boldTitles) {
-                                this.container.selectAll('.annotationSelector  .annotation-note-title ').style('font-weight', "normal")
-                            }
-
+                            if (!this.textSettings.boldTitles) {this.container.selectAll('.annotationSelector  .annotation-note-title ').style('font-weight', "normal")}
                             d3.selectAll(`.annotation_selector_${element.selectionId.getKey().replace(/\W/g, '')}`).style('font-weight', "bold")
                             d3.selectAll(`.annotation_selector_${element.selectionId.getKey().replace(/\W/g, '')}  .annotation-note-title `).style('font-weight', "bold")
-
-
-                            //Open link 
-                            if (element.URL) {
-                                this.host.launchUrl(element.URL)
-                            }
-
-                        } else {
-                            // this.container.selectAll('.bar').style('fill-opacity', 1)
-                            this.container.selectAll('.annotationSelector').style('font-weight', "normal")
-
-                            if (!this.textSettings.boldTitles) {
-                                this.container.selectAll('.annotationSelector .annotation-note-title').style('font-weight', "normal")
-                            }
+                            if (element.URL) {this.host.launchUrl(element.URL)}
+                        } else {this.container.selectAll('.annotationSelector').style('font-weight', "normal")
+                            if (!this.textSettings.boldTitles) {this.container.selectAll('.annotationSelector .annotation-note-title').style('font-weight', "normal")}
                         }
-
-                    })
-                })
-
-        })
+                    })})})
     }
+
 
     private configureImagesTimeline(state: ChartDrawingState) {
         this.padding = this.defaultPadding;
@@ -1169,7 +1076,28 @@ export class Visual implements IVisual {
 
         state.scale = d3.scaleTime()
             .domain([this.minVal, this.maxVal]) //min and max data 
-            .range([0, this.width - (this.padding * 2)]); //min and max width in px           
+            .range([0, this.width - (this.padding * 2)]); //min and max width in px
+
+        let last_date
+        let current_date
+
+        if(this.imageSettings.style === "alternate") 
+        {
+            state.filteredData.forEach((element, i) => 
+            {
+                current_date = element["dateAsInt"]
+
+                if(current_date === last_date)
+                {
+                    console.log("make taller")
+                    state.finalMarginTop += this.imageSettings.imagesHeight - this.imageSettings.imagesHeight;                   
+                }
+
+                last_date = element["dateAsInt"]
+            })
+
+        }
+        state.finalMarginTop = state.finalMarginTop + this.imageSettings.imagesHeight;      
 
 
         if (this.styleSettings.timelineStyle !== "image") {
