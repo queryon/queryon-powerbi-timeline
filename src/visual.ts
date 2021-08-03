@@ -66,7 +66,7 @@ export class Visual implements IVisual {
     private fontHeightLib: any;
 
 
-    /* Settings Getters for cleaner and less verbose code */
+    // Settings Getters for cleaner and less verbose code
     get settings(): Settings {
         return this.viewModel.settings;
     }
@@ -106,7 +106,7 @@ export class Visual implements IVisual {
         this.fontHeightLib = {}
     }
 
-    /** Handle context menu - right click */
+    // Handle context menu - right click 
     private handleContextMenuRightClick() {
         const mouseEvent: MouseEvent = d3.event as MouseEvent;
         const eventTarget: EventTarget = mouseEvent.target;
@@ -118,7 +118,7 @@ export class Visual implements IVisual {
         mouseEvent.preventDefault();
     }
 
-    /** Handle click on/out bar  */
+    // Handle click on/out bar  
     private handleSvgClick() {
         const mouseEvent: MouseEvent = d3.event as MouseEvent;
         const eventTarget: EventTarget = mouseEvent.target;
@@ -172,7 +172,7 @@ export class Visual implements IVisual {
 
 
     // Douglas 2020-10-20: Unknown what the purpose of this is, just refactored it out of update()
-    /** Empties the canvas to remove lingering elements */
+    // Empties the canvas to remove lingering elements */
     private setEmptyCanvas() {
         this.container.selectAll("g").remove();
         this.container.selectAll("rect").remove();
@@ -232,7 +232,7 @@ export class Visual implements IVisual {
         return createFormatter(format);
     }
 
-    /** Determines the Min & Max date or numeric values for the timeline */
+    // Determines the Min & Max date or numeric values for the timeline */
     private setDataRange(data: DataPoint[]) {
         let minFromData = d3.min(data, function (d: any) { return d.date })
         let maxFromData = d3.max(data, function (d: any) { return d.date })
@@ -320,11 +320,11 @@ export class Visual implements IVisual {
                 if (this.styleSettings.timelineStyle !== "image") {
                     if (dataPoint["top"]) {
                         this.marginTop = Math.max(this.marginTop, dataPoint["textHeight"] + 30)
-
-                        if (dataPoint.customVertical) {
+                        if (dataPoint.customVertical) {                          
                             state.maxOffsetTop = Math.max(state.maxOffsetTop, dataPoint.verticalOffset)
-                        }
+                        }                
                     } else {
+                        
                         if (dataPoint.customVertical) {
                             state.maxOffsetBottom = Math.max(state.maxOffsetBottom, dataPoint.verticalOffset)
                         }
@@ -332,6 +332,7 @@ export class Visual implements IVisual {
                         if (dataPoint.image) {
                             this.marginTop = Math.max(this.marginTop, state.addToMargin)
                         }
+                        
                     }
 
                 }
@@ -713,30 +714,26 @@ export class Visual implements IVisual {
 
 
                 switch (this.imageSettings.style) {
-                    case "default":
-                        console.log("Staggered")
+                    case "default": //staggered
                         imageY = !element.top ? (state.finalMarginTop + element.dy) + element.textHeight - this.imageSettings.imagesHeight : (state.finalMarginTop + element.dy) - element.textHeight - 5
                         if (this.styleSettings.timelineStyle == "bar" && !element.top) { imageY += this.barHt }
                         if (orientation == "middle") { imageX = element.x - (this.imageSettings.imagesWidth / 2) }
                         else if (orientation == "left") { imageX = element.x }
                         else { imageX = element.x - this.imageSettings.imagesWidth }
                         break;
-                    case "straight":
-                        console.log("straight")
+                    case "straight": //straight
                         imageY = element.top ? state.finalMarginTop + 20 : state.finalMarginTop - 20 - this.imageSettings.imagesHeight
                         if (this.styleSettings.timelineStyle == "bar" && element.top) { imageY += this.barHt }
                         break;
-                    default:
-                        console.log("alternating")
-
+                    default: //alternating
                         imageY = element.top ? state.finalMarginTop + 20 : 0
                         if (state.downloadTop) {imageY += 35;}
                         if (imgCounter % 2 == 0) {imageY += this.imageSettings.imagesHeight;}
                         if (this.styleSettings.timelineStyle == "bar" && element.top) { imageY += this.barHt }
-                        if (orientation == "middle") { imageX = element.x - (this.imageSettings.imagesWidth / 2) }
-                        else if (orientation == "left") { imageX = element.x }
-                        else { imageX = element.x - this.imageSettings.imagesWidth }
-                        
+
+                        imageX = element.x - (this.imageSettings.imagesWidth / 2)
+
+
                         for(var i:number = 0; i < imageXValues.length; i++)
                         {
                             if(imageXValues[i] === element["x"] && imageYValues[i] === imageY)
@@ -1037,7 +1034,7 @@ export class Visual implements IVisual {
             });
         }
 
-        state.marginTopStagger += ((filteredData.filter(element => element.top).length) * this.textSettings.spacing) + 20
+        state.marginTopStagger += ((filteredData.filter(element => element.top && !element.customVertical).length) * this.textSettings.spacing) + 20
 
         //case margintopstagger wasn't incremented - no top staggered items:
         state.marginTopStagger = Math.max(this.marginTop, state.marginTopStagger)
@@ -1049,16 +1046,15 @@ export class Visual implements IVisual {
         //define "official" margin top to start drawing graph
         if (this.styleSettings.timelineStyle !== "image") {
             state.finalMarginTop = !this.textSettings.stagger || this.styleSettings.timelineStyle == "minimalist" ? this.marginTop : state.marginTopStagger
-
+            
             if (this.styleSettings.timelineStyle != "minimalist" && filteredData.filter(el => el.top && el.customVertical).length > 0) {
                 //case user input offset is > than margin
                 state.finalMarginTop = Math.max(state.finalMarginTop, state.maxOffsetTop + this.textSettings.spacing)
+    
             }
-
         } else {
             state.finalMarginTop = 20 //+ imagesHeight / 2
         }
-
 
         state.downloadTop = this.downloadSettings.downloadCalendar && this.downloadSettings.position.split(",")[0] == "TOP";
         state.downloadBottom = this.downloadSettings.downloadCalendar && this.downloadSettings.position.split(",")[0] !== "TOP"
@@ -1088,17 +1084,14 @@ export class Visual implements IVisual {
                 current_date = element["dateAsInt"]
 
                 if(current_date === last_date)
-                {
-                    console.log("make taller")
-                    state.finalMarginTop += this.imageSettings.imagesHeight - this.imageSettings.imagesHeight;                   
+                { 
+                    state.finalMarginTop = state.finalMarginTop + (this.imageSettings.imagesHeight / 2); //Makes taller
                 }
 
                 last_date = element["dateAsInt"]
             })
 
         }
-        state.finalMarginTop = state.finalMarginTop + this.imageSettings.imagesHeight;      
-
 
         if (this.styleSettings.timelineStyle !== "image") {
             //all styles, not image focus:
@@ -1260,11 +1253,10 @@ export class Visual implements IVisual {
 
             }
 
-            if (state.enabledAnnotations) {
-                this.configureTimelineAnnotations(state);
-            }
+        if (state.enabledAnnotations) {
+            this.configureTimelineAnnotations(state);
         }
-        else { //image focus config:    
+        } else { //image focus config:    
             this.configureImagesTimeline(state);
         }
 
@@ -1750,6 +1742,8 @@ export class Visual implements IVisual {
                 }
                 break;
         };
+
+        
 
         return objectEnumeration;
 
