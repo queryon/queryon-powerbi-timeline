@@ -671,6 +671,9 @@ export class Visual implements IVisual {
         // let countTop = 1, countBottom = 1, counter
         let imgCountTop = 0, imgCountBottom = 0, imgCounter
 
+        let imageXValues: number[] = [];
+        let imageYValues: number[] = [];
+
         // let pixelWidth = (this.width - this.padding * 2) / data.length
 
         state.filteredData.forEach((element, i) => {
@@ -744,7 +747,7 @@ export class Visual implements IVisual {
                 makeAnnotations
                     .disable(["connector"])
             }
-
+            
 
             //append images
             if (element.image) {
@@ -774,28 +777,29 @@ export class Visual implements IVisual {
                         if (this.styleSettings.timelineStyle == "bar" && element.top) { imageY += this.barHt }
                         break;
 
-                    // case "image":
-                    //   imageY = this.finalMarginTop - imagesHeight / 2
-                    //   imageX = element.x
-
-                    //   break;
-
                     default:
+                        console.log("alternating")
+
                         imageY = element.top ? state.finalMarginTop + 20 : 0
-                        if (state.downloadTop) {
-                            imageY += 35
-                        }
-                        if (imgCounter % 2 == 0) {
-                            imageY += this.imageSettings.imagesHeight
-                        }
-
+                        if (state.downloadTop) {imageY += 35;}
+                        if (imgCounter % 2 == 0) {imageY += this.imageSettings.imagesHeight;}
                         if (this.styleSettings.timelineStyle == "bar" && element.top) { imageY += this.barHt }
+                        imageX = element.x - (this.imageSettings.imagesWidth / 2)
+                        
+                        for(var i:number = 0; i < imageXValues.length; i++)
+                        {
+                            if(imageXValues[i] === element["x"] && imageYValues[i] === imageY)
+                            {
+                                imageY += this.imageSettings.imagesHeight;
+                            }
+                        }
 
-                        break;
+                        imageXValues.push(element["x"])
+                        imageYValues.push(imageY)
 
-                }
+                        break;}
 
-
+                    
                 imageX = !imageX ? element.x - (this.imageSettings.imagesWidth / 2) : imageX
 
 
@@ -1130,7 +1134,7 @@ export class Visual implements IVisual {
             });
         }
 
-        state.marginTopStagger += ((filteredData.filter(element => element.top).length) * this.textSettings.spacing) + 20
+        state.marginTopStagger += ((filteredData.filter(element => element.top && !element.customVertical).length) * this.textSettings.spacing) + 20
 
         //case margintopstagger wasn't incremented - no top staggered items:
         state.marginTopStagger = Math.max(this.marginTop, state.marginTopStagger)
@@ -1169,8 +1173,26 @@ export class Visual implements IVisual {
 
         state.scale = d3.scaleTime()
             .domain([this.minVal, this.maxVal]) //min and max data 
-            .range([0, this.width - (this.padding * 2)]); //min and max width in px           
+            .range([0, this.width - (this.padding * 2)]); //min and max width in px 
+            
+        let last_date
+        let current_date
 
+        if(this.imageSettings.style === "alternate") 
+        {
+            state.filteredData.forEach((element, i) => 
+            {
+                current_date = element["dateAsInt"]
+
+                if(current_date === last_date)
+                {
+                    state.finalMarginTop = state.finalMarginTop + (this.imageSettings.imagesHeight / 2);                   
+                }
+
+                last_date = element["dateAsInt"]
+            })
+
+        }      
 
         if (this.styleSettings.timelineStyle !== "image") {
             //all styles, not image focus:
