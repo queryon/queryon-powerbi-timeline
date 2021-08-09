@@ -674,6 +674,9 @@ export class Visual implements IVisual {
         let imageXValues: number[] = [];
         let imageYValues: number[] = [];
 
+        let last_dateasint
+        let current_dateasint
+
         // let pixelWidth = (this.width - this.padding * 2) / data.length
 
         state.filteredData.forEach((element, i) => {
@@ -778,24 +781,58 @@ export class Visual implements IVisual {
                         break;
 
                     default:
-                        console.log("alternating")
 
-                        imageY = element.top ? state.finalMarginTop + 20 : 0
-                        if (state.downloadTop) {imageY += 35;}
-                        if (imgCounter % 2 == 0) {imageY += this.imageSettings.imagesHeight;}
-                        if (this.styleSettings.timelineStyle == "bar" && element.top) { imageY += this.barHt }
-                        imageX = element.x - (this.imageSettings.imagesWidth / 2)
                         
-                        for(var i:number = 0; i < imageXValues.length; i++)
+                        
+                        //if (this.styleSettings.timelineStyle == "bar" && element.top) { imageY += this.barHt }
+                        imageX = element.x - (this.imageSettings.imagesWidth / 2)
+
+                        current_dateasint = element.dateAsInt
+                        //console.log(current_dateasint + " === " + last_dateasint)
+                        
+                        if(current_dateasint === last_dateasint) // Then go up and dont do alternate design
                         {
-                            if(imageXValues[i] === element["x"] && imageYValues[i] === imageY)
+                            
+                            imageY = element.top ? state.finalMarginTop + 20 : state.finalMarginTop - 20 - this.imageSettings.imagesHeight
+
+                            if (this.styleSettings.timelineStyle == "bar" && element.top) { imageY += this.barHt }
+
+                            for(var i:number = 0; i < imageXValues.length; i++)
                             {
-                                imageY += this.imageSettings.imagesHeight;
+                                if(imageXValues[i] === element["x"] && imageYValues[i] === imageY)
+                                {
+                                    imageY -= this.imageSettings.imagesHeight;
+                                }
+
                             }
                         }
+                        else
+                        {
+                            
+                            //imageY = element.top ? state.finalMarginTop + 20 : 0 // sets high
+                            imageY = element.top ? state.finalMarginTop + 20 : state.finalMarginTop - 20 - this.imageSettings.imagesHeight
+                            if (state.downloadTop) {
+                                imageY += 35
+                            }
+                            if (imgCounter % 2 == 0) {
+                                imageY += this.imageSettings.imagesHeight
+                            }
+                            if(!element.top)
+                            {
+                                imageY -= this.imageSettings.imagesHeight
+                            }
+
+                            if (this.styleSettings.timelineStyle == "bar" && element.top) { imageY += this.barHt }
+
+                        }
+
 
                         imageXValues.push(element["x"])
                         imageYValues.push(imageY)
+
+                        last_dateasint = current_dateasint
+
+                        console.log(element.label + " : " + imageY)
 
                         break;}
 
@@ -805,7 +842,7 @@ export class Visual implements IVisual {
 
                 if (this.imageSettings.style != "default") {
 
-                    if(!element.image || element.image === "https://pbiontap.com/Transparent-Image-Placeholder.png")
+                    if(!element.image)
                     {
                         
                     }
@@ -1186,13 +1223,13 @@ export class Visual implements IVisual {
 
                 if(current_date === last_date)
                 {
-                    state.finalMarginTop = state.finalMarginTop + (this.imageSettings.imagesHeight / 2);                   
+                    state.finalMarginTop = state.finalMarginTop + this.imageSettings.imagesHeight;                   
                 }
 
                 last_date = element["dateAsInt"]
             })
 
-        }      
+        }           
 
         if (this.styleSettings.timelineStyle !== "image") {
             //all styles, not image focus:
@@ -2042,13 +2079,7 @@ function generateViewModel(options: VisualUpdateOptions, host: IVisualHost) {
 
         if (element.date) {
             viewModel.dataPoints.push(element)
-        }
-
-        if(element.image === false || element.image === "https://pbiontap.com/Transparent-Image-Placeholder.png")
-        {
-            
-        }
-        
+        }        
     }
 
     return viewModel;
