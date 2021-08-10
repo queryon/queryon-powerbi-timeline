@@ -677,6 +677,8 @@ export class Visual implements IVisual {
         let last_dateasint
         let current_dateasint
 
+        let isHighAlternating
+
         // let pixelWidth = (this.width - this.padding * 2) / data.length
 
         state.filteredData.forEach((element, i) => {
@@ -782,16 +784,13 @@ export class Visual implements IVisual {
 
                     default:
 
-                        
-                        
-                        //if (this.styleSettings.timelineStyle == "bar" && element.top) { imageY += this.barHt }
                         imageX = element.x - (this.imageSettings.imagesWidth / 2)
 
                         current_dateasint = element.dateAsInt
-                        //console.log(current_dateasint + " === " + last_dateasint)
-                        
+
                         if(current_dateasint === last_dateasint) // Then go up and dont do alternate design
                         {
+                            isHighAlternating = true
                             
                             imageY = element.top ? state.finalMarginTop + 20 : state.finalMarginTop - 20 - this.imageSettings.imagesHeight
 
@@ -808,8 +807,7 @@ export class Visual implements IVisual {
                         }
                         else
                         {
-                            
-                            //imageY = element.top ? state.finalMarginTop + 20 : 0 // sets high
+                            isHighAlternating = false
                             imageY = element.top ? state.finalMarginTop + 20 : state.finalMarginTop - 20 - this.imageSettings.imagesHeight
                             if (state.downloadTop) {
                                 imageY += 35
@@ -842,27 +840,29 @@ export class Visual implements IVisual {
 
                 if (this.imageSettings.style != "default") {
 
-                    if(!element.image)
+                    if(!element.image && isHighAlternating === false)
                     {
                         
                     }
                     else
                     {
-                        let connector = this.container.append("line")
-                        .attr("x1", element.x)
-                        .attr("y1", () => {
-                            let result = state.finalMarginTop
-                            if (this.styleSettings.timelineStyle == "bar" && element.top) {
-                                result += this.barHt
-                            }
-                            return result
-                        })
-                        .attr("x2", element.x)
-                        .attr("y2", element.top ? imageY : imageY + this.imageSettings.imagesHeight)
-                        .attr("stroke-width", 1)
-                        .attr("stroke", element.textColor);
+                        if(isHighAlternating === false)
+                        {
+                            let connector = this.container.append("line")
+                            .attr("x1", element.x)
+                            .attr("y1", () => {
+                                let result = state.finalMarginTop
+                                if (this.styleSettings.timelineStyle == "bar" && element.top) {
+                                    result += this.barHt
+                                }
+                                return result
+                            })
+                            .attr("x2", element.x)
+                            .attr("y2", element.top ? imageY : imageY + this.imageSettings.imagesHeight)
+                            .attr("stroke-width", 1)
+                            .attr("stroke", element.textColor);
+                        }
                     }
-
                 }
 
                 let image = this.container.append('image')
@@ -924,6 +924,10 @@ export class Visual implements IVisual {
                 })
 
         })
+        if(isHighAlternating)
+        {
+            //state.finalMarginTop = state.finalMarginTop - this.imageSettings.imagesHeight; // alternate starts at 2 high. 
+        }
     }
 
     private configureImagesTimeline(state: ChartDrawingState) {
@@ -1214,20 +1218,31 @@ export class Visual implements IVisual {
             
         let last_date
         let current_date
-
+        let pictureHeight = 0;
+        
         if(this.imageSettings.style === "alternate") 
         {
+            
+            
             state.filteredData.forEach((element, i) => 
             {
                 current_date = element["dateAsInt"]
 
                 if(current_date === last_date)
                 {
-                    state.finalMarginTop = state.finalMarginTop + this.imageSettings.imagesHeight;                   
+                    state.finalMarginTop = state.finalMarginTop + this.imageSettings.imagesHeight;
+                    pictureHeight = pictureHeight + 1
+                    console.log(pictureHeight)                    
                 }
 
                 last_date = element["dateAsInt"]
             })
+
+            if(pictureHeight > 1)
+            {
+
+                state.finalMarginTop = state.finalMarginTop - this.imageSettings.imagesHeight; // alternate starts at 2 high.
+            }
 
         }           
 
