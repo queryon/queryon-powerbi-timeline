@@ -662,6 +662,85 @@ export class Visual implements IVisual {
 
     }
 
+    
+    private isImageOverlapping(imageXValues, imageYValues, i)
+    {
+
+        const intersection = require("rectangle-overlap");
+        
+        let currentRect = {x: imageXValues[i], y: imageYValues[i], width: this.imageSettings.imagesWidth, height: this.imageSettings.imagesHeight};
+        let lastRect    = {x: imageXValues[i - 1], y: imageYValues[i - 1], width: this.imageSettings.imagesWidth, height: this.imageSettings.imagesHeight};
+        
+        if(imageXValues[i - 1] !== undefined) //Is the compare variable undifined 
+        {
+            const overlap = intersection(currentRect, lastRect);
+        
+            if (imageXValues[i] === imageXValues[i - 1]) //if touching they are technically overlapping.
+            {
+                return false;
+                //console.log("The rectangles do not overlap AND ARE TOUCHING ");
+            }
+
+            else if (overlap) 
+            {
+                return true;
+                //console.log("overlap")
+                
+                //imageY -= this.imageSettings.imagesHeight // Need to find a way to use recurrion to go through
+                //i = i - 1;
+            } 
+            else 
+            {
+                return false;
+                //console.log("The rectangles do not overlap");
+            }
+        }
+        return false;
+        
+
+    }
+
+    private imageOverlappingAmount(imageXValues, imageYValues, i)
+    {
+
+        const intersection = require("rectangle-overlap");
+        
+        let result = 0;
+
+        let currentRect = {x: imageXValues[i], y: imageYValues[i], width: this.imageSettings.imagesWidth, height: this.imageSettings.imagesHeight};
+        let lastRect    = {x: imageXValues[i - 1], y: imageYValues[i - 1], width: this.imageSettings.imagesWidth, height: this.imageSettings.imagesHeight};
+        
+        if(imageXValues[i - 1] !== undefined) //Is the compare variable undifined 
+        {
+            const overlap = intersection(currentRect, lastRect);
+        
+            if (imageXValues[i] === imageXValues[i - 1]) //if touching they are technically overlapping.
+            {
+                return result;
+                //console.log("The rectangles do not overlap AND ARE TOUCHING ");
+            }
+
+            else if (overlap) 
+            {
+                result = result + 1;
+                this.imageOverlappingAmount(imageXValues, imageYValues, i)
+                //return result;
+                //console.log("overlap")
+                
+                //imageY -= this.imageSettings.imagesHeight // Need to find a way to use recurrion to go through
+                //i = i - 1;
+            } 
+            else 
+            {
+                return result;
+                //console.log("The rectangles do not overlap");
+            }
+        }
+        return result;
+        
+
+    }
+
     // Configures the non-image timeline annotations
     private configureTimelineAnnotations(state: ChartDrawingState) {
         //annotations config
@@ -671,8 +750,8 @@ export class Visual implements IVisual {
         // let countTop = 1, countBottom = 1, counter
         let imgCountTop = 0, imgCountBottom = 0, imgCounter
 
-        let imageXValues: number[] = [];
-        let imageYValues: number[] = [];
+        let imageXValues:      number[] = [];
+        let imageYValues:      number[] = [];
 
         let last_dateasint
         let current_dateasint
@@ -791,7 +870,6 @@ export class Visual implements IVisual {
                         if(current_dateasint === last_dateasint) // Then go up and dont do alternate design
                         {
                             imageY = element.top ? state.finalMarginTop + 20 : 0
-                            console.log(imageY)
 
                             if (this.styleSettings.timelineStyle == "bar" && element.top) { imageY += this.barHt }
 
@@ -827,8 +905,65 @@ export class Visual implements IVisual {
 
                     
                 imageX = !imageX ? element.x - (this.imageSettings.imagesWidth / 2) : imageX
+                
+                /*for(var i:number = 0; i < imageXValues.length; i++)
+                {
+                    //console.log(imageXValues[i] + " : " + imageYValues[i] + " : COMPARE : " + imageXValues[i - 1] + " : " + imageYValues[i - 1])
 
+                    if(this.isImageOverlapping(imageXValues, imageYValues, i) === true)
+                    {
+                        console.log("Overlapping : " + element.label)
+                        //console.log("imageOverlappingAmount : " + this.imageOverlappingAmount(imageXValues, imageYValues, i))
+                        imageY -= this.imageSettings.imagesHeight // Need to find a way to use recurrion to go through
+                    }
+                    else
+                    {
+                        console.log("Not Overlapping")
+                    }
+                }*/
 
+                //----------
+                
+                for(var i:number = 0; i < imageXValues.length; i++)
+                {
+                    //console.log(imageXValues[i] + " : " + imageYValues[i] + " : COMPARE : " + imageXValues[i - 1] + " : " + imageYValues[i - 1])
+
+                    const intersection = require("rectangle-overlap");
+        
+                    let currentRect = {x: imageXValues[i], y: imageYValues[i], width: this.imageSettings.imagesWidth, height: this.imageSettings.imagesHeight};
+                    let lastRect    = {x: imageXValues[i - 1], y: imageYValues[i - 1], width: this.imageSettings.imagesWidth, height: this.imageSettings.imagesHeight};
+                    console.log(currentRect)
+                    console.log("COMPARED TO : ")
+                    console.log(lastRect)
+                    console.log("_____________________________")
+                    if(imageXValues[i - 1] !== undefined) //Is the compare variable undifined 
+                    {
+                        const overlap = intersection(currentRect, lastRect);
+                    
+                        if (imageXValues[i] === imageXValues[i - 1]) //if touching they are technically overlapping.
+                        {
+
+                        }
+
+                        else if (overlap) 
+                        {
+                            //console.log(imageXValues[i] + " : " + imageYValues[i] + " : COMPARE : " + imageXValues[i - 1] + " : " + imageYValues[i - 1])
+                            console.log("overlap : " + element.label)
+                            imageY -= this.imageSettings.imagesHeight
+
+                            imageXValues[i] = element["x"]
+                            imageYValues[i] = imageY
+
+                            //imageY -= this.imageSettings.imagesHeight // Need to find a way to use recurrion to go through
+                            //i = i - 1;
+                        } 
+                        else 
+                        {
+
+                        }
+                    }
+                }
+                    
                 if (this.imageSettings.style != "default") {
 
                     if(!element.image)
@@ -916,6 +1051,7 @@ export class Visual implements IVisual {
 
         })
 
+        
     }
 
     private configureImagesTimeline(state: ChartDrawingState) {
@@ -1218,8 +1354,7 @@ export class Visual implements IVisual {
                 if(current_date === last_date)
                 {
                     state.finalMarginTop = state.finalMarginTop + this.imageSettings.imagesHeight;
-                    pictureHeight = pictureHeight + 1
-                    console.log(pictureHeight)                    
+                    pictureHeight = pictureHeight + 1                 
                 }
 
                 last_date = element["dateAsInt"]
