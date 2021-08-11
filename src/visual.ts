@@ -790,9 +790,8 @@ export class Visual implements IVisual {
 
                         if(current_dateasint === last_dateasint) // Then go up and dont do alternate design
                         {
-                            isHighAlternating = true
-                            
-                            imageY = element.top ? state.finalMarginTop + 20 : state.finalMarginTop - 20 - this.imageSettings.imagesHeight
+                            imageY = element.top ? state.finalMarginTop + 20 : 0
+                            console.log(imageY)
 
                             if (this.styleSettings.timelineStyle == "bar" && element.top) { imageY += this.barHt }
 
@@ -800,7 +799,7 @@ export class Visual implements IVisual {
                             {
                                 if(imageXValues[i] === element["x"] && imageYValues[i] === imageY)
                                 {
-                                    imageY -= this.imageSettings.imagesHeight;
+                                    imageY += this.imageSettings.imagesHeight;
                                 }
 
                             }
@@ -809,16 +808,10 @@ export class Visual implements IVisual {
                         {
                             isHighAlternating = false
                             imageY = element.top ? state.finalMarginTop + 20 : state.finalMarginTop - 20 - this.imageSettings.imagesHeight
-                            if (state.downloadTop) {
-                                imageY += 35
-                            }
-                            if (imgCounter % 2 == 0) {
-                                imageY += this.imageSettings.imagesHeight
-                            }
-                            if(!element.top)
-                            {
-                                imageY -= this.imageSettings.imagesHeight
-                            }
+                              
+                            if (state.downloadTop) { imageY += 35 }
+                            if (imgCounter % 2 == 0) { imageY += this.imageSettings.imagesHeight }
+                            if(!element.top) { imageY -= this.imageSettings.imagesHeight }
 
                             if (this.styleSettings.timelineStyle == "bar" && element.top) { imageY += this.barHt }
 
@@ -830,8 +823,6 @@ export class Visual implements IVisual {
 
                         last_dateasint = current_dateasint
 
-                        console.log(element.label + " : " + imageY)
-
                         break;}
 
                     
@@ -840,7 +831,7 @@ export class Visual implements IVisual {
 
                 if (this.imageSettings.style != "default") {
 
-                    if(!element.image && isHighAlternating === false)
+                    if(!element.image)
                     {
                         
                     }
@@ -924,10 +915,7 @@ export class Visual implements IVisual {
                 })
 
         })
-        if(isHighAlternating)
-        {
-            //state.finalMarginTop = state.finalMarginTop - this.imageSettings.imagesHeight; // alternate starts at 2 high. 
-        }
+
     }
 
     private configureImagesTimeline(state: ChartDrawingState) {
@@ -1218,13 +1206,12 @@ export class Visual implements IVisual {
             
         let last_date
         let current_date
-        let pictureHeight = 0;
+        let pictureHeight = 1;
         
         if(this.imageSettings.style === "alternate") 
         {
-            
-            
-            state.filteredData.forEach((element, i) => 
+              
+            state.filteredData.forEach((element, i) => //if datapoints have the same date then add margin
             {
                 current_date = element["dateAsInt"]
 
@@ -1238,12 +1225,10 @@ export class Visual implements IVisual {
                 last_date = element["dateAsInt"]
             })
 
-            if(pictureHeight > 1)
-            {
+            if(pictureHeight < 2) // if its one image
+            { state.finalMarginTop = state.finalMarginTop + this.imageSettings.imagesHeight; }
 
-                state.finalMarginTop = state.finalMarginTop - this.imageSettings.imagesHeight; // alternate starts at 2 high.
-            }
-
+            state.finalMarginTop = state.finalMarginTop - this.imageSettings.imagesHeight; // alternate starts at 2 high.
         }           
 
         if (this.styleSettings.timelineStyle !== "image") {
