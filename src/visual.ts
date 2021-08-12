@@ -869,7 +869,8 @@ export class Visual implements IVisual {
 
                         if(current_dateasint === last_dateasint) // Then go up and dont do alternate design
                         {
-                            imageY = element.top ? state.finalMarginTop + 20 : 0
+                            //imageY = element.top ? state.finalMarginTop + 20 : 0
+                            imageY = element.top ? state.finalMarginTop + 20 : state.finalMarginTop - 20 - this.imageSettings.imagesHeight
 
                             if (this.styleSettings.timelineStyle == "bar" && element.top) { imageY += this.barHt }
 
@@ -877,7 +878,7 @@ export class Visual implements IVisual {
                             {
                                 if(imageXValues[i] === element["x"] && imageYValues[i] === imageY)
                                 {
-                                    imageY += this.imageSettings.imagesHeight;
+                                    imageY -= this.imageSettings.imagesHeight;
                                 }
 
                             }
@@ -892,7 +893,6 @@ export class Visual implements IVisual {
                             if(!element.top) { imageY -= this.imageSettings.imagesHeight }
 
                             if (this.styleSettings.timelineStyle == "bar" && element.top) { imageY += this.barHt }
-
                         }
 
 
@@ -922,20 +922,22 @@ export class Visual implements IVisual {
                     }
                 }*/
 
-                //----------
+                //---------- 
                 
                 for(var i:number = 0; i < imageXValues.length; i++)
                 {
+                    if(element.top === true)
+                    {
+                        break
+                    }
                     //console.log(imageXValues[i] + " : " + imageYValues[i] + " : COMPARE : " + imageXValues[i - 1] + " : " + imageYValues[i - 1])
 
                     const intersection = require("rectangle-overlap");
         
-                    let currentRect = {x: imageXValues[i], y: imageYValues[i], width: this.imageSettings.imagesWidth, height: this.imageSettings.imagesHeight};
+                    let currentRect = {x: imageXValues[i],     y: imageYValues[i],     width: this.imageSettings.imagesWidth, height: this.imageSettings.imagesHeight};
                     let lastRect    = {x: imageXValues[i - 1], y: imageYValues[i - 1], width: this.imageSettings.imagesWidth, height: this.imageSettings.imagesHeight};
-                    console.log(currentRect)
-                    console.log("COMPARED TO : ")
-                    console.log(lastRect)
-                    console.log("_____________________________")
+                   
+                   
                     if(imageXValues[i - 1] !== undefined) //Is the compare variable undifined 
                     {
                         const overlap = intersection(currentRect, lastRect);
@@ -947,15 +949,20 @@ export class Visual implements IVisual {
 
                         else if (overlap) 
                         {
+                            console.log("___________ " + element.label +  "__________________")
+                            console.log(currentRect)
+                            console.log("COMPARED TO : ")
+                            console.log(lastRect)
                             //console.log(imageXValues[i] + " : " + imageYValues[i] + " : COMPARE : " + imageXValues[i - 1] + " : " + imageYValues[i - 1])
-                            console.log("overlap : " + element.label)
+                            //console.log("overlap moving up: " + element.label)
+                            
                             imageY -= this.imageSettings.imagesHeight
-
+                            console.log(element.label)
                             imageXValues[i] = element["x"]
                             imageYValues[i] = imageY
 
                             //imageY -= this.imageSettings.imagesHeight // Need to find a way to use recurrion to go through
-                            //i = i - 1;
+                            i = i - 1;
                         } 
                         else 
                         {
@@ -1048,10 +1055,7 @@ export class Visual implements IVisual {
 
                     })
                 })
-
-        })
-
-        
+        })        
     }
 
     private configureImagesTimeline(state: ChartDrawingState) {
@@ -1363,9 +1367,9 @@ export class Visual implements IVisual {
             if(pictureHeight < 2) // if its one image
             { state.finalMarginTop = state.finalMarginTop + this.imageSettings.imagesHeight; }
 
-            state.finalMarginTop = state.finalMarginTop - this.imageSettings.imagesHeight; // alternate starts at 2 high.
+            state.finalMarginTop = state.finalMarginTop - this.imageSettings.imagesHeight+ 500; // alternate starts at 2 high.
         }           
-
+        //state.finalMarginTop = state.finalMarginTop + this.imageSettings.imagesHeight + 500;
         if (this.styleSettings.timelineStyle !== "image") {
             //all styles, not image focus:
             //let bar, axisMarginTop, enabledAnnotations, strokeColor, width, axisPadding
