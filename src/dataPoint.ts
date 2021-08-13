@@ -45,10 +45,12 @@ export class RowData
     public rowData_dateAsInt: number
     public rowData_firstImageY: number
     public rowData_numberOfImages: number
+    public rowData_lastImageY: number
 
-    constructor(rowData_dateAsInt: number, rowData_firstImageY: number, rowData_numberOfImages: number) {
+    constructor(rowData_dateAsInt: number, rowData_firstImageY: number, rowData_numberOfImages: number, rowData_lastImageY: number) {
         this.rowData_dateAsInt = rowData_dateAsInt;
         this.rowData_firstImageY = rowData_firstImageY;
+        this.rowData_lastImageY = rowData_lastImageY;
         this.rowData_numberOfImages = rowData_numberOfImages;
     }
 }

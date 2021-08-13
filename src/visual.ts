@@ -879,7 +879,12 @@ export class Visual implements IVisual {
                                 {
                                     
                                     RowDataArray[i].rowData_numberOfImages = RowDataArray[i].rowData_numberOfImages + 1
-                                    imageY = RowDataArray[i].rowData_firstImageY
+
+                                    imageY = RowDataArray[i].rowData_firstImageY - (RowDataArray[i].rowData_numberOfImages * this.imageSettings.imagesHeight) + this.imageSettings.imagesHeight
+
+                                    //imageY = imageY + 100
+
+                                    RowDataArray[i].rowData_lastImageY = imageY
                                     
                                 }
                             }
@@ -899,8 +904,7 @@ export class Visual implements IVisual {
 
                             if (this.styleSettings.timelineStyle == "bar" && element.top) { imageY += this.barHt }
 
-                            console.log("STARTING NEW ROW")
-                            RowDataArray.push(new RowData(element.dateAsInt, imageY, 1))
+                            RowDataArray.push(new RowData(element.dateAsInt, imageY, 1, imageY)) // Start New Row
                         }
 
 
