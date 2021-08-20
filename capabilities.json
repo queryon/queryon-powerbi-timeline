@@ -734,6 +734,10 @@
                             {
                                 "displayName": "Alternating",
                                 "value": "alternate"
+                            },
+                            {
+                                "displayName": "AlternatingVertical",
+                                "value": "alternateVertical"
                             }
                         ]
                     }

@@ -794,6 +794,8 @@ export class Visual implements IVisual {
         let RowDataArray: RowOfImage[] = [];
         let singleImageArray: SingleImage[] = []
 
+        let designStyle
+
 
         // let pixelWidth = (this.width - this.padding * 2) / data.length
 
@@ -882,6 +884,8 @@ export class Visual implements IVisual {
                 let imageY, imageX
                 switch (this.imageSettings.style) {
                     case "default":
+                        designStyle = "staggered"
+                    
                         imageY = !element.top ? (state.finalMarginTop + element.dy) + element.textHeight - this.imageSettings.imagesHeight : (state.finalMarginTop + element.dy) - element.textHeight - 5
 
 
@@ -893,17 +897,35 @@ export class Visual implements IVisual {
                         break;
 
                     case "straight":
+                        designStyle = "straight"
                         imageY = element.top ? state.finalMarginTop + 20 : state.finalMarginTop - 20 - this.imageSettings.imagesHeight
 
                         if (this.styleSettings.timelineStyle == "bar" && element.top) { imageY += this.barHt }
                         break;
 
+                    case "alternate":
+                        designStyle = "alternate"
+                        
+                        imageY = element.top ? state.finalMarginTop + 20 : 0
+                        if (state.downloadTop) {
+                            imageY += 35
+                        }
+                        if (imgCounter % 2 == 0) {
+                            imageY += this.imageSettings.imagesHeight
+                        }
+
+                        if (this.styleSettings.timelineStyle == "bar" && element.top) { imageY += this.barHt }
+
+                        break;
+                        
                     default:
+
+                        designStyle = "alternateVertical"
 
                         imageX = element.x - (this.imageSettings.imagesWidth / 2)
 
                         current_dateasint = element.dateAsInt
-
+                        if (this.styleSettings.timelineStyle == "bar" && element.top) { imageY += this.barHt }
                         if(current_dateasint === last_dateasint) // Then go up and dont do alternate design
                         {
 
@@ -915,15 +937,19 @@ export class Visual implements IVisual {
                                     
                                     RowDataArray[i].rowData_numberOfImages = RowDataArray[i].rowData_numberOfImages + 1
 
-                                    imageY = RowDataArray[i].rowData_firstImageY - (RowDataArray[i].rowData_numberOfImages * this.imageSettings.imagesHeight) + this.imageSettings.imagesHeight
                                     
-                                    RowDataArray[i].rowData_lastImageY = imageY
+
+                                    imageY = RowDataArray[i].rowData_firstImage.imageData_y- (RowDataArray[i].rowData_numberOfImages * this.imageSettings.imagesHeight) + this.imageSettings.imagesHeight
+
+                                    let lastImageTemp = new SingleImage(element.label, element["x"], imageY, element.dateAsInt, element.image, element.top)
+
+                                    RowDataArray[i].rowData_lastImage = lastImageTemp
                                     RowDataArray[i].rowData_shouldAlternate = false
                                     
                                 }
                             }
 
-                            if (this.styleSettings.timelineStyle == "bar" && element.top) { imageY += this.barHt }
+                            
                
                         }
                         else
@@ -953,22 +979,13 @@ export class Visual implements IVisual {
                             //console.log(RowDataArray)
                             if(highImage === true)
                             {
-                                /*if(levelOfAlternate === 0)
-                                {
-                                    imageY += this.imageSettings.imagesHeight
-                                    levelOfAlternate = 1
-                                }
-                                else
-                                {
-                                    levelOfAlternate = 0
-                                }*/
-                                //if (imgCounter % 2 == 0) {imageY += this.imageSettings.imagesHeight  }
-                                RowDataArray.push(new RowOfImage(element.dateAsInt, imageY, 1, imageY, false)) // Start New Row Without Alternate
+                                let firstImageTemp = new SingleImage(element.label, element["x"], imageY, element.dateAsInt, element.image, element.top) // -50 is for temp center
+                                RowDataArray.push(new RowOfImage(element.dateAsInt, firstImageTemp, 1, firstImageTemp, false)) // Start New Row Without Alternate
                             }
                             else
                             {
-                                //imageY += this.imageSettings.imagesHeight
-                                RowDataArray.push(new RowOfImage(element.dateAsInt, imageY, 1, imageY, true)) // Start New Row With Alternate
+                                let firstImageTemp = new SingleImage(element.label, element["x"], imageY, element.dateAsInt, element.image, element.top) // -50 is for temp center
+                                RowDataArray.push(new RowOfImage(element.dateAsInt, firstImageTemp, 1, firstImageTemp, true)) // Start New Row With Alternate
                             }
                             
                             
@@ -979,70 +996,13 @@ export class Visual implements IVisual {
 
                         last_dateasint = current_dateasint
 
-                        break;}
+                        break;
+                    }
 
-
-                //console.log(RowDataArray)
                 imageX = !imageX ? element.x - (this.imageSettings.imagesWidth / 2) : imageX
                 
-                /*for(var i:number = 0; i < imageXValues.length; i++)
-                {
-                    //console.log(imageXValues[i] + " : " + imageYValues[i] + " : COMPARE : " + imageXValues[i - 1] + " : " + imageYValues[i - 1])
-
-                    if(this.isImageOverlapping(imageXValues, imageYValues, i) === true)
-                    {
-                        console.log("Overlapping : " + element.label)
-                        //console.log("imageOverlappingAmount : " + this.imageOverlappingAmount(imageXValues, imageYValues, i))
-                        imageY -= this.imageSettings.imagesHeight // Need to find a way to use recurrion to go through
-                    }
-                    else
-                    {
-                        console.log("Not Overlapping")
-                    }
-                }*/
-
-                //----------
-                
-                /*for(var i:number = 0; i < imageXValues.length; i++)
-                {
-                    //console.log(imageXValues[i] + " : " + imageYValues[i] + " : COMPARE : " + imageXValues[i - 1] + " : " + imageYValues[i - 1])
-
-                    const intersection = require("rectangle-overlap");
-        
-                    let currentRect = {x: imageXValues[i], y: imageYValues[i], width: this.imageSettings.imagesWidth, height: this.imageSettings.imagesHeight};
-                    let lastRect    = {x: imageXValues[i - 1], y: imageYValues[i - 1], width: this.imageSettings.imagesWidth, height: this.imageSettings.imagesHeight};
-                    console.log(currentRect)
-                    console.log("COMPARED TO : ")
-                    console.log(lastRect)
-                    console.log("_____________________________")
-                    if(imageXValues[i - 1] !== undefined) //Is the compare variable undifined 
-                    {
-                        const overlap = intersection(currentRect, lastRect);
-                    
-                        if (imageXValues[i] === imageXValues[i - 1]) //if touching they are technically overlapping.
-                        {
-
-                        }
-
-                        else if (overlap) 
-                        {
-                            //console.log(imageXValues[i] + " : " + imageYValues[i] + " : COMPARE : " + imageXValues[i - 1] + " : " + imageYValues[i - 1])
-                            console.log("overlap : " + element.label)
-                            imageY -= this.imageSettings.imagesHeight
-
-                            imageXValues[i] = element["x"]
-                            imageYValues[i] = imageY
-
-                            //imageY -= this.imageSettings.imagesHeight // Need to find a way to use recurrion to go through
-                            //i = i - 1;
-                        } 
-                        else 
-                        {
-
-                        }
-                    }
-                }*/
-                    
+                if(designStyle === "staggered" || designStyle === "straight" || designStyle === "alternate")
+            {
                 if (this.imageSettings.style != "default") {
 
                     if(!element.image)
@@ -1051,7 +1011,7 @@ export class Visual implements IVisual {
                     }
                     else
                     {
-                        /*let connector = this.container.append("line")
+                        let connector = this.container.append("line")
                         .attr("x1", element.x)
                         .attr("y1", () => {
                             let result = state.finalMarginTop
@@ -1063,152 +1023,129 @@ export class Visual implements IVisual {
                         .attr("x2", element.x)
                         .attr("y2", element.top ? imageY : imageY + this.imageSettings.imagesHeight)
                         .attr("stroke-width", 1)
-                        .attr("stroke", element.textColor);*/
+                        .attr("stroke", element.textColor);
                     }
+
                 }
 
+                let image = this.container.append('image')
+                    .attr('xlink:href', element.image)
+                    .attr('width', this.imageSettings.imagesWidth)
+                    .attr('height', this.imageSettings.imagesHeight)
+                    .attr('x', imageX)
+                    .attr('y', imageY)
 
-
-
-
-
-            this.container
-                .append("g")
-                .attr('class', `annotation_selector_${element.selectionId.getKey().replace(/\W/g, '')} annotationSelector`)
-                .style('font-size', element.textSize + "px")
-                .style('font-family', element.fontFamily)
-                .style('background-color', 'transparent')
-                .call(makeAnnotations)
-                .on('click', el => {
-                    //manage highlighted formating and open links
-                    this.selectionManager.select(element.selectionId).then((ids: ISelectionId[]) => {
-                        if (ids.length > 0) {
-                            // this.container.selectAll('.bar').style('fill-opacity', 0.1)
-                            d3.select(`.selector_${element.selectionId.getKey().replace(/\W/g, '')}`).style('fill-opacity', 1)
-                            this.container.selectAll('.annotationSelector').style('font-weight', "normal")
-
-                            if (!this.textSettings.boldTitles) {
-                                this.container.selectAll('.annotationSelector  .annotation-note-title ').style('font-weight', "normal")
-                            }
-
-                            d3.selectAll(`.annotation_selector_${element.selectionId.getKey().replace(/\W/g, '')}`).style('font-weight', "bold")
-                            d3.selectAll(`.annotation_selector_${element.selectionId.getKey().replace(/\W/g, '')}  .annotation-note-title `).style('font-weight', "bold")
-
-
-                            //Open link 
-                            if (element.URL) {
-                                this.host.launchUrl(element.URL)
-                            }
-
-                        } else {
-                            // this.container.selectAll('.bar').style('fill-opacity', 1)
-                            this.container.selectAll('.annotationSelector').style('font-weight', "normal")
-
-                            if (!this.textSettings.boldTitles) {
-                                this.container.selectAll('.annotationSelector .annotation-note-title').style('font-weight', "normal")
-                            }
+                    .on("click", () => {
+                        if (element.URL) {
+                            this.host.launchUrl(element.URL)
                         }
 
+                    });
+                }
+
+                this.container
+                    .append("g")
+                    .attr('class', `annotation_selector_${element.selectionId.getKey().replace(/\W/g, '')} annotationSelector`)
+                    .style('font-size', element.textSize + "px")
+                    .style('font-family', element.fontFamily)
+                    .style('background-color', 'transparent')
+                    .call(makeAnnotations)
+                    .on('click', el => {
+                        //manage highlighted formating and open links
+                        this.selectionManager.select(element.selectionId).then((ids: ISelectionId[]) => {
+                            if (ids.length > 0) {
+                                // this.container.selectAll('.bar').style('fill-opacity', 0.1)
+                                d3.select(`.selector_${element.selectionId.getKey().replace(/\W/g, '')}`).style('fill-opacity', 1)
+                                this.container.selectAll('.annotationSelector').style('font-weight', "normal")
+
+                                if (!this.textSettings.boldTitles) {
+                                    this.container.selectAll('.annotationSelector  .annotation-note-title ').style('font-weight', "normal")
+                                }
+
+                                d3.selectAll(`.annotation_selector_${element.selectionId.getKey().replace(/\W/g, '')}`).style('font-weight', "bold")
+                                d3.selectAll(`.annotation_selector_${element.selectionId.getKey().replace(/\W/g, '')}  .annotation-note-title `).style('font-weight', "bold")
+
+
+                                //Open link 
+                                if (element.URL) {
+                                    this.host.launchUrl(element.URL)
+                                }
+
+                            } else {
+                                // this.container.selectAll('.bar').style('fill-opacity', 1)
+                                this.container.selectAll('.annotationSelector').style('font-weight', "normal")
+
+                                if (!this.textSettings.boldTitles) {
+                                    this.container.selectAll('.annotationSelector .annotation-note-title').style('font-weight', "normal")
+                                }
+                            }
+
+                        })
                     })
-                })
-
-        }})
-
-        for(var i:number = 0; i < RowDataArray.length; i++)
-        {
-            
-            if(RowDataArray[i].rowData_shouldAlternate === true)
-            {
-                
-
-                let moveUpDate = RowDataArray[i].rowData_dateAsInt
-                for(var j:number = 0; j < singleImageArray.length; j++)
-                {
-                    if(singleImageArray[j].imageData_imageOnTop === true)
-                    {
-                        
-                    }
-                    else
-                    {
-                        if(singleImageArray[j].imageData_dateAsInt === moveUpDate)
-                        {
-                            console.log("Before = " + singleImageArray[j].imageData_y)
-                            singleImageArray[j].imageData_y = singleImageArray[j].imageData_y - 100
-                            console.log(singleImageArray[j].imageData_label + " After = " + singleImageArray[j].imageData_y)
-                        }
-                    }
-
                 }
+            })
+
+            
+            
+            
+            if(designStyle === "alternateVertical")
+            {
+                for(var i:number = 0; i < RowDataArray.length; i++)
+                {
+                
+                    if(RowDataArray[i].rowData_shouldAlternate === true)
+                    {
+                    
+
+                        let moveUpDate = RowDataArray[i].rowData_dateAsInt
+                        for(var j:number = 0; j < singleImageArray.length; j++)
+                            {
+                                if(singleImageArray[j].imageData_imageOnTop === true)
+                            {
+                            
+                            }
+                            else
+                            {
+                                if(singleImageArray[j].imageData_dateAsInt === moveUpDate)
+                                {
+                                    //singleImageArray[j].imageData_y = singleImageArray[j].imageData_y - 100
+                                }
+                            }
+
+                        }
+                    }  
+                }
+
+            
+            for(var h:number = 0; h < RowDataArray.length; h++)
+            {
+                let connector = this.container.append("line")
+                .attr("x1", RowDataArray[h].rowData_lastImage.imageData_x) //TOP
+                //.attr("y1", RowDataArray[h].rowData_lastImage.imageData_y) //TOP
+
+                .attr("y1", () => {let result = state.finalMarginTop
+                    if (this.styleSettings.timelineStyle == "bar" && RowDataArray[h].rowData_lastImage.imageData_imageOnTop) {result += this.barHt}
+                    return result})
+
+                .attr("x2", RowDataArray[h].rowData_firstImage.imageData_x) //Bottom
+                .attr("y2", RowDataArray[h].rowData_lastImage.imageData_imageOnTop ? RowDataArray[h].rowData_lastImage.imageData_y  : RowDataArray[h].rowData_lastImage.imageData_y + this.imageSettings.imagesHeight) //BOTTOM
+                .attr("stroke-width", 1)
+                .attr("stroke", "Black");
+            }
+
+            for(var p:number = 0; p < singleImageArray.length; p++)
+            {
+
+                let image = this.container.append('image')
+                .attr('xlink:href', singleImageArray[p].imageData_image)
+                .attr('width', this.imageSettings.imagesWidth)
+                .attr('height', this.imageSettings.imagesHeight)
+                .attr('x', singleImageArray[p].imageData_x - 50)
+
+                .attr('y', singleImageArray[p].imageData_y)
+
             }
         }
-
-        for(var p:number = 0; p < singleImageArray.length; p++)
-        {
-
-            let image = this.container.append('image')
-            .attr('xlink:href', singleImageArray[p].imageData_image)
-            .attr('width', this.imageSettings.imagesWidth)
-            .attr('height', this.imageSettings.imagesHeight)
-            .attr('x', singleImageArray[p].imageData_x)
-
-            .attr('y', singleImageArray[p].imageData_y)
-        }
-
-        /*
-        for(var i:number = 0; i < RowDataArray.length; i++)
-        {
-            if(RowDataArray[i].rowData_shouldAlternate === false)
-            {
-                console.log(RowDataArray[i])
-                let moveDownDate = RowDataArray[i].rowData_dateAsInt
-                for(var j:number = 0; j < singleImageArray.length; j++)
-                {
-                    if(singleImageArray[j].imageData_dateAsInt === moveDownDate)
-                    {
-                        //console.log("DOWN IMAGE + " + singleImageArray[j].imageData_label)
-                        let image = this.container.append('image')
-                        .attr('xlink:href', singleImageArray[j].imageData_image)
-                        .attr('width', this.imageSettings.imagesWidth)
-                        .attr('height', this.imageSettings.imagesHeight)
-                        .attr('x', singleImageArray[j].imageData_x)
-    
-                        .attr('y', singleImageArray[j].imageData_y)
-                    }
-                    else
-                    {
-                        //console.log("Normal Image + " + singleImageArray[j].imageData_label)
-                        let image = this.container.append('image')
-                        .attr('xlink:href', singleImageArray[j].imageData_image)
-                        .attr('width', this.imageSettings.imagesWidth)
-                        .attr('height', this.imageSettings.imagesHeight)
-                        .attr('x', singleImageArray[j].imageData_x)
-    
-                        .attr('y', singleImageArray[j].imageData_y)
-                    }
-
-                    
-                    .attr("y", () => {
-                        let result = singleImageArray[j].imageData_y
-                        if(singleImageArray[j].imageData_dateAsInt === moveDownDate)
-                        {
-                            result = result + 100
-                        }
-                        return result
-                    })
-
-                    //.on("click", () => {
-                    //    if (element.URL) {
-                    //        this.host.launchUrl(element.URL)
-                    //    }
-
-                    }//);
-                }
-                    
-                
-                //imageY += this.imageSettings.imagesHeight
-        }*/
-        
-        
     }
 
     private configureImagesTimeline(state: ChartDrawingState) {
@@ -1501,7 +1438,7 @@ export class Visual implements IVisual {
         let current_date
         let pictureHeight = 1;
         
-        if(this.imageSettings.style === "alternate") 
+        if(this.imageSettings.style === "alternateVertical") 
         {
               
             state.filteredData.forEach((element, i) => //if datapoints have the same date then add margin

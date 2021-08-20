@@ -43,16 +43,16 @@ export class DataPoint {
 export class RowOfImage //Class that holds info on a list of ImageData
 {
     public rowData_dateAsInt: number
-    public rowData_firstImageY: number
+    public rowData_firstImage: SingleImage
     public rowData_numberOfImages: number
-    public rowData_lastImageY: number
+    public rowData_lastImage: SingleImage
     public rowData_shouldAlternate: boolean
 
-    constructor(rowData_dateAsInt: number, rowData_firstImageY: number, rowData_numberOfImages: number, rowData_lastImageY: number, rowData_shouldAlternate: boolean) {
+    constructor(rowData_dateAsInt: number, rowData_firstImage: SingleImage, rowData_numberOfImages: number, rowData_lastImage: SingleImage, rowData_shouldAlternate: boolean) {
         this.rowData_dateAsInt       = rowData_dateAsInt;
-        this.rowData_firstImageY     = rowData_firstImageY;
+        this.rowData_firstImage      = rowData_firstImage;
         this.rowData_numberOfImages  = rowData_numberOfImages;
-        this.rowData_lastImageY      = rowData_lastImageY;
+        this.rowData_lastImage       = rowData_lastImage;
         this.rowData_shouldAlternate = rowData_shouldAlternate;
     }
 }
