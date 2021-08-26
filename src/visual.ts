@@ -937,9 +937,16 @@ export class Visual implements IVisual {
                                     
                                     RowDataArray[i].rowData_numberOfImages = RowDataArray[i].rowData_numberOfImages + 1
 
-                                    
+                                    if(element.top)
+                                    {
+                                        imageY = RowDataArray[i].rowData_firstImage.imageData_y - (RowDataArray[i].rowData_numberOfImages * this.imageSettings.imagesHeight) + this.imageSettings.imagesHeight
+                                    }
+                                    else
+                                    {
+                                        imageY = RowDataArray[i].rowData_firstImage.imageData_y - (RowDataArray[i].rowData_numberOfImages * this.imageSettings.imagesHeight) + this.imageSettings.imagesHeight
+                                    }
 
-                                    imageY = RowDataArray[i].rowData_firstImage.imageData_y- (RowDataArray[i].rowData_numberOfImages * this.imageSettings.imagesHeight) + this.imageSettings.imagesHeight
+                                    
 
                                     let lastImageTemp = new SingleImage(element.label, element["x"], imageY, element.dateAsInt, element.image, element.top)
 
