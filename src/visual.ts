@@ -66,7 +66,6 @@ export class Visual implements IVisual {
     //private imagesWidth: number; // is this.imageSettings.imagesWidth
     private fontHeightLib: any;
 
-
     /* Settings Getters for cleaner and less verbose code */
     get settings(): Settings {
         return this.viewModel.settings;
@@ -1275,6 +1274,8 @@ export class Visual implements IVisual {
     }
 
 
+    
+
     public update(options: VisualUpdateOptions) {
         this.events.renderingStarted(options); // Rendering Events API START
 
@@ -1400,7 +1401,7 @@ export class Visual implements IVisual {
             //if(pictureHeight < 2) // if its one image
             //{ state.finalMarginTop = state.finalMarginTop + this.imageSettings.imagesHeight; }*/
 
-            state.finalMarginTop = state.finalMarginTop + 900; // alternate starts at 2 high.
+            state.finalMarginTop = state.finalMarginTop + 800; // alternate starts at 2 high.
         }           
 
         if (this.styleSettings.timelineStyle !== "image") {
