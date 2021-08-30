@@ -41,6 +41,9 @@ import { DataPointAlignment } from "./dataPointAlignment";
 
 type Selection<T extends d3.BaseType> = d3.Selection<T, any, any, any>;
 
+let  amountOfMarginToIncrease = 0 //these are hacky and need to be fixed before launch
+let enumAmount = 2
+
 export class Visual implements IVisual {
 
     private readonly defaultPadding = 15; // Extracted implicitly from use
@@ -683,10 +686,7 @@ export class Visual implements IVisual {
 
             else if (overlap) 
             {
-                console.log(`The rectangles overlap over an area of ${overlap.area}`);
-                console.log(
-                    `Intersection coordinates: x=${overlap.x}, y=${overlap.y}, width=${overlap.width}, height=${overlap.height}`,
-                  )
+                
                 return true;
 
                 //console.log("overlap")
@@ -1019,16 +1019,20 @@ export class Visual implements IVisual {
                     }
                 })
 
-            let tempIncreaseAmount = 0;
-            let marginIncreaseAmount = 0;
+
             
             if(designStyle === "alternateVertical")
             {
-                for(var i:number = 0; i < RowDataArray.length; i++)
+                let tempIncreaseAmount = 0;
+                let marginIncreaseAmount = 0;
+
+                let newZeroPoint = amountOfMarginToIncrease
+
+                for(var i:number = 0; i < RowDataArray.length; i++) //Get each RowData
                 {
-                    if(RowDataArray[i].rowData_firstImage.imageData_y === 0)
+                    if(RowDataArray[i].rowData_firstImage.imageData_y === 0 || RowDataArray[i].rowData_firstImage.imageData_y === newZeroPoint) //If the RowData firstImage is on the bottom (Checking to see if its actually the start)
                     {
-                        tempIncreaseAmount = RowDataArray[i].rowData_numberOfImages
+                        tempIncreaseAmount = RowDataArray[i].rowData_numberOfImages - 1
                     }
                     
                     if(RowDataArray[i].rowData_shouldAlternate === false)
@@ -1036,7 +1040,7 @@ export class Visual implements IVisual {
                         let firstImage = RowDataArray[i].rowData_firstImage
                         let lastImage = RowDataArray[i].rowData_lastImage
 
-                        if(lastImage.imageData_y - 100 === RowDataArray[i + 1].rowData_firstImage.imageData_y)
+                        if(lastImage.imageData_y - 100 === RowDataArray[i + 1].rowData_firstImage.imageData_y) // If images are overlapping add on top
                         {
                             tempIncreaseAmount = tempIncreaseAmount + RowDataArray[i + 1].rowData_numberOfImages   
                         }
@@ -1046,14 +1050,13 @@ export class Visual implements IVisual {
                             {
                                 marginIncreaseAmount = tempIncreaseAmount    
                             }
-                                            
+                             
                         }
                         
                     }
                     
-                    
+                    amountOfMarginToIncrease = marginIncreaseAmount * this.imageSettings.imagesHeight
                 }
-                console.log(marginIncreaseAmount)
             
                 for(var h:number = 0; h < RowDataArray.length; h++)
                 {
@@ -1081,6 +1084,14 @@ export class Visual implements IVisual {
                     .attr('x', singleImageArray[p].imageData_x - 50)
 
                     .attr('y', singleImageArray[p].imageData_y)
+
+                    .on("click", () => {
+                        console.log(singleImageArray[p].imageData_image)
+                        if (singleImageArray[p].imageData_image) {
+                            this.host.launchUrl(singleImageArray[p].imageData_image)
+                        }
+
+                    });
 
                 }
             }
@@ -1277,360 +1288,365 @@ export class Visual implements IVisual {
     
 
     public update(options: VisualUpdateOptions) {
-        this.events.renderingStarted(options); // Rendering Events API START
 
-        this.viewModel = generateViewModel(options, this.host)
-        const state: ChartDrawingState = new ChartDrawingState();
-        state.data = this.viewModel.dataPoints
-
-        if(this.validateDataSizeConstraints(state.data, options)) { // Short circuit if data size is too large for view type
-            this.events.renderingFailed(options); // Rendering Events API FAIL
-            return;
-        }
-
-        this.setEmptyCanvas();
-        this.setDefaultGlobals();
-        this.setDataRange(this.viewModel.dataPoints); // Set the date range of the timeline based on the data
-
-        state.addToMargin = this.getAdditionalMargin();
-        state.dateValueFormatter = this.createDateFormatter(options);
-        this.filterAndProcessData(state);
-        state.filteredWithImage = state.filteredData.filter(el => el.image)
-
-        const filteredData = state.filteredData; // Array Refernece used to reduce call length
-
-        //min label width from annotation plugin
-        if (this.textSettings.wrap < 90) {
-            this.textSettings.wrap = 90
-        }
-
-        if (!this.axisSettings.manualScalePixel || !this.axisSettings.customPixel || isNaN(this.axisSettings.customPixel)) {
-            this.width = options.viewport.width - 20;
-        } else {
-            this.width = this.axisSettings.customPixel
-        }
-
-        this.height = options.viewport.height;
-        this.barHt = this.styleSettings.barHt;
-
-        //sort so staggering works in right order
-        // data = data.sort((a, b) => (a.date > b.date) ? 1 : -1)
-
-        if (this.textSettings.annotationStyle === 'annotationCallout' || this.textSettings.annotationStyle === 'annotationCalloutCurve') {
-            //annotation styles that add to text height, increment spacing
-            state.spacing += 10
-        }
-        
-        //work around not limiting minimum spacing
-        if (this.textSettings.autoStagger || !this.textSettings.spacing) {
-            this.textSettings.spacing = state.spacing
-            this.host.persistProperties({
-                merge: [{
-                    objectName: 'textSettings',
-                    selector: null,
-                    properties: { spacing: state.spacing }
-                }]
-            });
-        }
-
-        state.marginTopStagger += ((filteredData.filter(element => element.top && !element.customVertical).length) * this.textSettings.spacing) + 20
-
-        //case margintopstagger wasn't incremented - no top staggered items:
-        state.marginTopStagger = Math.max(this.marginTop, state.marginTopStagger)
-
-
-        if (this.imageSettings.style !== "default" && filteredData.filter(el => !el.top && el.image).length > 0) {
-            state.marginTopStagger = Math.max(state.marginTopStagger, state.addToMargin)
-        }
-        //define "official" margin top to start drawing graph
-        if (this.styleSettings.timelineStyle !== "image") {
-            state.finalMarginTop = !this.textSettings.stagger || this.styleSettings.timelineStyle == "minimalist" ? this.marginTop : state.marginTopStagger
-
-            if (this.styleSettings.timelineStyle != "minimalist" && filteredData.filter(el => el.top && el.customVertical).length > 0) {
-                //case user input offset is > than margin
-                state.finalMarginTop = Math.max(state.finalMarginTop, state.maxOffsetTop + this.textSettings.spacing)
-            }
-
-        } else {
-            state.finalMarginTop = 20 //+ imagesHeight / 2
-        }
-
-
-        state.downloadTop = this.downloadSettings.downloadCalendar && this.downloadSettings.position.split(",")[0] == "TOP";
-        state.downloadBottom = this.downloadSettings.downloadCalendar && this.downloadSettings.position.split(",")[0] !== "TOP"
-
-        //download calendar icon is enabled and positioned at top
-        if (state.downloadTop) {
-            state.finalMarginTop += 35
-        }
-
-        //axis format
-        state.axisFormat = this.axisSettings.dateFormat != "customJS" ? this.axisSettings.dateFormat : this.axisSettings.customJS;
-        state.axisValueFormatter = state.axisFormat == "same" ? state.dateValueFormatter : createFormatter(state.axisFormat);      
-
-        this.setPadding(state);
-
-        state.scale = d3.scaleTime()
-            .domain([this.minVal, this.maxVal]) //min and max data 
-            .range([0, this.width - (this.padding * 2)]); //min and max width in px 
-            
-        let last_date
-        let current_date
-        let pictureHeight = 1;
-        
-        if(this.imageSettings.style === "alternateVertical") 
+        for(var i:number = 0; i < enumAmount; i++)
         {
-
-
-
-
-            /*
-              
-            state.filteredData.forEach((element, i) => //if datapoints have the same date then add margin
-            {
-                current_date = element["dateAsInt"]
-
-                if(current_date === last_date)
-                {
-                    //state.finalMarginTop = state.finalMarginTop + this.imageSettings.imagesHeight;
-                    pictureHeight = pictureHeight + 1                 
-                }
-                last_date = element["dateAsInt"]
-            })
-
-            //if(pictureHeight < 2) // if its one image
-            //{ state.finalMarginTop = state.finalMarginTop + this.imageSettings.imagesHeight; }*/
-
-            state.finalMarginTop = state.finalMarginTop + 800; // alternate starts at 2 high.
-        }           
-
-        if (this.styleSettings.timelineStyle !== "image") {
-            //all styles, not image focus:
-            //let bar, axisMarginTop, enabledAnnotations, strokeColor, width, axisPadding
-
-
-            this.svg.attr("width", this.width - 4);
-            switch (this.styleSettings.timelineStyle) {
-                case "line":
-                    this.configureLineChart(state);
-                    break;
-
-                case "bar":
-                    this.configureBarChart(state);
-                    break;
-
-                case "minimalist":
-                    this.configureMinimalistView(state);
-                    break;
-            }
-
-            state.finalHeight = Math.max(this.height - 4, state.svgHeightTracking)
-
-            this.svg.attr("height", state.finalHeight);
-
-            let transparentContainer
-            if (state.needScroll && this.styleSettings.minimalistAxis == "bottom") {
-                transparentContainer = this.container.append('rect')
-                    .attr('width', this.width)
-                    .attr('x', 0)//this.padding)
-                    .attr('fill', "white")
-                    .attr('y', state.axisMarginTop)
-                    .attr('height', this.height)
-            }
-            //axis setup
-
-            if (state.axisMarginTop) {
-                let x_axis = d3.axisBottom(state.scale)
-                    .tickFormat(d => {
-                        return state.axisValueFormatter.format(new Date(<any>d))
-                    })
-
-
-                let sandBox: any = d3.select('#sandbox-host')
-                //Append group and insert axis
-                let axisSVG = this.container.append("g")
-                    .attr("transform", "translate(" + state.axisPadding + "," + (state.needScroll ? state.axisMarginTop + sandBox.property("scrollTop") : state.axisMarginTop) + ")")
-                    .call(x_axis)
-                    .attr('class', 'axis')
-
-                    .attr('style', `color :${this.axisSettings.axisColor.solid.color}`)
-                    .attr('style', `stroke :${this.axisSettings.axisColor.solid.color}`)
-
-                this.container.selectAll('path, line')
-                    .attr('style', `color :${state.strokeColor}`)
-
-                if (this.axisSettings.bold) {
-                    this.container.classed("xAxis", false);
-                } else {
-                    this.container.attr('class', 'xAxis')
-                }
-
-                if (this.axisSettings.axis === "None") {
-                    this.container.selectAll(".axis text").remove()
-                }
-                else {
-                    this.container.selectAll(".axis text").style('font-size', this.axisSettings.fontSize)
-                    this.container.selectAll(".axis text").style('fill', this.axisSettings.axisColor.solid.color)
-                    this.container.selectAll(".axis text").style('font-family', this.axisSettings.fontFamily)
-
-                }
-
-                if (state.needScroll) {
-                    //on scroll event delete and re-write axis on better position
-                    // https://github.com/wbkd/d3-extended
-                    d3.selection.prototype.moveToFront = function () {
-                        return this.each(function () {
-                            this.parentNode.appendChild(this);
-                        });
-                    };
-                    sandBox.on("scroll", (e) => {
-                        let firstXForm = axisSVG.property("transform").baseVal.getItem(0)
-                        axisSVG.remove()
-                        if (this.styleSettings.minimalistAxis == "bottom") {
-                            transparentContainer.remove()
-                            //Appent transparent container
-                            transparentContainer = this.container.append('rect')
-                                .attr('width', this.width)
-                                .attr('x', 0)//this.padding)
-                                .attr('fill', "white")
-                                .attr('y', state.axisMarginTop + sandBox.property("scrollTop"))
-                                .attr('height', this.height)
-                        }
-                        //Append group and insert axis
-                        axisSVG = this.container.append("g")
-                            .attr("transform", "translate(" + state.axisPadding + "," + (state.axisMarginTop + sandBox.property("scrollTop")) + ")")
-                            .call(x_axis)
-                            .attr('class', 'axis')
-
-                            .attr('style', `color :${this.axisSettings.axisColor.solid.color}`)
-                            .attr('style', `stroke :${this.axisSettings.axisColor.solid.color}`)
-
-                        this.container.selectAll('path, line')
-                            .attr('style', `color :${state.strokeColor}`)
-
-                        if (this.axisSettings.bold) {
-                            this.container.classed("xAxis", false);
-                        } else {
-                            this.container.attr('class', 'xAxis')
-                        }
-
-                        if (this.axisSettings.axis === "None") {
-                            this.container.selectAll(".axis text").remove()
-                        }
-                        else {
-                            this.container.selectAll(".axis text").style('font-size', this.axisSettings.fontSize)
-                            this.container.selectAll(".axis text").style('fill', this.axisSettings.axisColor.solid.color)
-                            this.container.selectAll(".axis text").style('font-family', this.axisSettings.fontFamily)
-
-                        }
-                        // }
-
-                        // Setting
-                        // axisSVG.attr("transform", "translate(" + axisPadding + "," + (this.height - sandBox.property("scrollTop")) + ")")
-
-
-
-                        let cal: any = d3.select("#calendar-icon")
-                        cal.moveToFront()
-
-                    })
-                }
-
-            }
-            //append today icon
-            let today = new Date
-            if (this.styleSettings.today && today >= this.minVal && today <= this.maxVal) {
-                let todayIcon = this.container
-                    .append('path')
-                    .attr("d", d3.symbol().type(d3.symbolTriangle).size(150))
-                    .attr("class", "symbol today-symbol")
-                    .attr("transform", (d) => {
-                        let transformStr, todayIconY,
-                            todayMarginTop = state.axisMarginTop ? state.axisMarginTop : state.finalMarginTop,
-                            todayPadding = state.axisPadding ? state.axisPadding : this.padding
-
-                        if (this.styleSettings.todayTop) {
-                            todayIconY = todayMarginTop - 12
-                            transformStr = "translate(" + (todayPadding + state.scale(today)) + "," + (todayIconY) + ") rotate(180)"
-                        } else {
-                            todayIconY = this.styleSettings.timelineStyle == "bar" ? todayMarginTop + 12 + this.barHt : todayMarginTop + 12
-
-                            transformStr = "translate(" + (todayPadding + state.scale(today)) + "," + (todayIconY) + ")"
-                        }
-
-                        return transformStr
-                    })
-                    .style("fill", this.styleSettings.todayColor.solid.color);
-
-            }
-
-            if (state.enabledAnnotations) {
-                this.configureTimelineAnnotations(state);
-                //state.finalMarginTop = state.finalMarginTop + this.imageSettings.imagesHeight + 500
                 
+            this.events.renderingStarted(options); // Rendering Events API START
+
+            this.viewModel = generateViewModel(options, this.host)
+            const state: ChartDrawingState = new ChartDrawingState();
+            state.data = this.viewModel.dataPoints
+
+            if(this.validateDataSizeConstraints(state.data, options)) { // Short circuit if data size is too large for view type
+                this.events.renderingFailed(options); // Rendering Events API FAIL
+                return;
             }
-        }
-        else { //image focus config:    
-            this.configureImagesTimeline(state);
-        }
 
-        //remove default bold if bold titles is off
-        if (!this.textSettings.boldTitles) {
-            this.container.selectAll('.annotationSelector  .annotation-note-title ').style('font-weight', "normal")
-        }
+            this.setEmptyCanvas();
+            this.setDefaultGlobals();
+            this.setDataRange(this.viewModel.dataPoints); // Set the date range of the timeline based on the data
 
+            state.addToMargin = this.getAdditionalMargin();
+            state.dateValueFormatter = this.createDateFormatter(options);
+            this.filterAndProcessData(state);
+            state.filteredWithImage = state.filteredData.filter(el => el.image)
 
-        //Handle context menu - right click
-        this.svg.on('contextmenu', contextFunction => { this.handleContextMenuRightClick() } );
-        //Handles click on/out bar
-        this.svg.on('click', this.handleSvgClick);
-        this.svg.on('mouseover', this.handleMouseOver)
+            const filteredData = state.filteredData; // Array Refernece used to reduce call length
 
+            //min label width from annotation plugin
+            if (this.textSettings.wrap < 90) {
+                this.textSettings.wrap = 90
+            }
 
-
-        if (this.downloadSettings.downloadCalendar) {
-
-            const ics = require('ics')
-            // let orientationVertical = this.downloadSettings.position.split(",")[0]
-            let orientationHorizontal = this.downloadSettings.position.split(",")[1]
-            let calX
-            if (orientationHorizontal == "LEFT") {
-                calX = 2
+            if (!this.axisSettings.manualScalePixel || !this.axisSettings.customPixel || isNaN(this.axisSettings.customPixel)) {
+                this.width = options.viewport.width - 20;
             } else {
-                calX = this.width - 35
-                if (this.styleSettings.timelineStyle == "minimalist") {
-                    calX -= 20
+                this.width = this.axisSettings.customPixel
+            }
+
+            this.height = options.viewport.height;
+            this.barHt = this.styleSettings.barHt;
+
+            //sort so staggering works in right order
+            // data = data.sort((a, b) => (a.date > b.date) ? 1 : -1)
+
+            if (this.textSettings.annotationStyle === 'annotationCallout' || this.textSettings.annotationStyle === 'annotationCalloutCurve') {
+                //annotation styles that add to text height, increment spacing
+                state.spacing += 10
+            }
+            
+            //work around not limiting minimum spacing
+            if (this.textSettings.autoStagger || !this.textSettings.spacing) {
+                this.textSettings.spacing = state.spacing
+                this.host.persistProperties({
+                    merge: [{
+                        objectName: 'textSettings',
+                        selector: null,
+                        properties: { spacing: state.spacing }
+                    }]
+                });
+            }
+
+            state.marginTopStagger += ((filteredData.filter(element => element.top && !element.customVertical).length) * this.textSettings.spacing) + 20
+
+            //case margintopstagger wasn't incremented - no top staggered items:
+            state.marginTopStagger = Math.max(this.marginTop, state.marginTopStagger)
+
+
+            if (this.imageSettings.style !== "default" && filteredData.filter(el => !el.top && el.image).length > 0) {
+                state.marginTopStagger = Math.max(state.marginTopStagger, state.addToMargin)
+            }
+            //define "official" margin top to start drawing graph
+            if (this.styleSettings.timelineStyle !== "image") {
+                state.finalMarginTop = !this.textSettings.stagger || this.styleSettings.timelineStyle == "minimalist" ? this.marginTop : state.marginTopStagger
+
+                if (this.styleSettings.timelineStyle != "minimalist" && filteredData.filter(el => el.top && el.customVertical).length > 0) {
+                    //case user input offset is > than margin
+                    state.finalMarginTop = Math.max(state.finalMarginTop, state.maxOffsetTop + this.textSettings.spacing)
+                }
+
+            } else {
+                state.finalMarginTop = 20 //+ imagesHeight / 2
+            }
+
+
+            state.downloadTop = this.downloadSettings.downloadCalendar && this.downloadSettings.position.split(",")[0] == "TOP";
+            state.downloadBottom = this.downloadSettings.downloadCalendar && this.downloadSettings.position.split(",")[0] !== "TOP"
+
+            //download calendar icon is enabled and positioned at top
+            if (state.downloadTop) {
+                state.finalMarginTop += 35
+            }
+
+            //axis format
+            state.axisFormat = this.axisSettings.dateFormat != "customJS" ? this.axisSettings.dateFormat : this.axisSettings.customJS;
+            state.axisValueFormatter = state.axisFormat == "same" ? state.dateValueFormatter : createFormatter(state.axisFormat);      
+
+            this.setPadding(state);
+
+            state.scale = d3.scaleTime()
+                .domain([this.minVal, this.maxVal]) //min and max data 
+                .range([0, this.width - (this.padding * 2)]); //min and max width in px 
+                
+            let last_date
+            let current_date
+            let pictureHeight = 1;
+            
+            if(this.imageSettings.style === "alternateVertical") 
+            {
+
+                state.finalMarginTop = state.finalMarginTop + amountOfMarginToIncrease;
+                
+
+                /*
+                
+                state.filteredData.forEach((element, i) => //if datapoints have the same date then add margin
+                {
+                    current_date = element["dateAsInt"]
+
+                    if(current_date === last_date)
+                    {
+                        //state.finalMarginTop = state.finalMarginTop + this.imageSettings.imagesHeight;
+                        pictureHeight = pictureHeight + 1                 
+                    }
+                    last_date = element["dateAsInt"]
+                })
+
+                //if(pictureHeight < 2) // if its one image
+                //{ state.finalMarginTop = state.finalMarginTop + this.imageSettings.imagesHeight; }*/
+
+                //state.finalMarginTop = state.finalMarginTop + 800; // alternate starts at 2 high.
+            }           
+
+            if (this.styleSettings.timelineStyle !== "image") {
+                //all styles, not image focus:
+                //let bar, axisMarginTop, enabledAnnotations, strokeColor, width, axisPadding
+
+
+                this.svg.attr("width", this.width - 4);
+                switch (this.styleSettings.timelineStyle) {
+                    case "line":
+                        this.configureLineChart(state);
+                        break;
+
+                    case "bar":
+                        this.configureBarChart(state);
+                        break;
+
+                    case "minimalist":
+                        this.configureMinimalistView(state);
+                        break;
+                }
+                
+                state.finalHeight = Math.max(this.height - 4, state.svgHeightTracking)
+
+                this.svg.attr("height", state.finalHeight);
+
+                let transparentContainer
+                if (state.needScroll && this.styleSettings.minimalistAxis == "bottom") {
+                    transparentContainer = this.container.append('rect')
+                        .attr('width', this.width)
+                        .attr('x', 0)//this.padding)
+                        .attr('fill', "white")
+                        .attr('y', state.axisMarginTop)
+                        .attr('height', this.height)
+                }
+                //axis setup
+                
+                if (state.axisMarginTop) {
+                    let x_axis = d3.axisBottom(state.scale)
+                        .tickFormat(d => {
+                            return state.axisValueFormatter.format(new Date(<any>d))
+                        })
+
+
+                    let sandBox: any = d3.select('#sandbox-host')
+                    //Append group and insert axis
+                    let axisSVG = this.container.append("g")
+                        .attr("transform", "translate(" + state.axisPadding + "," + (state.needScroll ? state.axisMarginTop + sandBox.property("scrollTop") : state.axisMarginTop) + ")")
+                        .call(x_axis)
+                        .attr('class', 'axis')
+
+                        .attr('style', `color :${this.axisSettings.axisColor.solid.color}`)
+                        .attr('style', `stroke :${this.axisSettings.axisColor.solid.color}`)
+
+                    this.container.selectAll('path, line')
+                        .attr('style', `color :${state.strokeColor}`)
+
+                    if (this.axisSettings.bold) {
+                        this.container.classed("xAxis", false);
+                    } else {
+                        this.container.attr('class', 'xAxis')
+                    }
+
+                    if (this.axisSettings.axis === "None") {
+                        this.container.selectAll(".axis text").remove()
+                    }
+                    else {
+                        this.container.selectAll(".axis text").style('font-size', this.axisSettings.fontSize)
+                        this.container.selectAll(".axis text").style('fill', this.axisSettings.axisColor.solid.color)
+                        this.container.selectAll(".axis text").style('font-family', this.axisSettings.fontFamily)
+
+                    }
+                    
+                    if (state.needScroll) {
+                        //on scroll event delete and re-write axis on better position
+                        // https://github.com/wbkd/d3-extended
+                        d3.selection.prototype.moveToFront = function () {
+                            return this.each(function () {
+                                this.parentNode.appendChild(this);
+                            });
+                        };
+                        sandBox.on("scroll", (e) => {
+                            let firstXForm = axisSVG.property("transform").baseVal.getItem(0)
+                            axisSVG.remove()
+                            if (this.styleSettings.minimalistAxis == "bottom") {
+                                transparentContainer.remove()
+                                //Appent transparent container
+                                transparentContainer = this.container.append('rect')
+                                    .attr('width', this.width)
+                                    .attr('x', 0)//this.padding)
+                                    .attr('fill', "white")
+                                    .attr('y', state.axisMarginTop + sandBox.property("scrollTop"))
+                                    .attr('height', this.height)
+                            }
+                            //Append group and insert axis
+                            axisSVG = this.container.append("g")
+                                .attr("transform", "translate(" + state.axisPadding + "," + (state.axisMarginTop + sandBox.property("scrollTop")) + ")")
+                                .call(x_axis)
+                                .attr('class', 'axis')
+
+                                .attr('style', `color :${this.axisSettings.axisColor.solid.color}`)
+                                .attr('style', `stroke :${this.axisSettings.axisColor.solid.color}`)
+
+                            this.container.selectAll('path, line')
+                                .attr('style', `color :${state.strokeColor}`)
+
+                            if (this.axisSettings.bold) {
+                                this.container.classed("xAxis", false);
+                            } else {
+                                this.container.attr('class', 'xAxis')
+                            }
+
+                            if (this.axisSettings.axis === "None") {
+                                this.container.selectAll(".axis text").remove()
+                            }
+                            else {
+                                this.container.selectAll(".axis text").style('font-size', this.axisSettings.fontSize)
+                                this.container.selectAll(".axis text").style('fill', this.axisSettings.axisColor.solid.color)
+                                this.container.selectAll(".axis text").style('font-family', this.axisSettings.fontFamily)
+
+                            }
+                            // }
+
+                            // Setting
+                            // axisSVG.attr("transform", "translate(" + axisPadding + "," + (this.height - sandBox.property("scrollTop")) + ")")
+
+
+
+                            let cal: any = d3.select("#calendar-icon")
+                            cal.moveToFront()
+
+                        })
+                    }
+
+                } 
+                //append today icon
+                let today = new Date
+                if (this.styleSettings.today && today >= this.minVal && today <= this.maxVal) {
+                    let todayIcon = this.container
+                        .append('path')
+                        .attr("d", d3.symbol().type(d3.symbolTriangle).size(150))
+                        .attr("class", "symbol today-symbol")
+                        .attr("transform", (d) => {
+                            let transformStr, todayIconY,
+                                todayMarginTop = state.axisMarginTop ? state.axisMarginTop : state.finalMarginTop,
+                                todayPadding = state.axisPadding ? state.axisPadding : this.padding
+
+                            if (this.styleSettings.todayTop) {
+                                todayIconY = todayMarginTop - 12
+                                transformStr = "translate(" + (todayPadding + state.scale(today)) + "," + (todayIconY) + ") rotate(180)"
+                            } else {
+                                todayIconY = this.styleSettings.timelineStyle == "bar" ? todayMarginTop + 12 + this.barHt : todayMarginTop + 12
+
+                                transformStr = "translate(" + (todayPadding + state.scale(today)) + "," + (todayIconY) + ")"
+                            }
+
+                            return transformStr
+                        })
+                        .style("fill", this.styleSettings.todayColor.solid.color);
+
+                }
+
+                if (state.enabledAnnotations) {
+                    
+                    this.configureTimelineAnnotations(state);
+                    
                 }
             }
-            let calY = state.downloadTop ? 2 : state.finalHeight - 35
+            else { //image focus config:    
+                this.configureImagesTimeline(state);
+            }
+
+            //remove default bold if bold titles is off
+            if (!this.textSettings.boldTitles) {
+                this.container.selectAll('.annotationSelector  .annotation-note-title ').style('font-weight', "normal")
+            }
+
+
+            //Handle context menu - right click
+            this.svg.on('contextmenu', contextFunction => { this.handleContextMenuRightClick() } );
+            //Handles click on/out bar
+            this.svg.on('click', this.handleSvgClick);
+            this.svg.on('mouseover', this.handleMouseOver)
 
 
 
+            if (this.downloadSettings.downloadCalendar) {
 
-
-            //append download icon
-            let calendarIcon = this.container.append('image')
-                .attr('xlink:href', "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAQAAACROWYpAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAAmJLR0QAAKqNIzIAAAAJcEhZcwAADsQAAA7EAZUrDhsAAAAHdElNRQfkBg8SOTSmsBjTAAAC8ElEQVQ4y53UbWjVZRgG8N/Ozs7aOZMtWSuTs2UMEvZlK2kp9kogytiLxdyoYJCGYKkEITb6ELE06INpYkFfVviWJEsC8QUN0lJWzGKR5UrTZnNTZyxkL2fn34cdT3s5Luj6dD33c1//57mf+7r/ZMJK3bqt9D9Q5LgGDY4rmjkxlCGyQFwgELcgw/4EZE1Z32e1xX5Uhm7lTvjAhduLcxULp8582st6bdWlCFeVW2uO7Y5IgoQrRiaK31cpAbLdI+yyYSEBsiTluldCrzEQccRbRv8VX/CiXyYUEaTfIjklxgPe1OjSLXFYQjea5PvbnhnZbuckUiWmxCQ1qXZUtSQzMHZPfrDx70Sd8aEiMWZg0cx97lRljyqdGdkZC+1VpXNqY8PIdtCfZhn0PXqnsB+M+E6xXJfNniwPY8wyG90U1YqWSSzPDn+pVipHlhylnnTVoFRv12qzzHXr3K/AnEnsVfO9Yq5vfGKndiedV6/O7+PtGhfP95jZFuky6vE0e9Rcj9jhDV/K1qDcKYd9ocBr+p0dv3bILkmzHLAXUizwkGartYMmSxGy2Q1bXPS6Pl+HM4xHIKbYWbk2paTEHEMstdqvxAbNoZRJaoypscIKNQIhgSXyfHzbCWyTozaTST4y6po1DhlIJ0cNCibYZMAhyzOZZJe3xZXoSKfWqveHHnVq07EOZZlNcl2WiL50Yr5hXZKG5Kdj/SKZTDLkZ9smVbtPiS3Yad/0wahwWqsWlThts1wJo4qdQ9jdeM95HHAXrkig2EgmkxR6zpiYiFOos12jYcdcVO9djfr9hGcUjtc81STfOuqGl7QZUOGETms8j6htKlXY705LfBo2pEWPQCBmFcYE8qxS4EEv2GpE1Fd+E8GIHotdQ7NR7VkWeUqu6Qjc4QmtLtkkaiz1S8x200YlWqx30oyoddo688TFlSoVFzfPeh2WT3f1dCy0QcRBHfpQ7GFLjXpn/NT/ElOoxrPK5Mgy4lef+fyWbf8BTNASSGAMJiEAAAAldEVYdGRhdGU6Y3JlYXRlADIwMjAtMDYtMTVUMTg6NTc6NTItMDQ6MDC+fJWTAAAAJXRFWHRkYXRlOm1vZGlmeQAyMDIwLTA2LTE1VDE4OjU3OjUyLTA0OjAwzyEtLwAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAAASUVORK5CYII=")
-                .attr('width', 30)
-                .attr('height', 30)
-                .attr("id", "calendar-icon")
-                .attr('x', calX)
-                .attr('y', calY)
-                .on("click", () => {
-                    const { error, value } = ics.createEvents(state.ICSevents)
-
-                    if (error) {
-                        return
+                const ics = require('ics')
+                // let orientationVertical = this.downloadSettings.position.split(",")[0]
+                let orientationHorizontal = this.downloadSettings.position.split(",")[1]
+                let calX
+                if (orientationHorizontal == "LEFT") {
+                    calX = 2
+                } else {
+                    calX = this.width - 35
+                    if (this.styleSettings.timelineStyle == "minimalist") {
+                        calX -= 20
                     }
-                    var blob;
+                }
+                let calY = state.downloadTop ? 2 : state.finalHeight - 35
 
-                    blob = new Blob([value]);
 
-                    FileSaver.saveAs(blob, `${this.downloadSettings.calendarName != "" ? this.downloadSettings.calendarName : 'calendar'}.ics`);
-                });
+
+
+
+                //append download icon
+                let calendarIcon = this.container.append('image')
+                    .attr('xlink:href', "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAQAAACROWYpAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAAmJLR0QAAKqNIzIAAAAJcEhZcwAADsQAAA7EAZUrDhsAAAAHdElNRQfkBg8SOTSmsBjTAAAC8ElEQVQ4y53UbWjVZRgG8N/Ozs7aOZMtWSuTs2UMEvZlK2kp9kogytiLxdyoYJCGYKkEITb6ELE06INpYkFfVviWJEsC8QUN0lJWzGKR5UrTZnNTZyxkL2fn34cdT3s5Luj6dD33c1//57mf+7r/ZMJK3bqt9D9Q5LgGDY4rmjkxlCGyQFwgELcgw/4EZE1Z32e1xX5Uhm7lTvjAhduLcxULp8582st6bdWlCFeVW2uO7Y5IgoQrRiaK31cpAbLdI+yyYSEBsiTluldCrzEQccRbRv8VX/CiXyYUEaTfIjklxgPe1OjSLXFYQjea5PvbnhnZbuckUiWmxCQ1qXZUtSQzMHZPfrDx70Sd8aEiMWZg0cx97lRljyqdGdkZC+1VpXNqY8PIdtCfZhn0PXqnsB+M+E6xXJfNniwPY8wyG90U1YqWSSzPDn+pVipHlhylnnTVoFRv12qzzHXr3K/AnEnsVfO9Yq5vfGKndiedV6/O7+PtGhfP95jZFuky6vE0e9Rcj9jhDV/K1qDcKYd9ocBr+p0dv3bILkmzHLAXUizwkGartYMmSxGy2Q1bXPS6Pl+HM4xHIKbYWbk2paTEHEMstdqvxAbNoZRJaoypscIKNQIhgSXyfHzbCWyTozaTST4y6po1DhlIJ0cNCibYZMAhyzOZZJe3xZXoSKfWqveHHnVq07EOZZlNcl2WiL50Yr5hXZKG5Kdj/SKZTDLkZ9smVbtPiS3Yad/0wahwWqsWlThts1wJo4qdQ9jdeM95HHAXrkig2EgmkxR6zpiYiFOos12jYcdcVO9djfr9hGcUjtc81STfOuqGl7QZUOGETms8j6htKlXY705LfBo2pEWPQCBmFcYE8qxS4EEv2GpE1Fd+E8GIHotdQ7NR7VkWeUqu6Qjc4QmtLtkkaiz1S8x200YlWqx30oyoddo688TFlSoVFzfPeh2WT3f1dCy0QcRBHfpQ7GFLjXpn/NT/ElOoxrPK5Mgy4lef+fyWbf8BTNASSGAMJiEAAAAldEVYdGRhdGU6Y3JlYXRlADIwMjAtMDYtMTVUMTg6NTc6NTItMDQ6MDC+fJWTAAAAJXRFWHRkYXRlOm1vZGlmeQAyMDIwLTA2LTE1VDE4OjU3OjUyLTA0OjAwzyEtLwAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAAASUVORK5CYII=")
+                    .attr('width', 30)
+                    .attr('height', 30)
+                    .attr("id", "calendar-icon")
+                    .attr('x', calX)
+                    .attr('y', calY)
+                    .on("click", () => {
+                        const { error, value } = ics.createEvents(state.ICSevents)
+
+                        if (error) {
+                            return
+                        }
+                        var blob;
+
+                        blob = new Blob([value]);
+
+                        FileSaver.saveAs(blob, `${this.downloadSettings.calendarName != "" ? this.downloadSettings.calendarName : 'calendar'}.ics`);
+                    });
+            }
+
+            this.events.renderingFinished(options); // Rendering Events API FINISH
         }
-
-        this.events.renderingFinished(options); // Rendering Events API FINISH
     }
 
     /**
@@ -1642,7 +1658,6 @@ export class Visual implements IVisual {
 
         let objectName: string = options.objectName;
         let objectEnumeration: VisualObjectInstance[] = [];
-
 
         switch (objectName) {
             case 'textSettings':
@@ -2338,7 +2353,6 @@ function createFormatter(format, precision?: any, value?: number) {
 
 function wrap(text, width) {
     text.each(function () {
-
         var text = d3.select(this)
         var words = text.text().split(/\s+/).reverse()
         var word,
