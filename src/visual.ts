@@ -723,6 +723,8 @@ export class Visual implements IVisual {
 
         let designStyle
 
+        let arrayOfMakeAnnotations: any[] = []
+
 
         // let pixelWidth = (this.width - this.padding * 2) / data.length
 
@@ -970,132 +972,141 @@ export class Visual implements IVisual {
                         .attr('y', imageY)
 
                         .on("click", () => {
-                            if (element.URL) {
+                            if (element.URL) 
+                            {
                                 this.host.launchUrl(element.URL)
                             }
-
-                        });
-                    }
-
-                    this.container
-                        .append("g")
-                        .attr('class', `annotation_selector_${element.selectionId.getKey().replace(/\W/g, '')} annotationSelector`)
-                        .style('font-size', element.textSize + "px")
-                        .style('font-family', element.fontFamily)
-                        .style('background-color', 'transparent')
-                        .call(makeAnnotations)
-                        .on('click', el => {
-                            //manage highlighted formating and open links
-                            this.selectionManager.select(element.selectionId).then((ids: ISelectionId[]) => {
-                                if (ids.length > 0) {
-                                    // this.container.selectAll('.bar').style('fill-opacity', 0.1)
-                                    d3.select(`.selector_${element.selectionId.getKey().replace(/\W/g, '')}`).style('fill-opacity', 1)
-                                    this.container.selectAll('.annotationSelector').style('font-weight', "normal")
-
-                                    if (!this.textSettings.boldTitles) {
-                                        this.container.selectAll('.annotationSelector  .annotation-note-title ').style('font-weight', "normal")
-                                    }
-
-                                    d3.selectAll(`.annotation_selector_${element.selectionId.getKey().replace(/\W/g, '')}`).style('font-weight', "bold")
-                                    d3.selectAll(`.annotation_selector_${element.selectionId.getKey().replace(/\W/g, '')}  .annotation-note-title `).style('font-weight', "bold")
-
-
-                                    //Open link 
-                                    if (element.URL) {
-                                        this.host.launchUrl(element.URL)
-                                    }
-
-                                } else {
-                                    // this.container.selectAll('.bar').style('fill-opacity', 1)
-                                    this.container.selectAll('.annotationSelector').style('font-weight', "normal")
-
-                                    if (!this.textSettings.boldTitles) {
-                                        this.container.selectAll('.annotationSelector .annotation-note-title').style('font-weight', "normal")
-                                    }
-                                }
-
-                            })
-                        })
-                    }
-                })
-
-
-            
-            if(designStyle === "alternateVertical")
-            {
-                let tempIncreaseAmount = 0;
-                let marginIncreaseAmount = 0;
-
-                let newZeroPoint = amountOfMarginToIncrease
-
-                for(var i:number = 0; i < RowDataArray.length; i++) //Get each RowData
-                {
-                    if(RowDataArray[i].rowData_firstImage.imageData_y === 0 || RowDataArray[i].rowData_firstImage.imageData_y === newZeroPoint) //If the RowData firstImage is on the bottom (Checking to see if its actually the start)
-                    {
-                        tempIncreaseAmount = RowDataArray[i].rowData_numberOfImages - 1
-                    }
-                    
-                    if(RowDataArray[i].rowData_shouldAlternate === false)
-                    {
-                        let firstImage = RowDataArray[i].rowData_firstImage
-                        let lastImage = RowDataArray[i].rowData_lastImage
-
-                        if(lastImage.imageData_y - 100 === RowDataArray[i + 1].rowData_firstImage.imageData_y) // If images are overlapping add on top
-                        {
-                            tempIncreaseAmount = tempIncreaseAmount + RowDataArray[i + 1].rowData_numberOfImages   
-                        }
-                        else
-                        {
-                            if(tempIncreaseAmount > marginIncreaseAmount)
-                            {
-                                marginIncreaseAmount = tempIncreaseAmount    
-                            }
-                             
-                        }
-                        
-                    }
-                    
-                    amountOfMarginToIncrease = marginIncreaseAmount * this.imageSettings.imagesHeight
+                     });
                 }
-            
-                for(var h:number = 0; h < RowDataArray.length; h++)
-                {
-                    let connector = this.container.append("line")
-                    .attr("x1", RowDataArray[h].rowData_lastImage.imageData_x) //TOP
-                    //.attr("y1", RowDataArray[h].rowData_lastImage.imageData_y) //TOP
-
-                    .attr("y1", () => {let result = state.finalMarginTop
-                        if (this.styleSettings.timelineStyle == "bar" && RowDataArray[h].rowData_lastImage.imageData_imageOnTop) {result += this.barHt}
-                        return result})
-
-                    .attr("x2", RowDataArray[h].rowData_firstImage.imageData_x) //Bottom
-                    .attr("y2", RowDataArray[h].rowData_lastImage.imageData_imageOnTop ? RowDataArray[h].rowData_lastImage.imageData_y  : RowDataArray[h].rowData_lastImage.imageData_y + this.imageSettings.imagesHeight) //BOTTOM
-                    .attr("stroke-width", 1)
-                    .attr("stroke", "Black");
-                }
-
-                for(var p:number = 0; p < singleImageArray.length; p++)
-                {
-
-                    let image = this.container.append('image')
-                    .attr('xlink:href', singleImageArray[p].imageData_image)
-                    .attr('width', this.imageSettings.imagesWidth)
-                    .attr('height', this.imageSettings.imagesHeight)
-                    .attr('x', singleImageArray[p].imageData_x - 50)
-
-                    .attr('y', singleImageArray[p].imageData_y)
-
-                    .on("click", () => {
-                        console.log(singleImageArray[p].imageData_image)
-                        if (singleImageArray[p].imageData_image) {
-                            this.host.launchUrl(singleImageArray[p].imageData_image)
-                        }
-
-                    });
-
-                }
+                arrayOfMakeAnnotations.push(makeAnnotations)
             }
+        })
+
+        
+            
+        if(designStyle === "alternateVertical")
+        {
+            let tempIncreaseAmount = 0;
+            let marginIncreaseAmount = 0;
+
+            let newZeroPoint = amountOfMarginToIncrease
+
+            for(var i:number = 0; i < RowDataArray.length; i++) //Get each RowData
+            {
+                if(RowDataArray[i].rowData_firstImage.imageData_y === 0 || RowDataArray[i].rowData_firstImage.imageData_y === newZeroPoint) //If the RowData firstImage is on the bottom (Checking to see if its actually the start)
+                {
+                    tempIncreaseAmount = RowDataArray[i].rowData_numberOfImages - 1
+                }
+                
+                if(RowDataArray[i].rowData_shouldAlternate === false)
+                {
+                    let firstImage = RowDataArray[i].rowData_firstImage
+                    let lastImage = RowDataArray[i].rowData_lastImage
+
+                    if(lastImage.imageData_y - 100 === RowDataArray[i + 1].rowData_firstImage.imageData_y) // If images are overlapping add on top
+                    {
+                        tempIncreaseAmount = tempIncreaseAmount + RowDataArray[i + 1].rowData_numberOfImages   
+                    }
+                    else
+                    {
+                        if(tempIncreaseAmount > marginIncreaseAmount)
+                        {
+                            marginIncreaseAmount = tempIncreaseAmount    
+                        }
+                            
+                    }
+                    
+                }
+                
+                amountOfMarginToIncrease = marginIncreaseAmount * this.imageSettings.imagesHeight
+            }
+        
+            for(var h:number = 0; h < RowDataArray.length; h++)
+            {
+                let connector = this.container.append("line")
+                .attr("x1", RowDataArray[h].rowData_lastImage.imageData_x) //TOP
+                //.attr("y1", RowDataArray[h].rowData_lastImage.imageData_y) //TOP
+
+                .attr("y1", () => {let result = state.finalMarginTop
+                    if (this.styleSettings.timelineStyle == "bar" && RowDataArray[h].rowData_lastImage.imageData_imageOnTop) {result += this.barHt}
+                    return result})
+
+                .attr("x2", RowDataArray[h].rowData_firstImage.imageData_x) //Bottom
+                .attr("y2", RowDataArray[h].rowData_lastImage.imageData_imageOnTop ? RowDataArray[h].rowData_lastImage.imageData_y  : RowDataArray[h].rowData_lastImage.imageData_y + this.imageSettings.imagesHeight) //BOTTOM
+                .attr("stroke-width", 1)
+                .attr("stroke", "Black");
+            }
+
+            for(var p:number = 0; p < singleImageArray.length; p++)
+            {
+
+                let image = this.container.append('image')
+                .attr('xlink:href', singleImageArray[p].imageData_image)
+                .attr('width', this.imageSettings.imagesWidth)
+                .attr('height', this.imageSettings.imagesHeight)
+                .attr('x', singleImageArray[p].imageData_x - 50)
+
+                .attr('y', singleImageArray[p].imageData_y)
+
+                .on("click", () => {
+                    console.log(singleImageArray[p].imageData_image)
+                    if (singleImageArray[p].imageData_image) {
+                        this.host.launchUrl(singleImageArray[p].imageData_image)
+                    }
+
+                });
+
+            }
+            
         }
+            state.filteredData.forEach((element, i) => {
+
+                console.log(arrayOfMakeAnnotations)
+
+                //console.log(element.selectionId.getKey())
+                this.container
+                    .append("g")
+                    .attr('class', `annotation_selector_${element.selectionId.getKey().replace(/\W/g, '')} annotationSelector`)
+                    .style('font-size', element.textSize + "px")
+                    .style('font-family', element.fontFamily)
+                    .style('background-color', 'transparent')
+                    .call(arrayOfMakeAnnotations[i])
+                    .on('click', el => {
+                        //manage highlighted formating and open links
+                        this.selectionManager.select(element.selectionId).then((ids: ISelectionId[]) => {
+                            if (ids.length > 0) {
+                                // this.container.selectAll('.bar').style('fill-opacity', 0.1)
+                                d3.select(`.selector_${element.selectionId.getKey().replace(/\W/g, '')}`).style('fill-opacity', 1)
+                                this.container.selectAll('.annotationSelector').style('font-weight', "normal")
+    
+                                if (!this.textSettings.boldTitles) {
+                                    this.container.selectAll('.annotationSelector  .annotation-note-title ').style('font-weight', "normal")
+                                }
+    
+                                d3.selectAll(`.annotation_selector_${element.selectionId.getKey().replace(/\W/g, '')}`).style('font-weight', "bold")
+                                d3.selectAll(`.annotation_selector_${element.selectionId.getKey().replace(/\W/g, '')}  .annotation-note-title `).style('font-weight', "bold")
+    
+    
+                                //Open link 
+                                if (element.URL) {
+                                    this.host.launchUrl(element.URL)
+                                }
+    
+                            } else {
+                                // this.container.selectAll('.bar').style('fill-opacity', 1)
+                                this.container.selectAll('.annotationSelector').style('font-weight', "normal")
+    
+                                if (!this.textSettings.boldTitles) {
+                                    this.container.selectAll('.annotationSelector .annotation-note-title').style('font-weight', "normal")
+                                }
+                            }
+    
+                        })
+                    })
+                    
+            })
+
+    }
 
     private configureImagesTimeline(state: ChartDrawingState) {
         this.padding = this.defaultPadding;

@@ -68,6 +68,8 @@ export class SingleImage
 
     public imageData_imageOnTop: boolean
 
+    public imageData_
+
     constructor(imageData_label: string, imageData_x: number, imageData_y: number, imageData_dateAsInt: number, imageData_image: any, imageData_imageOnTop: boolean)
     {
         this.imageData_label     = imageData_label
