@@ -38,7 +38,6 @@ import { DataPoint, RowOfImage, SingleImage } from "./dataPoint";
 
 import { DataPointAlignment } from "./dataPointAlignment";
 
-
 type Selection<T extends d3.BaseType> = d3.Selection<T, any, any, any>;
 
 let  amountOfMarginToIncrease = 0 //these are hacky and need to be fixed before launch
@@ -1063,49 +1062,52 @@ export class Visual implements IVisual {
 
                 console.log(arrayOfMakeAnnotations)
 
-                //console.log(element.selectionId.getKey())
-                this.container
-                    .append("g")
-                    .attr('class', `annotation_selector_${element.selectionId.getKey().replace(/\W/g, '')} annotationSelector`)
-                    .style('font-size', element.textSize + "px")
-                    .style('font-family', element.fontFamily)
-                    .style('background-color', 'transparent')
-                    .call(arrayOfMakeAnnotations[i])
-                    .on('click', el => {
-                        //manage highlighted formating and open links
-                        this.selectionManager.select(element.selectionId).then((ids: ISelectionId[]) => {
-                            if (ids.length > 0) {
-                                // this.container.selectAll('.bar').style('fill-opacity', 0.1)
-                                d3.select(`.selector_${element.selectionId.getKey().replace(/\W/g, '')}`).style('fill-opacity', 1)
-                                this.container.selectAll('.annotationSelector').style('font-weight', "normal")
-    
-                                if (!this.textSettings.boldTitles) {
-                                    this.container.selectAll('.annotationSelector  .annotation-note-title ').style('font-weight', "normal")
-                                }
-    
-                                d3.selectAll(`.annotation_selector_${element.selectionId.getKey().replace(/\W/g, '')}`).style('font-weight', "bold")
-                                d3.selectAll(`.annotation_selector_${element.selectionId.getKey().replace(/\W/g, '')}  .annotation-note-title `).style('font-weight', "bold")
-    
-    
-                                //Open link 
-                                if (element.URL) {
-                                    this.host.launchUrl(element.URL)
-                                }
-    
-                            } else {
-                                // this.container.selectAll('.bar').style('fill-opacity', 1)
-                                this.container.selectAll('.annotationSelector').style('font-weight', "normal")
-    
-                                if (!this.textSettings.boldTitles) {
-                                    this.container.selectAll('.annotationSelector .annotation-note-title').style('font-weight', "normal")
-                                }
-                            }
-    
-                        })
-                    })
+                this.createAnnotation(element, i, arrayOfMakeAnnotations)
+                
                     
             })
+        
+    }
+    private createAnnotation(element: DataPoint, i: number, arrayOfMakeAnnotations: any[]) {
 
+        this.container.append("g")
+        .attr('class', `annotation_selector_${element.selectionId.getKey().replace(/\W/g, '')} annotationSelector`)
+        .style('font-size', element.textSize + "px")
+        .style('font-family', element.fontFamily)
+        .style('background-color', 'transparent')
+        .call(arrayOfMakeAnnotations[i])
+        .on('click', el => {
+            //manage highlighted formating and open links
+            this.selectionManager.select(element.selectionId).then((ids: ISelectionId[]) => {
+                if (ids.length > 0) {
+                    // this.container.selectAll('.bar').style('fill-opacity', 0.1)
+                    d3.select(`.selector_${element.selectionId.getKey().replace(/\W/g, '')}`).style('fill-opacity', 1)
+                    this.container.selectAll('.annotationSelector').style('font-weight', "normal")
+
+                    if (!this.textSettings.boldTitles) {
+                        this.container.selectAll('.annotationSelector  .annotation-note-title ').style('font-weight', "normal")
+                    }
+
+                    d3.selectAll(`.annotation_selector_${element.selectionId.getKey().replace(/\W/g, '')}`).style('font-weight', "bold")
+                    d3.selectAll(`.annotation_selector_${element.selectionId.getKey().replace(/\W/g, '')}  .annotation-note-title `).style('font-weight', "bold")
+
+
+                    //Open link 
+                    if (element.URL) {
+                        this.host.launchUrl(element.URL)
+                    }
+
+                } else {
+                    // this.container.selectAll('.bar').style('fill-opacity', 1)
+                    this.container.selectAll('.annotationSelector').style('font-weight', "normal")
+
+                    if (!this.textSettings.boldTitles) {
+                        this.container.selectAll('.annotationSelector .annotation-note-title').style('font-weight', "normal")
+                    }
+                }
+
+            })
+        })
     }
 
     private configureImagesTimeline(state: ChartDrawingState) {
@@ -1299,7 +1301,7 @@ export class Visual implements IVisual {
     
 
     public update(options: VisualUpdateOptions) {
-
+    
         for(var i:number = 0; i < enumAmount; i++)
         {
                 
@@ -1406,34 +1408,12 @@ export class Visual implements IVisual {
             
             if(this.imageSettings.style === "alternateVertical") 
             {
-
                 state.finalMarginTop = state.finalMarginTop + amountOfMarginToIncrease;
-                
-
-                /*
-                
-                state.filteredData.forEach((element, i) => //if datapoints have the same date then add margin
-                {
-                    current_date = element["dateAsInt"]
-
-                    if(current_date === last_date)
-                    {
-                        //state.finalMarginTop = state.finalMarginTop + this.imageSettings.imagesHeight;
-                        pictureHeight = pictureHeight + 1                 
-                    }
-                    last_date = element["dateAsInt"]
-                })
-
-                //if(pictureHeight < 2) // if its one image
-                //{ state.finalMarginTop = state.finalMarginTop + this.imageSettings.imagesHeight; }*/
-
-                //state.finalMarginTop = state.finalMarginTop + 800; // alternate starts at 2 high.
             }           
 
             if (this.styleSettings.timelineStyle !== "image") {
                 //all styles, not image focus:
                 //let bar, axisMarginTop, enabledAnnotations, strokeColor, width, axisPadding
-
 
                 this.svg.attr("width", this.width - 4);
                 switch (this.styleSettings.timelineStyle) {
@@ -1553,8 +1533,6 @@ export class Visual implements IVisual {
 
                             // Setting
                             // axisSVG.attr("transform", "translate(" + axisPadding + "," + (this.height - sandBox.property("scrollTop")) + ")")
-
-
 
                             let cal: any = d3.select("#calendar-icon")
                             cal.moveToFront()
