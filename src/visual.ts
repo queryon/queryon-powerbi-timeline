@@ -865,7 +865,7 @@ export class Visual implements IVisual {
                                     
                                     RowDataArray[i].rowData_numberOfImages = RowDataArray[i].rowData_numberOfImages + 1
 
-                                    if(element.top)
+                                    if(element.top) //this is for future implementation of this feature supporting it go down
                                     {
                                         imageY = RowDataArray[i].rowData_firstImage.imageData_y - (RowDataArray[i].rowData_numberOfImages * this.imageSettings.imagesHeight) + this.imageSettings.imagesHeight
                                     }
@@ -882,9 +882,7 @@ export class Visual implements IVisual {
                                     RowDataArray[i].rowData_shouldAlternate = false
                                     
                                 }
-                            }
-
-                            
+                            }         
                
                         }
                         else
@@ -892,27 +890,25 @@ export class Visual implements IVisual {
 
                             imageY = element.top ? state.finalMarginTop + 20 : state.finalMarginTop - 20 - this.imageSettings.imagesHeight
                               
-                            if (state.downloadTop) { imageY += 35 }
-                            //if(!element.top) { imageY -= this.imageSettings.imagesHeight }                  
+                            if (state.downloadTop) { imageY += 35 }            
                             if (this.styleSettings.timelineStyle == "bar" && element.top) { imageY += this.barHt }
                             
-                            let highImage = false
+                            let imageIsAddedAboveRow = false //is image being added above a already exisiting row
 
                             for(var i:number = 0; i < singleImageArray.length; i++)
                             {
 
-                                if(this.isImageOverlapping(element["x"], imageY, singleImageArray[i].imageData_x, singleImageArray[i].imageData_y))
+                                if(this.isImageOverlapping(element["x"], imageY, singleImageArray[i].imageData_x, singleImageArray[i].imageData_y)) //if image is overlaping make imageIsAddedAboveRow true
                                 {
 
                                     imageY = imageY - this.imageSettings.imagesHeight
-                                    highImage = true
+                                    imageIsAddedAboveRow = true
                                     
                                 }
                             }
 
-                            
-                            //console.log(RowDataArray)
-                            if(highImage === true)
+                        
+                            if(imageIsAddedAboveRow === true)
                             {
                                 let firstImageTemp = new SingleImage(element.label, element["x"], imageY, element.dateAsInt, element.image, element.top) // -50 is for temp center
                                 RowDataArray.push(new RowOfImage(element.dateAsInt, firstImageTemp, 1, firstImageTemp, false)) // Start New Row Without Alternate
@@ -922,9 +918,6 @@ export class Visual implements IVisual {
                                 let firstImageTemp = new SingleImage(element.label, element["x"], imageY, element.dateAsInt, element.image, element.top) // -50 is for temp center
                                 RowDataArray.push(new RowOfImage(element.dateAsInt, firstImageTemp, 1, firstImageTemp, true)) // Start New Row With Alternate
                             }
-                            
-                            
-
                         }
 
                         singleImageArray.push(new SingleImage(element.label, element["x"], imageY, element.dateAsInt, element.image, element.top))
@@ -936,46 +929,17 @@ export class Visual implements IVisual {
 
                 imageX = !imageX ? element.x - (this.imageSettings.imagesWidth / 2) : imageX
                 
-                if(designStyle === "staggered" || designStyle === "straight" || designStyle === "alternate")
+                if(designStyle === "staggered" || designStyle === "straight" || designStyle === "alternate") // the following can be calculated in the loop as it doesnt require calculation of margin.
                 {
                     if (this.imageSettings.style != "default") {
 
-                        if(!element.image)
+                        if(element.image)
                         {
-                            
+                            this.createLine(null, state, element, imageX, imageY)
                         }
-                        else
-                        {
-                            let connector = this.container.append("line")
-                            .attr("x1", element.x)
-                            .attr("y1", () => {
-                                let result = state.finalMarginTop
-                                if (this.styleSettings.timelineStyle == "bar" && element.top) {
-                                    result += this.barHt
-                                }
-                                return result
-                            })
-                            .attr("x2", element.x)
-                            .attr("y2", element.top ? imageY : imageY + this.imageSettings.imagesHeight)
-                            .attr("stroke-width", 1)
-                            .attr("stroke", element.textColor);
-                        }
-
                     }
-
-                    let image = this.container.append('image')
-                        .attr('xlink:href', element.image)
-                        .attr('width', this.imageSettings.imagesWidth)
-                        .attr('height', this.imageSettings.imagesHeight)
-                        .attr('x', imageX)
-                        .attr('y', imageY)
-
-                        .on("click", () => {
-                            if (element.URL) 
-                            {
-                                this.host.launchUrl(element.URL)
-                            }
-                     });
+                    this.createImage(null, element, imageX, imageY)
+                    
                 }
                 arrayOfMakeAnnotations.push(makeAnnotations)
             }
@@ -983,89 +947,135 @@ export class Visual implements IVisual {
 
         
             
-        if(designStyle === "alternateVertical")
+        if(designStyle === "alternateVertical") // if alternateVertical then drawing lines and creating images is handeled differently. Margin is also calculated differently as it is dynamic 
         {
-            let tempIncreaseAmount = 0;
-            let marginIncreaseAmount = 0;
-
-            let newZeroPoint = amountOfMarginToIncrease
-
-            for(var i:number = 0; i < RowDataArray.length; i++) //Get each RowData
-            {
-                if(RowDataArray[i].rowData_firstImage.imageData_y === 0 || RowDataArray[i].rowData_firstImage.imageData_y === newZeroPoint) //If the RowData firstImage is on the bottom (Checking to see if its actually the start)
-                {
-                    tempIncreaseAmount = RowDataArray[i].rowData_numberOfImages - 1
-                }
-                
-                if(RowDataArray[i].rowData_shouldAlternate === false)
-                {
-                    let firstImage = RowDataArray[i].rowData_firstImage
-                    let lastImage = RowDataArray[i].rowData_lastImage
-
-                    if(lastImage.imageData_y - 100 === RowDataArray[i + 1].rowData_firstImage.imageData_y) // If images are overlapping add on top
-                    {
-                        tempIncreaseAmount = tempIncreaseAmount + RowDataArray[i + 1].rowData_numberOfImages   
-                    }
-                    else
-                    {
-                        if(tempIncreaseAmount > marginIncreaseAmount)
-                        {
-                            marginIncreaseAmount = tempIncreaseAmount    
-                        }
-                            
-                    }
-                    
-                }
-                
-                amountOfMarginToIncrease = marginIncreaseAmount * this.imageSettings.imagesHeight
-            }
-        
+            this.getAmountOfMarginToIncrease(RowDataArray)
+            
             for(var h:number = 0; h < RowDataArray.length; h++)
             {
-                let connector = this.container.append("line")
-                .attr("x1", RowDataArray[h].rowData_lastImage.imageData_x) //TOP
-                //.attr("y1", RowDataArray[h].rowData_lastImage.imageData_y) //TOP
-
-                .attr("y1", () => {let result = state.finalMarginTop
-                    if (this.styleSettings.timelineStyle == "bar" && RowDataArray[h].rowData_lastImage.imageData_imageOnTop) {result += this.barHt}
-                    return result})
-
-                .attr("x2", RowDataArray[h].rowData_firstImage.imageData_x) //Bottom
-                .attr("y2", RowDataArray[h].rowData_lastImage.imageData_imageOnTop ? RowDataArray[h].rowData_lastImage.imageData_y  : RowDataArray[h].rowData_lastImage.imageData_y + this.imageSettings.imagesHeight) //BOTTOM
-                .attr("stroke-width", 1)
-                .attr("stroke", "Black");
-            }
-
-            for(var p:number = 0; p < singleImageArray.length; p++)
-            {
-
-                let image = this.container.append('image')
-                .attr('xlink:href', singleImageArray[p].imageData_image)
-                .attr('width', this.imageSettings.imagesWidth)
-                .attr('height', this.imageSettings.imagesHeight)
-                .attr('x', singleImageArray[p].imageData_x - 50)
-
-                .attr('y', singleImageArray[p].imageData_y)
-
-                .on("click", () => {
-                    console.log(singleImageArray[p].imageData_image)
-                    if (singleImageArray[p].imageData_image) {
-                        this.host.launchUrl(singleImageArray[p].imageData_image)
-                    }
-
-                });
-
+                this.createLine(RowDataArray[h], state, null, null, null)
             }
             
+            for(var p:number = 0; p < singleImageArray.length; p++)
+            {
+                this.createImage(singleImageArray[p], null, null, null)
+            }
         }
-            state.filteredData.forEach((element, i) => {
 
-                console.log(arrayOfMakeAnnotations)
+        state.filteredData.forEach((element, i) => //Created in forloop down here so text displays on top of image
+        { 
+            this.createAnnotation(element, i, arrayOfMakeAnnotations)       
+        })
+        
+    }
 
-                this.createAnnotation(element, i, arrayOfMakeAnnotations)
+    private getAmountOfMarginToIncrease(RowDataArray: any) //When using alternateVertical images need to be drawn and then Margin can be calculated. This requires an update call twice.
+    {
+        let tempIncreaseAmount   = 0;
+        let marginIncreaseAmount = 0;
+
+        let newZeroPoint = amountOfMarginToIncrease
+
+        for(var i:number = 0; i < RowDataArray.length; i++) 
+        {
+            if(RowDataArray[i].rowData_firstImage.imageData_y === 0 || RowDataArray[i].rowData_firstImage.imageData_y === newZeroPoint) //If the RowData firstImage is on the bottom (Checking to see if its actually the start)
+            {
+                tempIncreaseAmount = RowDataArray[i].rowData_numberOfImages - 1
+            }
+            
+            if(RowDataArray[i].rowData_shouldAlternate === false)
+            {
+                let lastImage = RowDataArray[i].rowData_lastImage
+
+                if(lastImage.imageData_y - 100 === RowDataArray[i + 1].rowData_firstImage.imageData_y) // If images are overlapping add on top
+                {
+                    tempIncreaseAmount = tempIncreaseAmount + RowDataArray[i + 1].rowData_numberOfImages   
+                }
+                else
+                {
+                    if(tempIncreaseAmount > marginIncreaseAmount)
+                    {
+                        marginIncreaseAmount = tempIncreaseAmount    
+                    }
+                        
+                }
                 
-                    
+            }
+            
+            amountOfMarginToIncrease = marginIncreaseAmount * this.imageSettings.imagesHeight
+        }
+    }
+
+    private createLine(RowData: any | null, state: ChartDrawingState, element: any | null, imageX: number | null, imageY: number | null)
+    {
+        if(element === null)
+        {
+            let connector = this.container.append("line")
+            .attr("x1", RowData.rowData_lastImage.imageData_x) //TOP
+    
+            .attr("y1", () => {let result = state.finalMarginTop
+                if (this.styleSettings.timelineStyle == "bar" && RowData.rowData_lastImage.imageData_imageOnTop) {result += this.barHt}
+                return result})
+    
+            .attr("x2", RowData.rowData_firstImage.imageData_x) //Bottom
+            .attr("y2", RowData.rowData_lastImage.imageData_imageOnTop ? RowData.rowData_lastImage.imageData_y  : RowData.rowData_lastImage.imageData_y + this.imageSettings.imagesHeight) //BOTTOM
+            .attr("stroke-width", 1)
+            .attr("stroke", "Black");
+        }
+        else
+        {
+            let connector = this.container.append("line")
+            .attr("x1", element.x)
+            .attr("y1", () => {
+                let result = state.finalMarginTop
+                if (this.styleSettings.timelineStyle == "bar" && element.top) {
+                    result += this.barHt
+                }
+                return result
             })
+            .attr("x2", element.x)
+            .attr("y2", element.top ? imageY : imageY + this.imageSettings.imagesHeight)
+            .attr("stroke-width", 1)
+            .attr("stroke", element.textColor);
+        }
+    }
+
+    private createImage(singleImage: any | null, element: any | null, imageX: number | null, imageY: number | null) //createImage can can used with a singleImage |OR| a element with X and Y.
+    {
+        if(element === null) //using singleImage data
+        {
+            let image = this.container.append('image')
+            .attr('xlink:href', singleImage.imageData_image)
+            .attr('width', this.imageSettings.imagesWidth)
+            .attr('height', this.imageSettings.imagesHeight)
+            .attr('x', singleImage.imageData_x - 50)
+
+            .attr('y', singleImage.imageData_y)
+
+            .on("click", () => {
+                console.log(singleImage.imageData_image)
+                if (singleImage.imageData_image) {
+                    this.host.launchUrl(singleImage.imageData_image)
+                }
+
+            });
+        }
+        else //using element and X and Y
+        {
+            let image = this.container.append('image')
+            .attr('xlink:href', element.image)
+            .attr('width', this.imageSettings.imagesWidth)
+            .attr('height', this.imageSettings.imagesHeight)
+            .attr('x', imageX)
+            .attr('y', imageY)
+
+            .on("click", () => {
+                if (element.URL) 
+                {
+                    this.host.launchUrl(element.URL)
+                }
+            });
+        }
         
     }
     private createAnnotation(element: DataPoint, i: number, arrayOfMakeAnnotations: any[]) {
@@ -1406,7 +1416,7 @@ export class Visual implements IVisual {
             let current_date
             let pictureHeight = 1;
             
-            if(this.imageSettings.style === "alternateVertical") 
+            if(this.imageSettings.style === "alternateVertical" && this.styleSettings.timelineStyle === "line" ||this.styleSettings.timelineStyle === "bar") 
             {
                 state.finalMarginTop = state.finalMarginTop + amountOfMarginToIncrease;
             }           
