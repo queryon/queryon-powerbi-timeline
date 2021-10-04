@@ -43,6 +43,8 @@ type Selection<T extends d3.BaseType> = d3.Selection<T, any, any, any>;
 let  amountOfMarginToIncrease = 0 //these are hacky and need to be fixed before launch
 let enumAmount = 2
 
+let shouldAlernateGlobal = true
+
 export class Visual implements IVisual {
 
     private readonly defaultPadding = 15; // Extracted implicitly from use
@@ -680,23 +682,15 @@ export class Visual implements IVisual {
             if (firstRect.x === compareRect.x) //if touching they are technically overlapping.
             {
                 return false;
-                //console.log("The rectangles do not overlap AND ARE TOUCHING ");
             }
 
             else if (overlap) 
-            {
-                
+            {            
                 return true;
-
-                //console.log("overlap")
-                
-                //imageY -= this.imageSettings.imagesHeight // Need to find a way to use recurrion to go through
-                //i = i - 1;
             } 
             else 
             {
                 return false;
-                //console.log("The rectangles do not overlap");
             }
         }
         return false;
@@ -724,7 +718,7 @@ export class Visual implements IVisual {
 
         let arrayOfMakeAnnotations: any[] = []
 
-
+        shouldAlernateGlobal = true
         // let pixelWidth = (this.width - this.padding * 2) / data.length
 
         state.filteredData.forEach((element, i) => {
@@ -865,12 +859,14 @@ export class Visual implements IVisual {
                                     
                                     RowDataArray[i].rowData_numberOfImages = RowDataArray[i].rowData_numberOfImages + 1
 
-                                    if(element.top) //this is for future implementation of this feature supporting it go down
+                                    if(element.top) //Text is on top. Images need to move down
                                     {
-                                        imageY = RowDataArray[i].rowData_firstImage.imageData_y - (RowDataArray[i].rowData_numberOfImages * this.imageSettings.imagesHeight) + this.imageSettings.imagesHeight
+                                        console.log("BOTTMO")
+                                        imageY = RowDataArray[i].rowData_firstImage.imageData_y + (RowDataArray[i].rowData_numberOfImages * this.imageSettings.imagesHeight) + this.imageSettings.imagesHeight
                                     }
                                     else
                                     {
+                                        
                                         imageY = RowDataArray[i].rowData_firstImage.imageData_y - (RowDataArray[i].rowData_numberOfImages * this.imageSettings.imagesHeight) + this.imageSettings.imagesHeight
                                     }
 
@@ -899,10 +895,20 @@ export class Visual implements IVisual {
                             {
 
                                 if(this.isImageOverlapping(element["x"], imageY, singleImageArray[i].imageData_x, singleImageArray[i].imageData_y)) //if image is overlaping make imageIsAddedAboveRow true
-                                {
+                                {   
+                                    if(element.top) //Text is on top. Images need to move down
+                                    {
+                                        console.log("BOTTMO2")
+                                        imageY = imageY + this.imageSettings.imagesHeight
+                                        imageIsAddedAboveRow = true
+                                    }
+                                    else
+                                    {
+                                        
+                                        imageY = imageY - this.imageSettings.imagesHeight
+                                        imageIsAddedAboveRow = true
+                                    }
 
-                                    imageY = imageY - this.imageSettings.imagesHeight
-                                    imageIsAddedAboveRow = true
                                     
                                 }
                             }
@@ -966,7 +972,16 @@ export class Visual implements IVisual {
         { 
             this.createAnnotation(element, i, arrayOfMakeAnnotations)       
         })
-        
+        for(var o = 0; o < RowDataArray.length; o++)
+        {
+            if(RowDataArray[o].rowData_shouldAlternate === false)
+            {
+                shouldAlernateGlobal = false
+                
+                
+            }
+        }
+        console.log(RowDataArray)
     }
 
     private getAmountOfMarginToIncrease(RowDataArray: any) //When using alternateVertical images need to be drawn and then Margin can be calculated. This requires an update call twice.
@@ -1416,9 +1431,14 @@ export class Visual implements IVisual {
             let current_date
             let pictureHeight = 1;
             
-            if(this.imageSettings.style === "alternateVertical" && this.styleSettings.timelineStyle === "line" ||this.styleSettings.timelineStyle === "bar") 
+            if(i === 1 && this.imageSettings.style === "alternateVertical" && this.styleSettings.timelineStyle === "line" ||this.styleSettings.timelineStyle === "bar") 
             {
+                if(amountOfMarginToIncrease === 0 && shouldAlernateGlobal === false)
+                {
+                    amountOfMarginToIncrease = 100
+                }
                 state.finalMarginTop = state.finalMarginTop + amountOfMarginToIncrease;
+
             }           
 
             if (this.styleSettings.timelineStyle !== "image") {
