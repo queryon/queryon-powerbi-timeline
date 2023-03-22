@@ -31,6 +31,7 @@ import * as FileSaver from 'file-saver';
 import { color, text, timeThursday } from "d3";
 // import { image } from "d3";
 
+import { ChartDrawingState } from './DataModel';
 
 
 import { ViewModel } from '@/interfaces';
@@ -853,7 +854,6 @@ export class Visual implements IVisual {
 
     @logExceptions()
     public update(options: VisualUpdateOptions) {
-        console.log("YADA YADA YAD22A");
 
         this.events.renderingStarted(options); // Rendering Events API START
         this.viewModel = generateViewModel(options, this.host)
@@ -874,7 +874,13 @@ export class Visual implements IVisual {
         
         //filterAndProcessData(state, this.textSettings);
 
-        filterAndProcessData(state, this.textSettings, this.styleSettings, this.minVal, this.maxVal, this.container, this.imageSettings, this.marginTop);
+
+        console.log("before");
+        console.log(this.fontHeightLib);
+        // console.log(!this.fontHeightLib[`${dataPoint["textSize"]}${fontFamily}`]);
+        console.log("after");
+
+        filterAndProcessData(state, this.textSettings, this.styleSettings, this.minVal, this.maxVal, this.container, this.imageSettings, this.marginTop, this.fontHeightLib, this.svg);
 
 
 
@@ -1386,41 +1392,7 @@ export class Visual implements IVisual {
 
         return result
     }
-    private getTextHeight(textString: string, textSize: number, fontFamily: string, wrappedText: boolean) {
-        let textData = [textString]
-
-        let textHeight
-
-
-        let txt = this.svg.append('g')
-            .selectAll('.dummyText')
-            .data(textData)
-            .enter()
-            .append("text")
-            .attr("font-family", fontFamily)
-            .attr("font-size", textSize)
-            .text(d => {return d;})
-            .attr("y", 1)
-            .attr("x", 1)
-        if (wrappedText) {
-            txt.call(wrap, this.textSettings.wrap)
-        }
-        txt.attr("color", function (d) {
-            //Irrelevant color. ".EACH" does not work on IE and we need to iterate over the elements after they have been appended to dom.
-            let thisHeight = this.getBBox().height
-            textHeight = thisHeight
-            // this.remove()
-            if (this.parentNode) {
-                this.parentNode.removeChild(this);
-            }
-
-
-            return "white"
-        })
-
-
-        return textHeight
-    }
+    
     private getAnnotationOrientation(element: DataPoint) {
         if (element.textWidth + element.x > this.width - this.padding * 2) {
             return "right"
@@ -1588,44 +1560,7 @@ function createFormatter(format, precision?: any, value?: number) {
     return vf.create(valueFormatter)
 }
 
-function wrap(text, width) {
-    text.each(function () {
 
-        var text = d3.select(this)
-        var words = text.text().split(/\s+/).reverse()
-        var word,
-            line = [],
-            lineNumber = 0,
-            lineHeight = 1,
-            // lineHeight = 1.1, // ems
-            x = text.attr("x"),
-            y = text.attr("y"),
-            dy = 0, //parseFloat(text.attr("dy")),
-            tspan = text.text(null)
-
-                .append("tspan")
-
-                // .attr("font-family", fontFamily)
-                // .attr("font-size", textSize)
-                .attr("x", x)
-                .attr("y", y)
-                .attr("dy", dy + "em");
-        while (word = words.pop()) {
-            line.push(word);
-            tspan.text(line.join(" "));
-            if (tspan.node().getComputedTextLength() > width) {
-                line.pop();
-                tspan.text(line.join(" "));
-                line = [word];
-                tspan = text.append("tspan")
-                    .attr("x", x)
-                    .attr("y", y)
-                    .attr("dy", ++lineNumber * lineHeight + dy + "em")
-                    .text(word);
-            }
-        }
-    });
-}
 
 
 function wrapAndCrop(text, width) {
@@ -1669,58 +1604,4 @@ function wrapAndCrop(text, width) {
         }
     });
 
-}
-// function getWidth(text:string, fontSize:number, fontFace:string){
-//     var canvas = document.createElement('canvas'),
-//     context = canvas.getContext('2d');
-//     context.font = fontSize + 'px ' + fontFace;
-//     var returnValue = context.measureText(text).width;
-//     canvas.remove();
-//     return returnValue;
-// }
-
-// Quickly formed data model to handle the mess of state-tracking variables scattered about
-// This is a known set of fields that facuilitates breaking things into separate functions
-class ChartDrawingState {
-    public data: DataPoint[] = [];
-    public filteredData: DataPoint[] = [];
-    public filteredWithImage: DataPoint[] = []; // FIltered data that have images
-
-    public dateValueFormatter: vf.IValueFormatter;
-
-    public axisFormat: string;
-    public axisValueFormatter: vf.IValueFormatter;
-
-    public scale: d3.ScaleTime<number, number>;
-
-    public axisMarginTop: number;
-    public addToMargin: number;
-    public enabledAnnotations: boolean;
-    public axisPadding: number;
-    public strokeColor: string;
-
-    public finalMarginTop: number = 0;
-    public marginTopStagger: number = 20;
-    public svgHeightTracking: number = 0;
-    public finalHeight: number = 0;
-    public needScroll: boolean = false;
-
-    public spacing: number = 0;
-    public maxOffsetTop: number = 0;
-    public maxOffsetBottom: number = 0;
-    public ICSevents: ICSEvent[] = [];
-
-    public width: number = 0;
-    public bar: d3.Selection<SVGLineElement, any, any, any> | d3.Selection<SVGRectElement, any, any, any>;
-
-    public downloadTop: boolean = false;
-    public downloadBottom: boolean = false;
-
-}
-
-interface ICSEvent {
-    title: string;
-    description: string;
-    start: number[];
-    duration: {minutes: number};
 }
