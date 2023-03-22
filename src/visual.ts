@@ -880,8 +880,10 @@ export class Visual implements IVisual {
         // console.log(!this.fontHeightLib[`${dataPoint["textSize"]}${fontFamily}`]);
         console.log("after");
 
-        filterAndProcessData(state, this.textSettings, this.styleSettings, this.minVal, this.maxVal, this.container, this.imageSettings, this.marginTop, this.fontHeightLib, this.svg);
+        this.marginTop = filterAndProcessData(state, this.textSettings, this.styleSettings, this.minVal, this.maxVal, this.container, this.imageSettings, this.marginTop, this.fontHeightLib, this.svg);
 
+
+        console.log(this.marginTop);
 
 
 
