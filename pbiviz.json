@@ -1,7 +1,7 @@
 {
     "visual": {
-        "name": "Timeline by Queryon - Refactor",
-        "displayName": "Timeline by Queryon - Refactor",
+        "name": "Timeline by Queryon",
+        "displayName": "Timeline by Queryon",
         "testguid": "timelineByQueryon2DD9A171C1CB4B148AA3DD23CEF5B012",
         "guid": "timelineByQueryon2DD9A171C1CB4B148AA3DD23CEF5B2F9",
         "visualClassName": "Visual",

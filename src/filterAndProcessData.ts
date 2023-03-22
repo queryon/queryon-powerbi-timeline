@@ -3,89 +3,18 @@
 import "core-js/stable";
 import 'regenerator-runtime/runtime'
 import "./../style/visual.less";
-import powerbi from "powerbi-visuals-api";
-import VisualConstructorOptions = powerbi.extensibility.visual.VisualConstructorOptions;
-import IVisualEventService = powerbi.extensibility.IVisualEventService;
-import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
-import IVisual = powerbi.extensibility.visual.IVisual;
-import EnumerateVisualObjectInstancesOptions = powerbi.EnumerateVisualObjectInstancesOptions;
-import VisualObjectInstance = powerbi.VisualObjectInstance;
-import DataView = powerbi.DataView;
-import VisualObjectInstanceEnumerationObject = powerbi.VisualObjectInstanceEnumerationObject;
-import VisualObjectInstanceEnumeration = powerbi.VisualObjectInstanceEnumeration;
-import IVisualHost = powerbi.extensibility.visual.IVisualHost;
-import ISelectionIdBuilder = powerbi.extensibility.ISelectionIdBuilder;
-import ISelectionId = powerbi.extensibility.ISelectionId;
-import ISelectionManager = powerbi.extensibility.ISelectionManager;
-import {
-    TooltipEventArgs,
-    createTooltipServiceWrapper,
-    ITooltipServiceWrapper,
-} from 'powerbi-visuals-utils-tooltiputils'
 import * as svgAnnotations from "d3-svg-annotation";
-import {
-    valueFormatter as vf,
-} from "powerbi-visuals-utils-formattingutils";
 import * as d3 from "d3";
-import * as FileSaver from 'file-saver';
-import { color, text, timeThursday } from "d3";
-// import { image } from "d3";
+
+import { ChartDrawingState } from './DataModel';
 
 
-import { ViewModel } from '@/interfaces';
-import { AxisSettings, DownloadSettings, ImageSettings, Settings, StyleSettings, TextSettings } from "./settings";
+
+import { ImageSettings, StyleSettings, TextSettings } from "./settings";
 import { DataPoint } from "./dataPoint";
 import { DataPointAlignment } from "./dataPointAlignment";
 
 type Selection<T extends d3.BaseType> = d3.Selection<T, any, any, any>;
-
-
-
-// Quickly formed data model to handle the mess of state-tracking variables scattered about
-// This is a known set of fields that facuilitates breaking things into separate functions
-class ChartDrawingState {
-    public data: DataPoint[] = [];
-    public filteredData: DataPoint[] = [];
-    public filteredWithImage: DataPoint[] = []; // FIltered data that have images
-
-    public dateValueFormatter: vf.IValueFormatter;
-
-    public axisFormat: string;
-    public axisValueFormatter: vf.IValueFormatter;
-
-    public scale: d3.ScaleTime<number, number>;
-
-    public axisMarginTop: number;
-    public addToMargin: number;
-    public enabledAnnotations: boolean;
-    public axisPadding: number;
-    public strokeColor: string;
-
-    public finalMarginTop: number = 0;
-    public marginTopStagger: number = 20;
-    public svgHeightTracking: number = 0;
-    public finalHeight: number = 0;
-    public needScroll: boolean = false;
-
-    public spacing: number = 0;
-    public maxOffsetTop: number = 0;
-    public maxOffsetBottom: number = 0;
-    public ICSevents: ICSEvent[] = [];
-
-    public width: number = 0;
-    public bar: d3.Selection<SVGLineElement, any, any, any> | d3.Selection<SVGRectElement, any, any, any>;
-
-    public downloadTop: boolean = false;
-    public downloadBottom: boolean = false;
-
-}
-
-interface ICSEvent {
-    title: string;
-    description: string;
-    start: number[];
-    duration: { minutes: number };
-}
 
 function getWidth(text: string, fontSize: number, fontFace: string) {
     var canvas = document.createElement('canvas'),
@@ -144,7 +73,10 @@ export function filterAndProcessData(
     maxVal: any,
     container: Selection<SVGElement>,
     imageSettings: ImageSettings,
-    marginTop: number,) {
+    marginTop: number,
+    fontHeightLib: any,
+    svg: Selection<SVGElement>,
+    ) {
 
 
     const textSize = textSettings.textSize;
@@ -165,7 +97,7 @@ export function filterAndProcessData(
     } else {
         state.filteredData = state.data.filter(element => element.date >= minVal && element.date <= maxVal)
     }
-    state.filteredData.forEach((dataPoint, i) => {
+    state.filteredData.forEach((dataPoint) => {
         dataPoint["formatted"] = state.dateValueFormatter.format(dataPoint["date"])
         dataPoint["labelText"] = styleSettings.timelineStyle != "image" ? `${dataPoint["formatted"]}${textSettings.separator} ${dataPoint["label"]}` : dataPoint["label"]
         dataPoint["textColor"] = dataPoint.customFormat ? dataPoint.textColor : textColor
@@ -223,12 +155,89 @@ export function filterAndProcessData(
             //if minimalist, disconsider margin and spacing is default to one line 
             let itemHeight
 
-            if (!this.fontHeightLib[`${dataPoint["textSize"]}${fontFamily}`]) {
-                this.fontHeightLib[`${dataPoint["textSize"]}${fontFamily}`] = this.getTextHeight(dataPoint["labelText"], dataPoint["textSize"], fontFamily, false) + 3
+            if (!fontHeightLib[`${dataPoint["textSize"]}${fontFamily}`]) {
+                fontHeightLib[`${dataPoint["textSize"]}${fontFamily}`] = getTextHeight(dataPoint["labelText"], dataPoint["textSize"], fontFamily, false, svg), + 3
             }
-            itemHeight = this.fontHeightLib[`${dataPoint["textSize"]}${fontFamily}`]
+            itemHeight = fontHeightLib[`${dataPoint["textSize"]}${fontFamily}`]
             state.spacing = Math.max(itemHeight, state.spacing)
         }
 
+    });
+}
+
+function getTextHeight(textString: string, textSize: number, fontFamily: string, wrappedText: boolean, svg: Selection<SVGElement>
+    ) {
+    let textData = [textString]
+
+    let textHeight
+
+
+    let txt = svg.append('g')
+        .selectAll('.dummyText')
+        .data(textData)
+        .enter()
+        .append("text")
+        .attr("font-family", fontFamily)
+        .attr("font-size", textSize)
+        .text(d => { return d; })
+        .attr("y", 1)
+        .attr("x", 1)
+    if (wrappedText) {
+        txt.call(wrap, this.textSettings.wrap)
+    }
+    txt.attr("color", function () {
+        //Irrelevant color. ".EACH" does not work on IE and we need to iterate over the elements after they have been appended to dom.
+        let thisHeight = this.getBBox().height
+        textHeight = thisHeight
+        // this.remove()
+        if (this.parentNode) {
+            this.parentNode.removeChild(this);
+        }
+
+
+        return "white"
+    })
+
+
+    return textHeight
+}
+
+
+function wrap(text, width) {
+    text.each(function () {
+
+        var text = d3.select(this)
+        var words = text.text().split(/\s+/).reverse()
+        var word,
+            line = [],
+            lineNumber = 0,
+            lineHeight = 1,
+            // lineHeight = 1.1, // ems
+            x = text.attr("x"),
+            y = text.attr("y"),
+            dy = 0, //parseFloat(text.attr("dy")),
+            tspan = text.text(null)
+
+                .append("tspan")
+
+                // .attr("font-family", fontFamily)
+                // .attr("font-size", textSize)
+                .attr("x", x)
+                .attr("y", y)
+                .attr("dy", dy + "em");
+        while (word = words.pop()) {
+            line.push(word);
+            tspan.text(line.join(" "));
+            if (tspan.node().getComputedTextLength() > width) {
+                line.pop();
+                tspan.text(line.join(" "));
+                line = [word];
+                tspan = text.append("tspan")
+                    .attr("x", x)
+                    .attr("y", y)
+                    .attr("dy", ++lineNumber * lineHeight + dy + "em")
+                    .text(word);
+            }
+        }
     });
 }

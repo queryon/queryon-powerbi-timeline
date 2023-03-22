@@ -1,87 +1,61 @@
-
 "use strict";
 
+// Importing required modules and styles
 import "core-js/stable";
-import 'regenerator-runtime/runtime'
+import "regenerator-runtime/runtime";
 import "./../style/visual.less";
-import powerbi from "powerbi-visuals-api";
-import VisualConstructorOptions = powerbi.extensibility.visual.VisualConstructorOptions;
-import IVisualEventService = powerbi.extensibility.IVisualEventService;
-import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
-import IVisual = powerbi.extensibility.visual.IVisual;
-import EnumerateVisualObjectInstancesOptions = powerbi.EnumerateVisualObjectInstancesOptions;
-import VisualObjectInstance = powerbi.VisualObjectInstance;
-import DataView = powerbi.DataView;
-import VisualObjectInstanceEnumerationObject = powerbi.VisualObjectInstanceEnumerationObject;
-import VisualObjectInstanceEnumeration = powerbi.VisualObjectInstanceEnumeration;
-import IVisualHost = powerbi.extensibility.visual.IVisualHost;
-import ISelectionIdBuilder = powerbi.extensibility.ISelectionIdBuilder;
-import ISelectionId = powerbi.extensibility.ISelectionId;
-import ISelectionManager = powerbi.extensibility.ISelectionManager;
-import {
-    TooltipEventArgs,
-    createTooltipServiceWrapper,
-    ITooltipServiceWrapper,
-} from 'powerbi-visuals-utils-tooltiputils'
-import * as svgAnnotations from "d3-svg-annotation";
-import {
-    valueFormatter as vf,
-} from "powerbi-visuals-utils-formattingutils";
+import { valueFormatter as vf } from "powerbi-visuals-utils-formattingutils";
 import * as d3 from "d3";
-import * as FileSaver from 'file-saver';
-import { color, text, timeThursday } from "d3";
-// import { image } from "d3";
 
-
-import { ViewModel } from '@/interfaces';
-import { AxisSettings, DownloadSettings, ImageSettings, Settings, StyleSettings, TextSettings } from "./settings";
+// Importing data point structure
 import { DataPoint } from "./dataPoint";
-import { DataPointAlignment } from "./dataPointAlignment";
 
-type Selection<T extends d3.BaseType> = d3.Selection<T, any, any, any>;
+/**
+ * ChartDrawingState class is used to store the current state of the chart.
+ * It includes data points, formatting options, and other settings.
+ */
+export class ChartDrawingState {
+  public data: DataPoint[] = [];
+  public filteredData: DataPoint[] = [];
+  public filteredWithImage: DataPoint[] = []; // Filtered data that have images
 
+  public dateValueFormatter: vf.IValueFormatter;
 
-// This is a known set of fields that facuilitates breaking things into separate functions
-class ChartDrawingState {
-    public data: DataPoint[] = [];
-    public filteredData: DataPoint[] = [];
-    public filteredWithImage: DataPoint[] = []; // FIltered data that have images
+  public axisFormat: string;
+  public axisValueFormatter: vf.IValueFormatter;
 
-    public dateValueFormatter: vf.IValueFormatter;
+  public scale: d3.ScaleTime<number, number>;
 
-    public axisFormat: string;
-    public axisValueFormatter: vf.IValueFormatter;
+  public axisMarginTop: number;
+  public addToMargin: number;
+  public enabledAnnotations: boolean;
+  public axisPadding: number;
+  public strokeColor: string;
 
-    public scale: d3.ScaleTime<number, number>;
+  public finalMarginTop: number = 0;
+  public marginTopStagger: number = 20;
+  public svgHeightTracking: number = 0;
+  public finalHeight: number = 0;
+  public needScroll: boolean = false;
 
-    public axisMarginTop: number;
-    public addToMargin: number;
-    public enabledAnnotations: boolean;
-    public axisPadding: number;
-    public strokeColor: string;
+  public spacing: number = 0;
+  public maxOffsetTop: number = 0;
+  public maxOffsetBottom: number = 0;
+  public ICSevents: ICSEvent[] = [];
 
-    public finalMarginTop: number = 0;
-    public marginTopStagger: number = 20;
-    public svgHeightTracking: number = 0;
-    public finalHeight: number = 0;
-    public needScroll: boolean = false;
+  public width: number = 0;
+  public bar: d3.Selection<SVGLineElement, any, any, any> | d3.Selection<SVGRectElement, any, any, any>;
 
-    public spacing: number = 0;
-    public maxOffsetTop: number = 0;
-    public maxOffsetBottom: number = 0;
-    public ICSevents: ICSEvent[] = [];
-
-    public width: number = 0;
-    public bar: d3.Selection<SVGLineElement, any, any, any> | d3.Selection<SVGRectElement, any, any, any>;
-
-    public downloadTop: boolean = false;
-    public downloadBottom: boolean = false;
-
+  public downloadTop: boolean = false;
+  public downloadBottom: boolean = false;
 }
 
+/**
+ * ICSEvent interface represents an event with its title, description, start time, and duration.
+ */
 interface ICSEvent {
-    title: string;
-    description: string;
-    start: number[];
-    duration: { minutes: number };
+  title: string;
+  description: string;
+  start: number[];
+  duration: { minutes: number };
 }
