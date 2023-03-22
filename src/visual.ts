@@ -38,6 +38,24 @@ import { AxisSettings, DownloadSettings, ImageSettings, Settings, StyleSettings,
 import { DataPoint } from "./dataPoint";
 import { DataPointAlignment } from "./dataPointAlignment";
 
+import { filterAndProcessData } from './filterAndProcessData'; // Import the function
+
+
+export function logExceptions(): MethodDecorator {
+    return function (target: Object, propertyKey: string, descriptor: TypedPropertyDescriptor<any>): TypedPropertyDescriptor<any> {
+        return {
+            value: function () {
+                try {
+                    return descriptor.value.apply(this, arguments);
+                } catch (e) {
+                    console.error(e);
+                    throw e;
+                }
+            }
+        }
+    }
+}
+
 
 type Selection<T extends d3.BaseType> = d3.Selection<T, any, any, any>;
 
@@ -267,89 +285,89 @@ export class Visual implements IVisual {
         }
     }
 
-    private filterAndProcessData(state: ChartDrawingState) {
-        const textSize = this.textSettings.textSize;
-        const textColor = this.textSettings.textColor.solid.color;
-        const fontFamily = this.textSettings.fontFamily;
-        const iconsColor = this.styleSettings.iconsColor.solid.color;
-        const top = this.textSettings.top;
-        const labelOrientation = this.textSettings.labelOrientation;
-        const annotationStyle = this.textSettings.annotationStyle;
+    // private filterAndProcessData(state: ChartDrawingState) {
+    //     const textSize = this.textSettings.textSize;
+    //     const textColor = this.textSettings.textColor.solid.color;
+    //     const fontFamily = this.textSettings.fontFamily;
+    //     const iconsColor = this.styleSettings.iconsColor.solid.color;
+    //     const top = this.textSettings.top;
+    //     const labelOrientation = this.textSettings.labelOrientation;
+    //     const annotationStyle = this.textSettings.annotationStyle;
 
-        //filter data out of axis range, reverse order if axis is in decremental order
-        if (this.minVal > this.maxVal) {
-            state.filteredData = state.data.filter(element => element.date <= this.minVal && element.date >= this.maxVal)
-            // data.reverse() //removed reverse so user can do their own sorting
-        } else {
-            state.filteredData = state.data.filter(element => element.date >= this.minVal && element.date <= this.maxVal)
-        }
-        state.filteredData.forEach((dataPoint, i) => {
-            dataPoint["formatted"] = state.dateValueFormatter.format(dataPoint["date"])
-            dataPoint["labelText"] = this.styleSettings.timelineStyle != "image" ? `${dataPoint["formatted"]}${this.textSettings.separator} ${dataPoint["label"]}` : dataPoint["label"]
-            dataPoint["textColor"] = dataPoint.customFormat ? dataPoint.textColor : textColor
-            dataPoint["iconColor"] = dataPoint.customFormat ? dataPoint.iconColor : iconsColor
-            dataPoint["fontFamily"] = dataPoint.customFormat ? dataPoint.fontFamily : fontFamily
-            dataPoint["textSize"] = dataPoint.customFormat ? dataPoint.textSize : textSize
-            dataPoint["top"] = dataPoint.customFormat ? dataPoint.top : top
-            dataPoint["labelOrientation"] = dataPoint.customFormat ? dataPoint.labelOrientation : labelOrientation
-            dataPoint["annotationStyle"] = dataPoint.customFormat ? dataPoint.annotationStyle : annotationStyle
-            dataPoint["textWidth"] = this.styleSettings.timelineStyle == "minimalist" ? 0 : Math.min(this.textSettings.wrap, getWidth(dataPoint["labelText"], dataPoint["textSize"], fontFamily));  // this.getTextWidth(dataPoint["labelText"], dataPoint["textSize"], fontFamily)
-            // dataPoint["textHeight"] = this.getTextHeight(dataPoint["labelText"], dataPoint["textSize"], fontFamily, true) + 3
-            dataPoint["textHeight"] = this.styleSettings.timelineStyle == "minimalist" ? 0 : this.getAnnotationHeight(dataPoint)
+    //     //filter data out of axis range, reverse order if axis is in decremental order
+    //     if (this.minVal > this.maxVal) {
+    //         state.filteredData = state.data.filter(element => element.date <= this.minVal && element.date >= this.maxVal)
+    //         // data.reverse() //removed reverse so user can do their own sorting
+    //     } else {
+    //         state.filteredData = state.data.filter(element => element.date >= this.minVal && element.date <= this.maxVal)
+    //     }
+    //     state.filteredData.forEach((dataPoint, i) => {
+    //         dataPoint["formatted"] = state.dateValueFormatter.format(dataPoint["date"])
+    //         dataPoint["labelText"] = this.styleSettings.timelineStyle != "image" ? `${dataPoint["formatted"]}${this.textSettings.separator} ${dataPoint["label"]}` : dataPoint["label"]
+    //         dataPoint["textColor"] = dataPoint.customFormat ? dataPoint.textColor : textColor
+    //         dataPoint["iconColor"] = dataPoint.customFormat ? dataPoint.iconColor : iconsColor
+    //         dataPoint["fontFamily"] = dataPoint.customFormat ? dataPoint.fontFamily : fontFamily
+    //         dataPoint["textSize"] = dataPoint.customFormat ? dataPoint.textSize : textSize
+    //         dataPoint["top"] = dataPoint.customFormat ? dataPoint.top : top
+    //         dataPoint["labelOrientation"] = dataPoint.customFormat ? dataPoint.labelOrientation : labelOrientation
+    //         dataPoint["annotationStyle"] = dataPoint.customFormat ? dataPoint.annotationStyle : annotationStyle
+    //         dataPoint["textWidth"] = this.styleSettings.timelineStyle == "minimalist" ? 0 : Math.min(this.textSettings.wrap, getWidth(dataPoint["labelText"], dataPoint["textSize"], fontFamily));  // this.getTextWidth(dataPoint["labelText"], dataPoint["textSize"], fontFamily)
+    //         // dataPoint["textHeight"] = this.getTextHeight(dataPoint["labelText"], dataPoint["textSize"], fontFamily, true) + 3
+    //         dataPoint["textHeight"] = this.styleSettings.timelineStyle == "minimalist" ? 0 : this.getAnnotationHeight(dataPoint)
 
-            let startTime = [dataPoint.date.getFullYear(), dataPoint.date.getMonth() + 1, dataPoint.date.getDate(), dataPoint.date.getHours(), dataPoint.date.getMinutes()];
+    //         let startTime = [dataPoint.date.getFullYear(), dataPoint.date.getMonth() + 1, dataPoint.date.getDate(), dataPoint.date.getHours(), dataPoint.date.getMinutes()];
 
-            state.ICSevents.push({
-                title: dataPoint.label,
-                description: dataPoint.description,
-                // startInputType: 'utc',
-                start: startTime,
-                duration: { minutes: 30 }
-            })
+    //         state.ICSevents.push({
+    //             title: dataPoint.label,
+    //             description: dataPoint.description,
+    //             // startInputType: 'utc',
+    //             start: startTime,
+    //             duration: { minutes: 30 }
+    //         })
 
-            //increment image height on staggered image view
-            if (dataPoint.image && (this.imageSettings.style == "default")) {// || this.imageSettings.style == "image")) {
-                dataPoint["textHeight"] += (this.imageSettings.imagesHeight + 2)
+    //         //increment image height on staggered image view
+    //         if (dataPoint.image && (this.imageSettings.style == "default")) {// || this.imageSettings.style == "image")) {
+    //             dataPoint["textHeight"] += (this.imageSettings.imagesHeight + 2)
 
-            }
+    //         }
 
-            //add heights to margin conditionally:
-            if (this.styleSettings.timelineStyle !== "minimalist") {
-                if (!state.spacing || state.spacing < dataPoint["textHeight"]) {
-                    state.spacing = dataPoint["textHeight"]
-                }
-                if (this.styleSettings.timelineStyle !== "image") {
-                    if (dataPoint["top"]) {
-                        this.marginTop = Math.max(this.marginTop, dataPoint["textHeight"] + 30)
+    //         //add heights to margin conditionally:
+    //         if (this.styleSettings.timelineStyle !== "minimalist") {
+    //             if (!state.spacing || state.spacing < dataPoint["textHeight"]) {
+    //                 state.spacing = dataPoint["textHeight"]
+    //             }
+    //             if (this.styleSettings.timelineStyle !== "image") {
+    //                 if (dataPoint["top"]) {
+    //                     this.marginTop = Math.max(this.marginTop, dataPoint["textHeight"] + 30)
 
-                        if (dataPoint.customVertical) {
-                            state.maxOffsetTop = Math.max(state.maxOffsetTop, dataPoint.verticalOffset)
-                        }
-                    } else {
-                        if (dataPoint.customVertical) {
-                            state.maxOffsetBottom = Math.max(state.maxOffsetBottom, dataPoint.verticalOffset)
-                        }
-                        //add to margin case text is bottom and image is on top (alternate and straight styles)
-                        if (dataPoint.image) {
-                            this.marginTop = Math.max(this.marginTop, state.addToMargin)
-                        }
-                    }
+    //                     if (dataPoint.customVertical) {
+    //                         state.maxOffsetTop = Math.max(state.maxOffsetTop, dataPoint.verticalOffset)
+    //                     }
+    //                 } else {
+    //                     if (dataPoint.customVertical) {
+    //                         state.maxOffsetBottom = Math.max(state.maxOffsetBottom, dataPoint.verticalOffset)
+    //                     }
+    //                     //add to margin case text is bottom and image is on top (alternate and straight styles)
+    //                     if (dataPoint.image) {
+    //                         this.marginTop = Math.max(this.marginTop, state.addToMargin)
+    //                     }
+    //                 }
 
-                }
-            }
-            else {
-                //if minimalist, disconsider margin and spacing is default to one line 
-                let itemHeight
+    //             }
+    //         }
+    //         else {
+    //             //if minimalist, disconsider margin and spacing is default to one line 
+    //             let itemHeight
 
-                if (!this.fontHeightLib[`${dataPoint["textSize"]}${fontFamily}`]) {
-                    this.fontHeightLib[`${dataPoint["textSize"]}${fontFamily}`] = this.getTextHeight(dataPoint["labelText"], dataPoint["textSize"], fontFamily, false) + 3
-                }
-                itemHeight = this.fontHeightLib[`${dataPoint["textSize"]}${fontFamily}`]
-                state.spacing = Math.max(itemHeight, state.spacing)
-            }
+    //             if (!this.fontHeightLib[`${dataPoint["textSize"]}${fontFamily}`]) {
+    //                 this.fontHeightLib[`${dataPoint["textSize"]}${fontFamily}`] = this.getTextHeight(dataPoint["labelText"], dataPoint["textSize"], fontFamily, false) + 3
+    //             }
+    //             itemHeight = this.fontHeightLib[`${dataPoint["textSize"]}${fontFamily}`]
+    //             state.spacing = Math.max(itemHeight, state.spacing)
+    //         }
 
-        });
-    }
+    //     });
+    // }
 
     /** If the data size is too large for the view type, this notified the user 
      * @returns True if the size is too large. False if it's fine.
@@ -831,9 +849,12 @@ export class Visual implements IVisual {
         this.marginTop = this.defaultMarginTop;
         this.padding = this.defaultPadding
     }
+    
 
-
+    @logExceptions()
     public update(options: VisualUpdateOptions) {
+        console.log("YADA YADA YAD22A");
+
         this.events.renderingStarted(options); // Rendering Events API START
         this.viewModel = generateViewModel(options, this.host)
         const state: ChartDrawingState = new ChartDrawingState();
@@ -847,7 +868,17 @@ export class Visual implements IVisual {
         this.setDataRange(this.viewModel.dataPoints); // Set the date range of the timeline based on the data
         state.addToMargin = this.getAdditionalMargin();
         state.dateValueFormatter = this.createDateFormatter(options);
-        this.filterAndProcessData(state);
+
+
+
+        
+        //filterAndProcessData(state, this.textSettings);
+
+        filterAndProcessData(state, this.textSettings, this.styleSettings, this.minVal, this.maxVal, this.container, this.imageSettings, this.marginTop);
+
+
+
+
         state.filteredWithImage = state.filteredData.filter(el => el.image)
         const filteredData = state.filteredData; // Array Refernece used to reduce call length
         //min label width from annotation plugin
@@ -1639,14 +1670,14 @@ function wrapAndCrop(text, width) {
     });
 
 }
-function getWidth(text:string, fontSize:number, fontFace:string){
-    var canvas = document.createElement('canvas'),
-    context = canvas.getContext('2d');
-    context.font = fontSize + 'px ' + fontFace;
-    var returnValue = context.measureText(text).width;
-    canvas.remove();
-    return returnValue;
-}
+// function getWidth(text:string, fontSize:number, fontFace:string){
+//     var canvas = document.createElement('canvas'),
+//     context = canvas.getContext('2d');
+//     context.font = fontSize + 'px ' + fontFace;
+//     var returnValue = context.measureText(text).width;
+//     canvas.remove();
+//     return returnValue;
+// }
 
 // Quickly formed data model to handle the mess of state-tracking variables scattered about
 // This is a known set of fields that facuilitates breaking things into separate functions
