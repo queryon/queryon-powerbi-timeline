@@ -62,14 +62,23 @@ type Selection<T extends d3.BaseType> = d3.Selection<T, any, any, any>;
 
 export class Visual implements IVisual {
 
-    private readonly defaultPadding = 15; // Extracted implicitly from use
-    private readonly maxPadding = 30; // Extracted implicitly from use
-    private readonly defaultMarginTop = 10; // Extracted implicitly from use
+    // defaultPadding: the default padding for the visual
+    private readonly defaultPadding = 15;
+    
+    // maxPadding: the maximum padding for the visual
+    private readonly maxPadding = 30;
 
+    // defaultMarginTop: the default margin top for the visual
+    private readonly defaultMarginTop = 10;
+
+    // events: the event service for the visual
     private events: IVisualEventService;
 
     private host: IVisualHost;
+
+    // svg: the SVG element for the visual
     private svg: Selection<SVGElement>;
+
     private container: Selection<SVGElement>;
     private padding: number = this.defaultPadding;
     private width: number;
@@ -124,6 +133,8 @@ export class Visual implements IVisual {
             options.host.tooltipService,
             options.element);
         this.fontHeightLib = {}
+
+
     }
 
     // Handle context menu - right click 
@@ -835,6 +846,7 @@ export class Visual implements IVisual {
     }
 
 
+
     private handleInitialRendering(options: VisualUpdateOptions, state: ChartDrawingState) {
         this.events.renderingStarted(options); // Rendering Events API START
         this.viewModel = generateViewModel(options, this.host)
@@ -868,21 +880,21 @@ export class Visual implements IVisual {
         if (!this.textSettings.boldTitles) {
             this.container.selectAll('.annotationSelector  .annotation-note-title ').style('font-weight', "normal");
         }
-    
+
         // Handle context menu - right click
         this.svg.on('contextmenu', contextFunction => { this.handleContextMenuRightClick(); });
-    
+
         // Handles click on/out bar
         this.svg.on('click', clickFunction => { this.handleSvgClick(); });
-    
+
         // Handles mouseover
         this.svg.on('mouseover', mouseoverFunction => { this.handleMouseOver(); });
-    
+
         // Setup download calendar if enabled
         if (this.downloadSettings.downloadCalendar) {
             this.setupDownloadCalendar(state);
         }
-    
+
         // Rendering Events API FINISH
         this.events.renderingFinished(options);
     }
