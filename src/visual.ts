@@ -39,7 +39,8 @@ import { AxisSettings, DownloadSettings, ImageSettings, Settings, StyleSettings,
 import { DataPoint } from "./dataPoint";
 import { DataPointAlignment } from "./dataPointAlignment";
 
-import { filterAndProcessData } from './filterAndProcessData'; // Import the function
+import { filterAndProcessData } from './filterAndProcessData'; // Import the function'
+import { handleInteractions } from './mouseActions';
 
 
 export function logExceptions(): MethodDecorator {
@@ -64,7 +65,7 @@ export class Visual implements IVisual {
 
     // defaultPadding: the default padding for the visual
     private readonly defaultPadding = 15;
-    
+
     // maxPadding: the maximum padding for the visual
     private readonly maxPadding = 30;
 
@@ -137,69 +138,69 @@ export class Visual implements IVisual {
 
     }
 
-    // Handle context menu - right click 
-    private handleContextMenuRightClick() {
-        const mouseEvent: MouseEvent = <MouseEvent>d3.event;
-        const eventTarget: EventTarget = mouseEvent.target;
-        let dataPoint: any = d3.select(<Element>eventTarget).datum();
-        this.selectionManager.showContextMenu(dataPoint ? dataPoint.selectionId : {}, {
-            x: mouseEvent.clientX,
-            y: mouseEvent.clientY
-        });
-        mouseEvent.preventDefault();
-    }
+    // // Handle context menu - right click 
+    // private handleContextMenuRightClick() {
+    //     const mouseEvent: MouseEvent = <MouseEvent>d3.event;
+    //     const eventTarget: EventTarget = mouseEvent.target;
+    //     let dataPoint: any = d3.select(<Element>eventTarget).datum();
+    //     this.selectionManager.showContextMenu(dataPoint ? dataPoint.selectionId : {}, {
+    //         x: mouseEvent.clientX,
+    //         y: mouseEvent.clientY
+    //     });
+    //     mouseEvent.preventDefault();
+    // }
 
-    // Handle click on/out bar  
-    private handleSvgClick() {
-        const mouseEvent: MouseEvent = <MouseEvent>d3.event;
-        const eventTarget: EventTarget = mouseEvent.target;
-        let dataPoint: any = d3.select(<Element>eventTarget).datum();
-        if (dataPoint) {
+    // // Handle click on/out bar  
+    // private handleSvgClick() {
+    //     const mouseEvent: MouseEvent = <MouseEvent>d3.event;
+    //     const eventTarget: EventTarget = mouseEvent.target;
+    //     let dataPoint: any = d3.select(<Element>eventTarget).datum();
+    //     if (dataPoint) {
 
-        } else {
-            this.selectionManager.clear().then(() => {
-                if (this.styleSettings.timelineStyle == "minimalist") {
-                    d3.selectAll('.annotationSelector').style('opacity', 1)
-                    d3.selectAll('.minIconSelector').style('opacity', 1)
-                } else {
-                    this.container.selectAll('.annotationSelector').style('font-weight', "normal")
+    //     } else {
+    //         this.selectionManager.clear().then(() => {
+    //             if (this.styleSettings.timelineStyle == "minimalist") {
+    //                 d3.selectAll('.annotationSelector').style('opacity', 1)
+    //                 d3.selectAll('.minIconSelector').style('opacity', 1)
+    //             } else {
+    //                 this.container.selectAll('.annotationSelector').style('font-weight', "normal")
 
-                    if (!this.textSettings.boldTitles) {
-                        this.container.selectAll('.annotationSelector  .annotation-note-title ').style('font-weight', "normal")
-                    }
-                }
-            })
-        }
-    }
+    //                 if (!this.textSettings.boldTitles) {
+    //                     this.container.selectAll('.annotationSelector  .annotation-note-title ').style('font-weight', "normal")
+    //                 }
+    //             }
+    //         })
+    //     }
+    // }
 
-    private handleMouseOver() {
-        const mouseEvent: MouseEvent = <MouseEvent>d3.event;
-        const eventTarget: EventTarget = mouseEvent.target;
-        let args = []
-        let dataPoint: any = d3.select(<Element>eventTarget).datum();
+    // private handleMouseOver() {
+    //     const mouseEvent: MouseEvent = <MouseEvent>d3.event;
+    //     const eventTarget: EventTarget = mouseEvent.target;
+    //     let args = []
+    //     let dataPoint: any = d3.select(<Element>eventTarget).datum();
 
-        if (dataPoint && dataPoint.labelColumn) {
+    //     if (dataPoint && dataPoint.labelColumn) {
 
-            args = [{
-                displayName: dataPoint.dateColumn,
-                value: dataPoint.formatted
-            },
-            {
-                displayName: dataPoint.labelColumn,
-                value: dataPoint.label
-            }]
+    //         args = [{
+    //             displayName: dataPoint.dateColumn,
+    //             value: dataPoint.formatted
+    //         },
+    //         {
+    //             displayName: dataPoint.labelColumn,
+    //             value: dataPoint.label
+    //         }]
 
-            if (dataPoint.description) {
-                args.push({
-                    displayName: dataPoint.descriptionColumn,
-                    value: dataPoint.description
-                })
-            }
-            this.tooltipServiceWrapper.addTooltip(d3.select(<Element>eventTarget),
-                (tooltipEvent: TooltipEventArgs<number>) => args,
-                (tooltipEvent: TooltipEventArgs<number>) => null);
-        }
-    }
+    //         if (dataPoint.description) {
+    //             args.push({
+    //                 displayName: dataPoint.descriptionColumn,
+    //                 value: dataPoint.description
+    //             })
+    //         }
+    //         this.tooltipServiceWrapper.addTooltip(d3.select(<Element>eventTarget),
+    //             (tooltipEvent: TooltipEventArgs<number>) => args,
+    //             (tooltipEvent: TooltipEventArgs<number>) => null);
+    //     }
+    // }
 
 
     // Douglas 2020-10-20: Unknown what the purpose of this is, just refactored it out of update()
@@ -872,23 +873,13 @@ export class Visual implements IVisual {
         this.marginTop = filterAndProcessData(state, this.textSettings, this.styleSettings, this.minVal, this.maxVal, this.container, this.imageSettings, this.marginTop, this.fontHeightLib, this.svg);
         this.processDataAndSetMargins(state, options);
         this.ConfigureTimeline(state);
-        this.handleInteractionsAndStyling(state, options);
-    }
 
-    private handleInteractionsAndStyling(state: ChartDrawingState, options: VisualUpdateOptions) {
         // Remove default bold if bold titles is off
         if (!this.textSettings.boldTitles) {
             this.container.selectAll('.annotationSelector  .annotation-note-title ').style('font-weight', "normal");
         }
 
-        // Handle context menu - right click
-        this.svg.on('contextmenu', contextFunction => { this.handleContextMenuRightClick(); });
-
-        // Handles click on/out bar
-        this.svg.on('click', clickFunction => { this.handleSvgClick(); });
-
-        // Handles mouseover
-        this.svg.on('mouseover', mouseoverFunction => { this.handleMouseOver(); });
+        handleInteractions(this.svg, this.selectionManager, this.styleSettings, this.textSettings, this.container, this.tooltipServiceWrapper)
 
         // Setup download calendar if enabled
         if (this.downloadSettings.downloadCalendar) {
@@ -898,6 +889,23 @@ export class Visual implements IVisual {
         // Rendering Events API FINISH
         this.events.renderingFinished(options);
     }
+
+    // private handleInteractions(state: ChartDrawingState, options: VisualUpdateOptions) {
+    //     // Handle context menu - right click
+    //     this.svg.on('contextmenu', contextFunction => {
+    //         handleContextMenuRightClick();
+    //     });
+    
+    //     // Handles click on/out bar
+    //     this.svg.on('click', clickFunction => {
+    //         handleSvgClick();
+    //     });
+    
+    //     // Handles mouseover
+    //     this.svg.on('mouseover', mouseoverFunction => {
+    //         handleMouseOver();
+    //     });
+    // }
 
     private ConfigureTimeline(state: ChartDrawingState) {
         state.axisFormat = this.axisSettings.dateFormat != "customJS" ? this.axisSettings.dateFormat : this.axisSettings.customJS;
