@@ -143,7 +143,7 @@ export class Visual implements IVisual {
     }
 
     private handleMouseOver() {
-        const mouseEvent: MouseEvent = <MouseEvent>d3.event ;
+        const mouseEvent: MouseEvent = <MouseEvent>d3.event;
         const eventTarget: EventTarget = mouseEvent.target;
         let args = []
         let dataPoint: any = d3.select(<Element>eventTarget).datum();
@@ -213,7 +213,7 @@ export class Visual implements IVisual {
         } else if (this.imageSettings.style == "straight") {
             return this.imageSettings.imagesHeight + 20
         }
-        return this.imageSettings.imagesHeight + 20 
+        return this.imageSettings.imagesHeight + 20
     }
 
     // Determines the Date format and generated a formatter for it 
@@ -441,9 +441,9 @@ export class Visual implements IVisual {
             .attr('fill', this.styleSettings.barColor.solid.color)
             .attr('y', state.finalMarginTop)
             .attr('height', this.barHt)
-            state.bar.exit().remove()
+        state.bar.exit().remove()
     }
-    private setupChartDrawingStateMinimalistView(state:ChartDrawingState){
+    private setupChartDrawingStateMinimalistView(state: ChartDrawingState) {
         state.enabledAnnotations = false;
         if (this.styleSettings.minimalistAxis == "bottom") {
             state.axisMarginTop = 10 + state.finalMarginTop + this.textSettings.spacing * (state.filteredData.length)
@@ -481,53 +481,53 @@ export class Visual implements IVisual {
             .attr("width", this.width - newWidth - this.padding - 10)
             .attr("height", state.svgHeightTracking);
     }
-    private appendPointsAndAnnotationsMinimalistView(state:ChartDrawingState){
+    private appendPointsAndAnnotationsMinimalistView(state: ChartDrawingState) {
         let textLateral = this.container.selectAll(".text-lateral")
-        .data(state.filteredData)
-    textLateral.exit().remove();
-    var enter = textLateral.enter()
-        .append("g").attr("class", "text-lateral")
-        .attr("clip-path", "url(#clip)")
-    enter.append("text")
-        .attr("x", 0)
-        .attr("y", (element, i) => {
-            let result = 10 + this.marginTop + this.textSettings.spacing * i
-            if (state.downloadTop) {
-                result += 35
-            }
-            return result
-        })
-        .attr('font-family', element => element.fontFamily)
-        .attr('font-size', element => element.textSize)
-        .attr("fill", el => el.textColor)
-        .attr("id", (element) => element.selectionId.getKey())
-        .text(element => element.label)
-        .attr('class', element => `annotation_selector_${element.selectionId.getKey().replace(/\W/g, '')} annotationSelector`)
-        .on('click', element => {
-            //manage highlighted formating and open links
-            this.selectionManager.select(element.selectionId).then((ids: ISelectionId[]) => {
-                if (ids.length > 0) {
-                    d3.selectAll('.annotationSelector').style('opacity', "0.1")
-                    d3.selectAll('.minIconSelector').style('opacity', "0.1")
-                    d3.selectAll(`.annotation_selector_${element["selectionId"].getKey().replace(/\W/g, '')}`).style('opacity', "1")
-                    d3.selectAll(`.min_icon_selector_${element["selectionId"].getKey().replace(/\W/g, '')}`).style('opacity', "1")
-                    //Open link 
-                    if (element.URL) {
-                        this.host.launchUrl(element.URL)
-                    }
+            .data(state.filteredData)
+        textLateral.exit().remove();
+        var enter = textLateral.enter()
+            .append("g").attr("class", "text-lateral")
+            .attr("clip-path", "url(#clip)")
+        enter.append("text")
+            .attr("x", 0)
+            .attr("y", (element, i) => {
+                let result = 10 + this.marginTop + this.textSettings.spacing * i
+                if (state.downloadTop) {
+                    result += 35
                 }
+                return result
             })
-        })
-    if (this.textSettings.boldTitles) {
-        enter.attr("font-weight", "bold")
-    }
-    textLateral = textLateral.merge(enter);
+            .attr('font-family', element => element.fontFamily)
+            .attr('font-size', element => element.textSize)
+            .attr("fill", el => el.textColor)
+            .attr("id", (element) => element.selectionId.getKey())
+            .text(element => element.label)
+            .attr('class', element => `annotation_selector_${element.selectionId.getKey().replace(/\W/g, '')} annotationSelector`)
+            .on('click', element => {
+                //manage highlighted formating and open links
+                this.selectionManager.select(element.selectionId).then((ids: ISelectionId[]) => {
+                    if (ids.length > 0) {
+                        d3.selectAll('.annotationSelector').style('opacity', "0.1")
+                        d3.selectAll('.minIconSelector').style('opacity', "0.1")
+                        d3.selectAll(`.annotation_selector_${element["selectionId"].getKey().replace(/\W/g, '')}`).style('opacity', "1")
+                        d3.selectAll(`.min_icon_selector_${element["selectionId"].getKey().replace(/\W/g, '')}`).style('opacity', "1")
+                        //Open link 
+                        if (element.URL) {
+                            this.host.launchUrl(element.URL)
+                        }
+                    }
+                })
+            })
+        if (this.textSettings.boldTitles) {
+            enter.attr("font-weight", "bold")
+        }
+        textLateral = textLateral.merge(enter);
     }
     private configureMinimalistView(state: ChartDrawingState) {
         this.setupChartDrawingStateMinimalistView(state);
         //append points and annotations
         this.appendPointsAndAnnotationsMinimalistView(state);
-        
+
         let minIcons = this.container.selectAll(".min-icons")
             .data(state.filteredData)
         minIcons.exit().remove();
@@ -573,7 +573,7 @@ export class Visual implements IVisual {
                 .attr("x", element => state.axisPadding + state.scale(element["date"]))
                 .attr("y", (element, i) => {
                     let y = 10 + (this.marginTop + this.textSettings.spacing * i) - shapeSize
-                    if (state.downloadTop) {y += 35;}
+                    if (state.downloadTop) { y += 35; }
                     return y
                 })
                 .attr("width", 2)
@@ -588,7 +588,7 @@ export class Visual implements IVisual {
                             d3.selectAll(`.annotation_selector_${element["selectionId"].key.replace(/\W/g, '')}`).style('opacity', "1")
                             d3.selectAll(`.min_icon_selector_${element["selectionId"].key.replace(/\W/g, '')}`).style('opacity', "1")
                             //Open link 
-                            if (element["URL"]) {this.host.launchUrl(element["URL"])}
+                            if (element["URL"]) { this.host.launchUrl(element["URL"]) }
                         }
                     })
                 })
@@ -596,7 +596,7 @@ export class Visual implements IVisual {
         minIcons = minIcons.merge(enterIcons)
             .style("fill", element => element["iconColor"]);
         //Add line
-        if (this.styleSettings.minimalistConnect) {            
+        if (this.styleSettings.minimalistConnect) {
             this.container.append("path")
                 .datum(state.filteredData)
                 .attr("fill", "none")
@@ -631,24 +631,29 @@ export class Visual implements IVisual {
         let imgCountTop = 0, imgCountBottom = 0, imgCounter
         state.filteredData.forEach((element, i) => {
             let orientation
-            if (element.top) {countTop++;
-                counter = countTop;}
-                 else {countBottom++;
-                counter = countBottom;}
+            if (element.top) {
+                countTop++;
+                counter = countTop;
+            }
+            else {
+                countBottom++;
+                counter = countBottom;
+            }
             element["x"] = this.padding + state.scale(element["date"])
             if (!element.customVertical) {
                 if (this.textSettings.stagger) {
-                    if (counter > 0) {element["dy"] = element.top ? this.textSettings.spacing * (-1 * (counter)) - 20 : this.textSettings.spacing * (counter) + 20}
-                     else {element["dy"] = element.top ? -20 : 20}}
-                else {element["dy"] = element.top ? -20 : 20}
-                if (this.axisSettings.axis != "None" && this.styleSettings.timelineStyle !== "bar" && !element.top) {element["dy"] += 20}
-            } else {element["dy"] = element.top ? element.verticalOffset * -1 : element.verticalOffset}
-            if (element.labelOrientation !== "Auto") {orientation = element.labelOrientation}
-             else {orientation = this.getAnnotationOrientation(element)}
+                    if (counter > 0) { element["dy"] = element.top ? this.textSettings.spacing * (-1 * (counter)) - 20 : this.textSettings.spacing * (counter) + 20 }
+                    else { element["dy"] = element.top ? -20 : 20 }
+                }
+                else { element["dy"] = element.top ? -20 : 20 }
+                if (this.axisSettings.axis != "None" && this.styleSettings.timelineStyle !== "bar" && !element.top) { element["dy"] += 20 }
+            } else { element["dy"] = element.top ? element.verticalOffset * -1 : element.verticalOffset }
+            if (element.labelOrientation !== "Auto") { orientation = element.labelOrientation }
+            else { orientation = this.getAnnotationOrientation(element) }
             element.alignment = new DataPointAlignment();
             element.alignment.note.align = orientation
             annotationsData = [{
-                note: {wrap: this.textSettings.wrap,title: element.labelText,label: element.description,bgPadding: 0},
+                note: { wrap: this.textSettings.wrap, title: element.labelText, label: element.description, bgPadding: 0 },
                 x: element["x"],
                 y: this.styleSettings.timelineStyle == "bar" && !element.top ? state.finalMarginTop + this.barHt : state.finalMarginTop,
                 dy: element["dy"], color: element.textColor, id: element.selectionId
@@ -661,10 +666,10 @@ export class Visual implements IVisual {
                 makeAnnotations
                     .disable(["connector"])
             }//append images
-            if (element.isImageValid()){
-            //if (element.image) {
-                if (element.top) {imgCountTop++;imgCounter = imgCountTop;}
-                 else {imgCountBottom++;imgCounter = imgCountBottom;}
+            if (element.isImageValid()) {
+                //if (element.image) {
+                if (element.top) { imgCountTop++; imgCounter = imgCountTop; }
+                else { imgCountBottom++; imgCounter = imgCountBottom; }
                 let imageY, imageX
                 switch (this.imageSettings.style) {
                     case "default":
@@ -680,21 +685,25 @@ export class Visual implements IVisual {
                         break;
                     default:
                         imageY = element.top ? state.finalMarginTop + 20 : 0
-                        if (state.downloadTop) {imageY += 35;}
-                        if (imgCounter % 2 == 0) {imageY += this.imageSettings.imagesHeight;}
+                        if (state.downloadTop) { imageY += 35; }
+                        if (imgCounter % 2 == 0) { imageY += this.imageSettings.imagesHeight; }
                         if (this.styleSettings.timelineStyle == "bar" && element.top) { imageY += this.barHt }
-                        break;}
+                        break;
+                }
                 imageX = !imageX ? element.x - (this.imageSettings.imagesWidth / 2) : imageX
                 if (this.imageSettings.style != "default") {
                     let connector = this.container.append("line")
                         .attr("x1", element.x)
-                        .attr("y1", () => {let result = state.finalMarginTop
-                            if (this.styleSettings.timelineStyle == "bar" && element.top) {result += this.barHt}
-                            return result})
+                        .attr("y1", () => {
+                            let result = state.finalMarginTop
+                            if (this.styleSettings.timelineStyle == "bar" && element.top) { result += this.barHt }
+                            return result
+                        })
                         .attr("x2", element.x)
                         .attr("y2", element.top ? imageY : imageY + this.imageSettings.imagesHeight)
                         .attr("stroke-width", 1)
-                        .attr("stroke", element.textColor);}
+                        .attr("stroke", element.textColor);
+                }
                 let image = this.container.append('image')
                     //.attr('src', element.image)
                     .attr('xlink:href', element.image)
@@ -702,7 +711,8 @@ export class Visual implements IVisual {
                     .attr('height', this.imageSettings.imagesHeight)
                     .attr('x', imageX)
                     .attr('y', imageY)
-                    .on("click", () => {if (element.URL) {this.host.launchUrl(element.URL);}});}
+                    .on("click", () => { if (element.URL) { this.host.launchUrl(element.URL); } });
+            }
             this.container
                 .append("g")
                 .attr('class', `annotation_selector_${element.selectionId.getKey().replace(/\W/g, '')} annotationSelector`)
@@ -715,14 +725,17 @@ export class Visual implements IVisual {
                         if (ids.length > 0) {
                             d3.select(`.selector_${element.selectionId.getKey().replace(/\W/g, '')}`).style('fill-opacity', 1)
                             this.container.selectAll('.annotationSelector').style('font-weight', "normal")
-                            if (!this.textSettings.boldTitles) {this.container.selectAll('.annotationSelector  .annotation-note-title ').style('font-weight', "normal")}
+                            if (!this.textSettings.boldTitles) { this.container.selectAll('.annotationSelector  .annotation-note-title ').style('font-weight', "normal") }
                             d3.selectAll(`.annotation_selector_${element.selectionId.getKey().replace(/\W/g, '')}`).style('font-weight', "bold")
                             d3.selectAll(`.annotation_selector_${element.selectionId.getKey().replace(/\W/g, '')}  .annotation-note-title `).style('font-weight', "bold")
-                            if (element.URL) {this.host.launchUrl(element.URL)}
-                        } else {this.container.selectAll('.annotationSelector').style('font-weight', "normal")
-                            if (!this.textSettings.boldTitles) {this.container.selectAll('.annotationSelector .annotation-note-title').style('font-weight', "normal")}
+                            if (element.URL) { this.host.launchUrl(element.URL) }
+                        } else {
+                            this.container.selectAll('.annotationSelector').style('font-weight', "normal")
+                            if (!this.textSettings.boldTitles) { this.container.selectAll('.annotationSelector .annotation-note-title').style('font-weight', "normal") }
                         }
-                    })})})
+                    })
+                })
+        })
     }
 
     private configureImagesTimeline(state: ChartDrawingState) {
@@ -731,14 +744,14 @@ export class Visual implements IVisual {
         let countTop = 0, countBottom = 0, counter
         let imgCountTop = 0, imgCountBottom = 0, imgCounter
         state.finalHeight = state.filteredWithImage.length > 0 ? state.finalMarginTop + this.imageSettings.imagesHeight + 30 + state.spacing : state.finalMarginTop + 30 + state.spacing
-        if (state.downloadBottom) {state.finalHeight += 35}
+        if (state.downloadBottom) { state.finalHeight += 35 }
         this.width = Math.max(state.filteredData.length * (this.textSettings.wrap + 10) + 20, this.width - 4)
         this.svg.attr("height", state.finalHeight);
         this.svg.attr("width", this.width);
         state.filteredData.forEach((element, i) => {
             let orientation
-            if (element.top) {countTop++;counter = countTop;}
-             else {countBottom++;counter = countBottom;}
+            if (element.top) { countTop++; counter = countTop; }
+            else { countBottom++; counter = countBottom; }
             element["x"] = i == 0 ? this.padding : this.padding + ((this.textSettings.wrap + 10) * i)
             element["dy"] = this.imageSettings.imagesHeight / 2 + 10
             orientation = "left"
@@ -746,9 +759,9 @@ export class Visual implements IVisual {
             element.alignment.note.align = orientation
             if (this.axisSettings.axis == "Values") {
                 dateStyle = svgAnnotations['annotationLabel']
-                dateType = new svgAnnotations.annotationCustomType(dateStyle,element.alignment)
+                dateType = new svgAnnotations.annotationCustomType(dateStyle, element.alignment)
                 datesData = [{
-                    note: {wrap: this.textSettings.wrap,title: state.axisValueFormatter.format(element.date),bgPadding: 0},
+                    note: { wrap: this.textSettings.wrap, title: state.axisValueFormatter.format(element.date), bgPadding: 0 },
                     x: element["x"], y: state.finalMarginTop, dy: 1, color: this.axisSettings.axisColor.solid.color
                 }]
                 makeDates = svgAnnotations.annotation()
@@ -762,8 +775,8 @@ export class Visual implements IVisual {
                     .style('font-family', this.axisSettings.fontFamily)
                     .style('background-color', 'transparent')
                     .call(makeDates)
-                if (this.axisSettings.bold) {newAxis.attr('class', 'bold');newAxis.classed('notBold', false);}
-                 else {newAxis.attr('class', 'notBold'); newAxis.classed('bold', false);}
+                if (this.axisSettings.bold) { newAxis.attr('class', 'bold'); newAxis.classed('notBold', false); }
+                else { newAxis.attr('class', 'notBold'); newAxis.classed('bold', false); }
             }
             element.alignment = new DataPointAlignment();
             element.alignment.note.align = orientation
@@ -782,10 +795,10 @@ export class Visual implements IVisual {
                 .type(new svgAnnotations.annotationCustomType(element.style, element.alignment))
             makeAnnotations
                 .disable(["connector"])
-            if (element.isImageValid()){
-            //if (element.image) {
-                if (element.top) {imgCountTop++;imgCounter = imgCountTop;}
-                 else {imgCountBottom++;imgCounter = imgCountBottom;}
+            if (element.isImageValid()) {
+                //if (element.image) {
+                if (element.top) { imgCountTop++; imgCounter = imgCountTop; }
+                else { imgCountBottom++; imgCounter = imgCountBottom; }
                 let imageY = state.finalMarginTop + 25
                 let imageX = element.x
                 let image = this.container.append('image')
@@ -795,7 +808,7 @@ export class Visual implements IVisual {
                     .attr('height', this.imageSettings.imagesHeight)
                     .attr('x', imageX)
                     .attr('y', imageY)
-                    .on("click", () => {if (element.URL) {this.host.launchUrl(element.URL)}});
+                    .on("click", () => { if (element.URL) { this.host.launchUrl(element.URL) } });
             }
             this.container
                 .append("g")
@@ -809,21 +822,22 @@ export class Visual implements IVisual {
                         if (ids.length > 0) {
                             d3.select(`.selector_${element.selectionId.getKey().replace(/\W/g, '')}`).style('fill-opacity', 1)
                             this.container.selectAll('.annotationSelector').style('font-weight', "normal")
-                            if (!this.textSettings.boldTitles) 
-                            {
+                            if (!this.textSettings.boldTitles) {
                                 this.container.selectAll('.annotationSelector  .annotation-note-title ').style('font-weight', "normal")
                             }
                             d3.selectAll(`.annotation_selector_${element.selectionId.getKey().replace(/\W/g, '')}`).style('font-weight', "bold")
                             d3.selectAll(`.annotation_selector_${element.selectionId.getKey().replace(/\W/g, '')}  .annotation-note-title `).style('font-weight', "bold")
-                            if (element.URL) {this.host.launchUrl(element.URL)
+                            if (element.URL) {
+                                this.host.launchUrl(element.URL)
                             }
                         } else {
                             this.container.selectAll('.annotationSelector').style('font-weight', "normal")
-                            if (!this.textSettings.boldTitles) {this.container.selectAll('.annotationSelector .annotation-note-title').style('font-weight', "normal")}
+                            if (!this.textSettings.boldTitles) { this.container.selectAll('.annotationSelector .annotation-note-title').style('font-weight', "normal") }
                         }
                     }
-                        )
-                    })})
+                    )
+                })
+        })
     }
 
     // Sets the defalt global values, executed on every update() call
@@ -834,163 +848,180 @@ export class Visual implements IVisual {
 
 
     public update(options: VisualUpdateOptions) {
-    // Signal the start of the rendering process
-    this.events.renderingStarted(options);
+        // Signal the start of the rendering process
+        this.events.renderingStarted(options);
 
-    // Generate the view model from the incoming data
-    this.viewModel = generateViewModel(options, this.host);
-    
-    // Initialize the state object to track various aspects of the chart
-    const state: ChartDrawingState = new ChartDrawingState();
-    state.data = this.viewModel.dataPoints;
+        // Generate the view model from the incoming data
+        this.viewModel = generateViewModel(options, this.host);
 
-    // Check if the data size is within acceptable limits
-    if(this.validateDataSizeConstraints(state.data, options)) {
-        this.events.renderingFailed(options);
-        return;
-    }
+        // Initialize the state object to track various aspects of the chart
+        const state: ChartDrawingState = new ChartDrawingState();
+        state.data = this.viewModel.dataPoints;
 
-    // Clear the canvas and reset global variables
-    this.setEmptyCanvas();
-    this.setDefaultGlobals();
-
-    // Set the date range for the timeline
-    this.setDataRange(this.viewModel.dataPoints);
-
-    // Calculate additional margins for images
-    state.addToMargin = this.getAdditionalMargin();
-
-    // Create a date formatter based on user settings
-    state.dateValueFormatter = this.createDateFormatter(options);
-
-    // Process and filter the data
-    this.filterAndProcessData(state);
-
-    // Separate data points with images
-    state.filteredWithImage = state.filteredData.filter(el => el.image);
-    const filteredData = state.filteredData;
-
-    // Ensure minimum width for text wrapping
-    if (this.textSettings.wrap < 90) {this.textSettings.wrap = 90;}
-
-    // Set the width of the visual
-    if (!this.axisSettings.manualScalePixel || !this.axisSettings.customPixel || isNaN(this.axisSettings.customPixel)) {
-        this.width = options.viewport.width - 20;
-    } else {
-        this.width = this.axisSettings.customPixel;
-    }
-    this.height = options.viewport.height;
-    this.barHt = this.styleSettings.barHt;
-
-    // Adjust spacing for certain annotation styles
-    if (this.textSettings.annotationStyle === 'annotationCallout' || this.textSettings.annotationStyle === 'annotationCalloutCurve') {
-        state.spacing += 10;
-    }
-
-    // Handle auto-staggering of text
-    if (this.textSettings.autoStagger || !this.textSettings.spacing) {
-        this.textSettings.spacing = state.spacing;
-        this.host.persistProperties({merge: [{objectName: 'textSettings', selector: null, properties: { spacing: state.spacing }}]});
-    }
-
-    // Calculate top margin for staggered layout
-    state.marginTopStagger += ((filteredData.filter(element => element.top).length) * this.textSettings.spacing) + 20;
-    state.marginTopStagger = Math.max(this.marginTop, state.marginTopStagger);
-
-    // Adjust margin for images
-    if (this.imageSettings.style !== "default" && filteredData.filter(el => !el.top && el.image).length > 0) {
-        state.marginTopStagger = Math.max(state.marginTopStagger, state.addToMargin);
-    }
-
-    // Set final top margin based on style settings
-    if (this.styleSettings.timelineStyle !== "image") {
-        state.finalMarginTop = !this.textSettings.stagger || this.styleSettings.timelineStyle == "minimalist" ? this.marginTop : state.marginTopStagger;
-        if (this.styleSettings.timelineStyle != "minimalist" && filteredData.filter(el => el.top && el.customVertical).length > 0) {
-            state.finalMarginTop = Math.max(state.finalMarginTop, state.maxOffsetTop + this.textSettings.spacing);
-        }
-    } else {
-        state.finalMarginTop = 20;
-    }
-
-    // Handle download calendar positioning
-    state.downloadTop = this.downloadSettings.downloadCalendar && this.downloadSettings.position.split(",")[0] == "TOP";
-    state.downloadBottom = this.downloadSettings.downloadCalendar && this.downloadSettings.position.split(",")[0] !== "TOP";
-    if (state.downloadTop) {state.finalMarginTop += 35;}
-
-    // Set up axis formatting
-    state.axisFormat = this.axisSettings.dateFormat != "customJS" ? this.axisSettings.dateFormat : this.axisSettings.customJS;
-    state.axisValueFormatter = state.axisFormat == "same" ? state.dateValueFormatter : createFormatter(state.axisFormat);      
-
-    // Set padding and create the time scale
-    this.setPadding(state);
-    state.scale = d3.scaleTime()
-        .domain([this.minVal, this.maxVal])
-        .range([0, this.width - (this.padding * 2)]);
-
-    // Configure the chart based on the selected style
-    if (this.styleSettings.timelineStyle !== "image") {
-        this.svg.attr("width", this.width - 4);
-        switch (this.styleSettings.timelineStyle) {
-            case "line":
-                this.configureLineChart(state);
-                break;
-            case "bar":
-                this.configureBarChart(state);
-                break;
-            case "minimalist":
-                this.configureMinimalistView(state);
-                break;
-        }
-        
-        // Set the final height of the SVG
-        state.finalHeight = Math.max(this.height - 4, state.svgHeightTracking);
-        this.svg.attr("height", state.finalHeight);
-
-        // Add transparent container for scrolling if needed
-        let transparentContainer;
-        if (state.needScroll && this.styleSettings.minimalistAxis == "bottom") {
-            transparentContainer = this.container.append('rect')
-                .attr('width', this.width)
-                .attr('x', 0)
-                .attr('fill', "white")
-                .attr('y', state.axisMarginTop)
-                .attr('height', this.height);
+        // Check if the data size is within acceptable limits
+        if (this.validateDataSizeConstraints(state.data, options)) {
+            this.events.renderingFailed(options);
+            return;
         }
 
-        // Set up the axis
-        this.axisSetup(state, transparentContainer);
-        
-        // Add the "today" icon if enabled
-        this.appendTodayIcon(state);
+        // Clear the canvas and reset global variables
+        this.setEmptyCanvas();
+        this.setDefaultGlobals();
 
-        // Configure timeline annotations if enabled
-        if (state.enabledAnnotations) {
-            this.configureTimelineAnnotations(state);
+        // Set the date range for the timeline
+        this.setDataRange(this.viewModel.dataPoints);
+
+        // Calculate additional margins for images
+        state.addToMargin = this.getAdditionalMargin();
+
+        // Create a date formatter based on user settings
+        state.dateValueFormatter = this.createDateFormatter(options);
+
+        // Process and filter the data
+        this.filterAndProcessData(state);
+
+        // Separate data points with images
+        state.filteredWithImage = state.filteredData.filter(el => el.image);
+        const filteredData = state.filteredData;
+
+        // Ensure minimum width for text wrapping
+        if (this.textSettings.wrap < 90) { this.textSettings.wrap = 90; }
+
+        // Set the width of the visual
+        if (!this.axisSettings.manualScalePixel || !this.axisSettings.customPixel || isNaN(this.axisSettings.customPixel)) {
+            this.width = options.viewport.width - 20;
+        } else {
+            this.width = this.axisSettings.customPixel;
         }
-    } else {
-        // Configure the timeline for image-focused style
-        this.configureImagesTimeline(state);
+        this.height = options.viewport.height;
+        this.barHt = this.styleSettings.barHt;
+
+        // Adjust spacing for certain annotation styles
+        if (this.textSettings.annotationStyle === 'annotationCallout' || this.textSettings.annotationStyle === 'annotationCalloutCurve') {
+            state.spacing += 10;
+        }
+
+        // Handle auto-staggering of text
+        if (this.textSettings.autoStagger || !this.textSettings.spacing) {
+            this.textSettings.spacing = state.spacing;
+            this.host.persistProperties({ merge: [{ objectName: 'textSettings', selector: null, properties: { spacing: state.spacing } }] });
+        }
+
+        // Calculate top margin for staggered layout
+        state.marginTopStagger += ((filteredData.filter(element => element.top).length) * this.textSettings.spacing) + 20;
+        state.marginTopStagger = Math.max(this.marginTop, state.marginTopStagger);
+
+        // Adjust margin for images
+        if (this.imageSettings.style !== "default" && filteredData.filter(el => !el.top && el.image).length > 0) {
+            state.marginTopStagger = Math.max(state.marginTopStagger, state.addToMargin);
+        }
+
+        // Set final top margin based on style settings
+        if (this.styleSettings.timelineStyle !== "image") {
+            state.finalMarginTop = !this.textSettings.stagger || this.styleSettings.timelineStyle == "minimalist" ? this.marginTop : state.marginTopStagger;
+            if (this.styleSettings.timelineStyle != "minimalist" && filteredData.filter(el => el.top && el.customVertical).length > 0) {
+                state.finalMarginTop = Math.max(state.finalMarginTop, state.maxOffsetTop + this.textSettings.spacing);
+            }
+        } else {
+            state.finalMarginTop = 20;
+        }
+
+        // Handle download calendar positioning
+        state.downloadTop = this.downloadSettings.downloadCalendar && this.downloadSettings.position.split(",")[0] == "TOP";
+        state.downloadBottom = this.downloadSettings.downloadCalendar && this.downloadSettings.position.split(",")[0] !== "TOP";
+        if (state.downloadTop) { state.finalMarginTop += 35; }
+
+        // Set up axis formatting
+        state.axisFormat = this.axisSettings.dateFormat != "customJS" ? this.axisSettings.dateFormat : this.axisSettings.customJS;
+        state.axisValueFormatter = state.axisFormat == "same" ? state.dateValueFormatter : createFormatter(state.axisFormat);
+
+        // Set padding and create the time scale
+        this.setPadding(state);
+        state.scale = d3.scaleTime()
+            .domain([this.minVal, this.maxVal])
+            .range([0, this.width - (this.padding * 2)]);
+
+        // Configure the chart based on the selected style
+        if (this.styleSettings.timelineStyle !== "image") {
+            this.svg.attr("width", this.width - 4);
+            switch (this.styleSettings.timelineStyle) {
+                case "line":
+                    this.configureLineChart(state);
+                    break;
+                case "bar":
+                    this.configureBarChart(state);
+                    break;
+                case "minimalist":
+                    this.configureMinimalistView(state);
+                    break;
+            }
+
+            // Set the final height of the SVG
+            state.finalHeight = Math.max(this.height - 4, state.svgHeightTracking);
+            this.svg.attr("height", state.finalHeight);
+
+            // Add transparent container for scrolling if needed
+            let transparentContainer;
+            if (state.needScroll && this.styleSettings.minimalistAxis == "bottom") {
+                transparentContainer = this.container.append('rect')
+                    .attr('width', this.width)
+                    .attr('x', 0)
+                    .attr('fill', "white")
+                    .attr('y', state.axisMarginTop)
+                    .attr('height', this.height);
+            }
+
+            // Set up the axis
+            this.axisSetup(state, transparentContainer);
+
+            // Add the "today" icon if enabled
+            this.appendTodayIcon(state);
+
+            // Configure timeline annotations if enabled
+            if (state.enabledAnnotations) {
+                this.configureTimelineAnnotations(state);
+            }
+        } else {
+            // Configure the timeline for image-focused style
+            this.configureImagesTimeline(state);
+        }
+
+        // Remove bold style from titles if boldTitles is off
+        if (!this.textSettings.boldTitles) {
+            this.container.selectAll('.annotationSelector  .annotation-note-title ').style('font-weight', "normal");
+        }
+
+        // Set up event handlers
+        this.svg.on('contextmenu', contextFunction => { this.handleContextMenuRightClick() });
+        this.svg.on('click', clickFunction => { this.handleSvgClick() });
+        this.svg.on('mouseover', mouseoverFunction => { this.handleMouseOver() });
+
+        // Set up download calendar if enabled
+        if (this.downloadSettings.downloadCalendar) {
+            this.setupDownloadCalendar(state);
+        }
+
+        if (this.styleSettings.today && this.axisSettings.manualScalePixel && this.styleSettings.todayFocus) {
+            const sandboxHost: any = d3.select('#sandbox-host');
+            if (sandboxHost.node()) {
+                const containerWidth = options.viewport.width;
+                const scrollPosition = this.getScrollPositionForToday(state.scale, containerWidth);
+                sandboxHost.property('scrollLeft', scrollPosition);
+            }
+        }
+
+        // Signal the completion of the rendering process
+        this.events.renderingFinished(options);
     }
 
-    // Remove bold style from titles if boldTitles is off
-    if (!this.textSettings.boldTitles) {
-        this.container.selectAll('.annotationSelector  .annotation-note-title ').style('font-weight', "normal");
+    private getScrollPositionForToday(scale: d3.ScaleTime<number, number>, width: number): number {
+        const today = new Date();
+        const todayPosition = scale(today);
+        const scrollPosition = Math.max(0, todayPosition - width / 2);
+        return Math.min(scrollPosition, this.width - width);
     }
 
-    // Set up event handlers
-    this.svg.on('contextmenu', contextFunction => { this.handleContextMenuRightClick() });
-    this.svg.on('click', clickFunction => {this.handleSvgClick() });
-    this.svg.on('mouseover', mouseoverFunction => {this.handleMouseOver()});
-
-    // Set up download calendar if enabled
-    if (this.downloadSettings.downloadCalendar) {
-        this.setupDownloadCalendar(state);
-    }
-
-    // Signal the completion of the rendering process
-    this.events.renderingFinished(options);
-}
-    private appendTodayIcon(state:ChartDrawingState){
+    private appendTodayIcon(state: ChartDrawingState) {
         let today = new Date
         if (this.styleSettings.today && today >= this.minVal && today <= this.maxVal) {
             let todayIcon = this.container
@@ -1013,7 +1044,7 @@ export class Visual implements IVisual {
                 .style("fill", this.styleSettings.todayColor.solid.color);
         }
     }
-    private setupDownloadCalendar(state:ChartDrawingState){
+    private setupDownloadCalendar(state: ChartDrawingState) {
         const ics = require('ics')
         let orientationHorizontal = this.downloadSettings.position.split(",")[1]
         let calX
@@ -1043,7 +1074,7 @@ export class Visual implements IVisual {
                 FileSaver.saveAs(blob, `${this.downloadSettings.calendarName != "" ? this.downloadSettings.calendarName : 'calendar'}.ics`);
             });
     }
-    private axisSetup(state:ChartDrawingState, transparentContainer){
+    private axisSetup(state: ChartDrawingState, transparentContainer) {
         if (state.axisMarginTop) {
             let x_axis = d3.axisBottom(state.scale)
                 .tickFormat(d => {
@@ -1123,24 +1154,25 @@ export class Visual implements IVisual {
         }
     }
 
-    private enumerateTextSettings(objectName:string, objectEnumeration:VisualObjectInstance[]){
+    private enumerateTextSettings(objectName: string, objectEnumeration: VisualObjectInstance[]) {
         if (this.styleSettings.timelineStyle !== "minimalist" && this.styleSettings.timelineStyle !== "image") {
             objectEnumeration.push({
-                objectName: objectName,properties: {stagger: this.textSettings.stagger},selector: null
+                objectName: objectName, properties: { stagger: this.textSettings.stagger }, selector: null
             });
             if (this.textSettings.stagger) {
                 objectEnumeration.push({
-                    objectName: objectName,properties: {autoStagger: this.textSettings.autoStagger},selector: null
+                    objectName: objectName, properties: { autoStagger: this.textSettings.autoStagger }, selector: null
                 });
                 if (!this.textSettings.autoStagger) {
                     objectEnumeration.push({
-                        objectName: objectName,properties: {spacing: this.textSettings.spacing}, selector: null
+                        objectName: objectName, properties: { spacing: this.textSettings.spacing }, selector: null
                     });
                 }
             }
             objectEnumeration.push({
                 objectName: objectName,
-                properties: {wrap: this.textSettings.wrap, separator: this.textSettings.separator,
+                properties: {
+                    wrap: this.textSettings.wrap, separator: this.textSettings.separator,
                     labelOrientation: this.textSettings.labelOrientation, top: this.textSettings.top,
                     annotationStyle: this.textSettings.annotationStyle, boldTitles: this.textSettings.boldTitles,
                     fontFamily: this.textSettings.fontFamily, textSize: this.textSettings.textSize,
@@ -1151,7 +1183,8 @@ export class Visual implements IVisual {
             if (this.styleSettings.timelineStyle == "image") {
                 objectEnumeration.push({
                     objectName: objectName,
-                    properties: { wrap: this.textSettings.wrap, annotationStyle: this.textSettings.annotationStyle
+                    properties: {
+                        wrap: this.textSettings.wrap, annotationStyle: this.textSettings.annotationStyle
                     }, selector: null
                 });
             }
@@ -1160,68 +1193,77 @@ export class Visual implements IVisual {
                 properties: {
                     boldTitles: this.textSettings.boldTitles, fontFamily: this.textSettings.fontFamily,
                     textSize: this.textSettings.textSize, textColor: this.textSettings.textColor,
-                    dateFormat: this.textSettings.dateFormat }, selector: null
+                    dateFormat: this.textSettings.dateFormat
+                }, selector: null
             });
         }
         if (this.textSettings.dateFormat == "customJS") {
             objectEnumeration.push({
                 objectName: objectName,
-                properties: {customJS: this.textSettings.customJS}, selector: null
+                properties: { customJS: this.textSettings.customJS }, selector: null
             });
         }
-    }   
-    
-    private enumerateDataPointSettings(objectName:string, objectEnumeration:VisualObjectInstance[]){
+    }
+
+    private enumerateDataPointSettings(objectName: string, objectEnumeration: VisualObjectInstance[]) {
         for (let dataElement of this.viewModel.dataPoints) {//.sort((a, b) => (a.value > b.value) ? 1 : -1)) {
             objectEnumeration.push({
                 objectName: objectName, displayName: dataElement.label + " custom format",
-                properties: { customFormat: dataElement.customFormat
+                properties: {
+                    customFormat: dataElement.customFormat
                 }, selector: dataElement.selectionId.getSelector()
             });
             if (dataElement.customFormat) {
                 if (this.styleSettings.timelineStyle !== "minimalist") {
                     objectEnumeration.push({
                         objectName: objectName, displayName: dataElement.label + " Text on top",
-                        properties: { top: dataElement.top
+                        properties: {
+                            top: dataElement.top
                         }, selector: dataElement.selectionId.getSelector()
                     });
                     objectEnumeration.push({
                         objectName: objectName, displayName: dataElement.label + " Text style",
-                        properties: { annotationStyle: dataElement.annotationStyle
+                        properties: {
+                            annotationStyle: dataElement.annotationStyle
                         }, selector: dataElement.selectionId.getSelector()
                     });
                     objectEnumeration.push({
                         objectName: objectName, displayName: dataElement.label + " Text orientation",
-                        properties: { labelOrientation: dataElement.labelOrientation
+                        properties: {
+                            labelOrientation: dataElement.labelOrientation
                         }, selector: dataElement.selectionId.getSelector()
                     });
                     objectEnumeration.push({
                         objectName: objectName, displayName: dataElement.label + " Custom Vertical Offset",
-                        properties: { customVertical: dataElement.customVertical
+                        properties: {
+                            customVertical: dataElement.customVertical
                         }, selector: dataElement.selectionId.getSelector()
                     });
                     if (dataElement.customVertical) {
                         objectEnumeration.push({
                             objectName: objectName, displayName: dataElement.label + " Vertical Offset in px",
-                            properties: { verticalOffset: dataElement.verticalOffset
+                            properties: {
+                                verticalOffset: dataElement.verticalOffset
                             }, selector: dataElement.selectionId.getSelector()
                         });
                     }
                 } else {
                     objectEnumeration.push({
                         objectName: objectName, displayName: dataElement.label + " Icon Color",
-                        properties: { iconColor: dataElement.iconColor
+                        properties: {
+                            iconColor: dataElement.iconColor
                         }, selector: dataElement.selectionId.getSelector()
                     });
                 }
                 objectEnumeration.push({
                     objectName: objectName, displayName: dataElement.label + " Font Family",
-                    properties: {fontFamily: dataElement.fontFamily
+                    properties: {
+                        fontFamily: dataElement.fontFamily
                     }, selector: dataElement.selectionId.getSelector()
                 });
                 objectEnumeration.push({
                     objectName: objectName, displayName: dataElement.label + " Text Size",
-                    properties: { textSize: dataElement.textSize}, selector: dataElement.selectionId.getSelector()
+                    properties: { textSize: dataElement.textSize }, selector: dataElement.selectionId.getSelector()
                 });
                 objectEnumeration.push({
                     objectName: objectName, displayName: dataElement.label + " Text Color",
@@ -1230,8 +1272,8 @@ export class Visual implements IVisual {
             }
         }
     }
-    
-    private enumerateStyleSettings(objectName:string, objectEnumeration:VisualObjectInstance[]){
+
+    private enumerateStyleSettings(objectName: string, objectEnumeration: VisualObjectInstance[]) {
         objectEnumeration.push({
             objectName: objectName, properties: {
                 timelineStyle: this.styleSettings.timelineStyle
@@ -1279,7 +1321,9 @@ export class Visual implements IVisual {
         if (this.styleSettings.today) {
             objectEnumeration.push({
                 objectName: objectName, properties: {
-                    todayColor: this.styleSettings.todayColor, todayTop: this.styleSettings.todayTop
+                    todayColor: this.styleSettings.todayColor,
+                    todayTop: this.styleSettings.todayTop,
+                    todayFocus: this.styleSettings.todayFocus
                 }, selector: null
             });
         }
@@ -1294,18 +1338,20 @@ export class Visual implements IVisual {
         let objectEnumeration: VisualObjectInstance[] = [];
         switch (objectName) {
             case 'textSettings':
-                this.enumerateTextSettings(objectName,objectEnumeration);
+                this.enumerateTextSettings(objectName, objectEnumeration);
                 break;
             case 'axisSettings':
                 objectEnumeration.push({
                     objectName: objectName,
-                    properties: {axis: this.axisSettings.axis, axisColor: this.axisSettings.axisColor
+                    properties: {
+                        axis: this.axisSettings.axis, axisColor: this.axisSettings.axisColor
                     }, selector: null
                 });
                 if (this.axisSettings.axis !== "None") {
                     objectEnumeration.push({
                         objectName: objectName,
-                        properties: {fontSize: this.axisSettings.fontSize, fontFamily: this.axisSettings.fontFamily,
+                        properties: {
+                            fontSize: this.axisSettings.fontSize, fontFamily: this.axisSettings.fontFamily,
                             bold: this.axisSettings.bold, dateFormat: this.axisSettings.dateFormat
                         }, selector: null
                     });
@@ -1316,33 +1362,37 @@ export class Visual implements IVisual {
                     if (this.axisSettings.manualScale) {
                         objectEnumeration.push({
                             objectName: objectName,
-                            properties: { barMin: this.axisSettings.barMin, barMax: this.axisSettings.barMax
+                            properties: {
+                                barMin: this.axisSettings.barMin, barMax: this.axisSettings.barMax
                             }, selector: null
                         });
                     }
                     if (this.axisSettings.dateFormat == "customJS") {
                         objectEnumeration.push({
-                            objectName: objectName, properties: { customJS: this.axisSettings.customJS
+                            objectName: objectName, properties: {
+                                customJS: this.axisSettings.customJS
                             }, selector: null
                         });
                     }
                 }
                 objectEnumeration.push({
-                    objectName: objectName, properties: { manualScalePixel: this.axisSettings.manualScalePixel
+                    objectName: objectName, properties: {
+                        manualScalePixel: this.axisSettings.manualScalePixel
                     }, selector: null
                 });
                 if (this.axisSettings.manualScalePixel) {
                     objectEnumeration.push({
-                        objectName: objectName, properties: { customPixel: this.axisSettings.customPixel
+                        objectName: objectName, properties: {
+                            customPixel: this.axisSettings.customPixel
                         }, selector: null
                     });
                 }
                 break
             case "dataPoint":
-                this.enumerateDataPointSettings(objectName,objectEnumeration);
+                this.enumerateDataPointSettings(objectName, objectEnumeration);
                 break;
             case "style":
-                this.enumerateStyleSettings(objectName,objectEnumeration);
+                this.enumerateStyleSettings(objectName, objectEnumeration);
                 break;
             case "imageSettings":
                 objectEnumeration.push({
@@ -1429,7 +1479,7 @@ export class Visual implements IVisual {
             .append("text")
             .attr("font-family", fontFamily)
             .attr("font-size", textSize)
-            .text(d => {return d;})
+            .text(d => { return d; })
             .attr("y", 1)
             .attr("x", 1)
         if (wrappedText) {
@@ -1700,9 +1750,9 @@ function wrapAndCrop(text, width) {
     });
 
 }
-function getWidth(text:string, fontSize:number, fontFace:string){
+function getWidth(text: string, fontSize: number, fontFace: string) {
     var canvas = document.createElement('canvas'),
-    context = canvas.getContext('2d');
+        context = canvas.getContext('2d');
     context.font = fontSize + 'px ' + fontFace;
     var returnValue = context.measureText(text).width;
     canvas.remove();
@@ -1752,5 +1802,5 @@ interface ICSEvent {
     title: string;
     description: string;
     start: number[];
-    duration: {minutes: number};
+    duration: { minutes: number };
 }

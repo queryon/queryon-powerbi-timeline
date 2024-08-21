@@ -875,6 +875,12 @@
                         "bool": true
                     }
                 },
+                "todayFocus": {
+                    "displayName": "Focus on today's date",
+                    "type": {
+                        "bool": true
+                    }
+                },
                 "lineColor": {
                     "displayName": "Line Color",
                     "type": {
