@@ -834,101 +834,162 @@ export class Visual implements IVisual {
 
 
     public update(options: VisualUpdateOptions) {
-        this.events.renderingStarted(options); // Rendering Events API START
-        this.viewModel = generateViewModel(options, this.host)
-        const state: ChartDrawingState = new ChartDrawingState();
-        state.data = this.viewModel.dataPoints
-        if(this.validateDataSizeConstraints(state.data, options)) { // Short circuit if data size is too large for view type
-            this.events.renderingFailed(options); // Rendering Events API FAIL
-            return;
-        }
-        this.setEmptyCanvas();
-        this.setDefaultGlobals();
-        this.setDataRange(this.viewModel.dataPoints); // Set the date range of the timeline based on the data
-        state.addToMargin = this.getAdditionalMargin();
-        state.dateValueFormatter = this.createDateFormatter(options);
-        this.filterAndProcessData(state);
-        state.filteredWithImage = state.filteredData.filter(el => el.image)
-        const filteredData = state.filteredData; // Array Refernece used to reduce call length
-        //min label width from annotation plugin
-        if (this.textSettings.wrap < 90) {this.textSettings.wrap = 90}
-        if (!this.axisSettings.manualScalePixel || !this.axisSettings.customPixel || isNaN(this.axisSettings.customPixel)) {this.width = options.viewport.width - 20;}
-         else {this.width = this.axisSettings.customPixel}
-        this.height = options.viewport.height;
-        this.barHt = this.styleSettings.barHt;
-        //sort so staggering works in right order // data = data.sort((a, b) => (a.date > b.date) ? 1 : -1)
-        if (this.textSettings.annotationStyle === 'annotationCallout' || this.textSettings.annotationStyle === 'annotationCalloutCurve') {
-            //annotation styles that add to text height, increment spacing
-            state.spacing += 10;}
-        //work around not limiting minimum spacing
-        if (this.textSettings.autoStagger || !this.textSettings.spacing) {
-            this.textSettings.spacing = state.spacing
-            this.host.persistProperties({merge: [{objectName: 'textSettings', selector: null, properties: { spacing: state.spacing }}]});
-        }
-        state.marginTopStagger += ((filteredData.filter(element => element.top).length) * this.textSettings.spacing) + 20
-        //case margintopstagger wasn't incremented - no top staggered items:
-        state.marginTopStagger = Math.max(this.marginTop, state.marginTopStagger)
-        if (this.imageSettings.style !== "default" && filteredData.filter(el => !el.top && el.image).length > 0) {
-            state.marginTopStagger = Math.max(state.marginTopStagger, state.addToMargin)}
-        //define "official" margin top to start drawing graph
-        if (this.styleSettings.timelineStyle !== "image") {
-            state.finalMarginTop = !this.textSettings.stagger || this.styleSettings.timelineStyle == "minimalist" ? this.marginTop : state.marginTopStagger
-            if (this.styleSettings.timelineStyle != "minimalist" && filteredData.filter(el => el.top && el.customVertical).length > 0) {
-                //case user input offset is > than margin
-                state.finalMarginTop = Math.max(state.finalMarginTop, state.maxOffsetTop + this.textSettings.spacing)}
-        } else {state.finalMarginTop = 20;}
-        state.downloadTop = this.downloadSettings.downloadCalendar && this.downloadSettings.position.split(",")[0] == "TOP";
-        state.downloadBottom = this.downloadSettings.downloadCalendar && this.downloadSettings.position.split(",")[0] !== "TOP"
-        //download calendar icon is enabled and positioned at top
-        if (state.downloadTop) {state.finalMarginTop += 35;}
-        //axis format
-        state.axisFormat = this.axisSettings.dateFormat != "customJS" ? this.axisSettings.dateFormat : this.axisSettings.customJS;
-        state.axisValueFormatter = state.axisFormat == "same" ? state.dateValueFormatter : createFormatter(state.axisFormat);      
-        this.setPadding(state);
-        state.scale = d3.scaleTime()
-            .domain([this.minVal, this.maxVal]) //min and max data 
-            .range([0, this.width - (this.padding * 2)]); //min and max width in px           
-        if (this.styleSettings.timelineStyle !== "image") {
-            //all styles, not image focus:
-            this.svg.attr("width", this.width - 4);
-            switch (this.styleSettings.timelineStyle) {
-                case "line":
-                    this.configureLineChart(state);
-                    break;
-                case "bar":
-                    this.configureBarChart(state);
-                    break;
-                case "minimalist":
-                    this.configureMinimalistView(state);
-                    break;
-            }
-            state.finalHeight = Math.max(this.height - 4, state.svgHeightTracking)
-            this.svg.attr("height", state.finalHeight);
-            let transparentContainer
-            if (state.needScroll && this.styleSettings.minimalistAxis == "bottom") {
-                transparentContainer = this.container.append('rect')
-                    .attr('width', this.width)
-                    .attr('x', 0)//this.padding)
-                    .attr('fill', "white")
-                    .attr('y', state.axisMarginTop)
-                    .attr('height', this.height)
-            }
-            //axis setup
-            this.axisSetup(state, transparentContainer);
-            this.appendTodayIcon(state);
-            if (state.enabledAnnotations) {this.configureTimelineAnnotations(state);}
-        }
-        else {this.configureImagesTimeline(state);}//image focus config:  
-        //remove default bold if bold titles is off
-        if (!this.textSettings.boldTitles) {this.container.selectAll('.annotationSelector  .annotation-note-title ').style('font-weight', "normal")}
-        //Handle context menu - right click
-        this.svg.on('contextmenu', contextFunction => { this.handleContextMenuRightClick() } );
-        //Handles click on/out bar
-        this.svg.on('click', clickFunction => {this.handleSvgClick() });
-        this.svg.on('mouseover', mouseoverFunction => {this.handleMouseOver()})
-        if (this.downloadSettings.downloadCalendar) {this.setupDownloadCalendar(state);}
-        this.events.renderingFinished(options); // Rendering Events API FINISH
+    // Signal the start of the rendering process
+    this.events.renderingStarted(options);
+
+    // Generate the view model from the incoming data
+    this.viewModel = generateViewModel(options, this.host);
+    
+    // Initialize the state object to track various aspects of the chart
+    const state: ChartDrawingState = new ChartDrawingState();
+    state.data = this.viewModel.dataPoints;
+
+    // Check if the data size is within acceptable limits
+    if(this.validateDataSizeConstraints(state.data, options)) {
+        this.events.renderingFailed(options);
+        return;
     }
+
+    // Clear the canvas and reset global variables
+    this.setEmptyCanvas();
+    this.setDefaultGlobals();
+
+    // Set the date range for the timeline
+    this.setDataRange(this.viewModel.dataPoints);
+
+    // Calculate additional margins for images
+    state.addToMargin = this.getAdditionalMargin();
+
+    // Create a date formatter based on user settings
+    state.dateValueFormatter = this.createDateFormatter(options);
+
+    // Process and filter the data
+    this.filterAndProcessData(state);
+
+    // Separate data points with images
+    state.filteredWithImage = state.filteredData.filter(el => el.image);
+    const filteredData = state.filteredData;
+
+    // Ensure minimum width for text wrapping
+    if (this.textSettings.wrap < 90) {this.textSettings.wrap = 90;}
+
+    // Set the width of the visual
+    if (!this.axisSettings.manualScalePixel || !this.axisSettings.customPixel || isNaN(this.axisSettings.customPixel)) {
+        this.width = options.viewport.width - 20;
+    } else {
+        this.width = this.axisSettings.customPixel;
+    }
+    this.height = options.viewport.height;
+    this.barHt = this.styleSettings.barHt;
+
+    // Adjust spacing for certain annotation styles
+    if (this.textSettings.annotationStyle === 'annotationCallout' || this.textSettings.annotationStyle === 'annotationCalloutCurve') {
+        state.spacing += 10;
+    }
+
+    // Handle auto-staggering of text
+    if (this.textSettings.autoStagger || !this.textSettings.spacing) {
+        this.textSettings.spacing = state.spacing;
+        this.host.persistProperties({merge: [{objectName: 'textSettings', selector: null, properties: { spacing: state.spacing }}]});
+    }
+
+    // Calculate top margin for staggered layout
+    state.marginTopStagger += ((filteredData.filter(element => element.top).length) * this.textSettings.spacing) + 20;
+    state.marginTopStagger = Math.max(this.marginTop, state.marginTopStagger);
+
+    // Adjust margin for images
+    if (this.imageSettings.style !== "default" && filteredData.filter(el => !el.top && el.image).length > 0) {
+        state.marginTopStagger = Math.max(state.marginTopStagger, state.addToMargin);
+    }
+
+    // Set final top margin based on style settings
+    if (this.styleSettings.timelineStyle !== "image") {
+        state.finalMarginTop = !this.textSettings.stagger || this.styleSettings.timelineStyle == "minimalist" ? this.marginTop : state.marginTopStagger;
+        if (this.styleSettings.timelineStyle != "minimalist" && filteredData.filter(el => el.top && el.customVertical).length > 0) {
+            state.finalMarginTop = Math.max(state.finalMarginTop, state.maxOffsetTop + this.textSettings.spacing);
+        }
+    } else {
+        state.finalMarginTop = 20;
+    }
+
+    // Handle download calendar positioning
+    state.downloadTop = this.downloadSettings.downloadCalendar && this.downloadSettings.position.split(",")[0] == "TOP";
+    state.downloadBottom = this.downloadSettings.downloadCalendar && this.downloadSettings.position.split(",")[0] !== "TOP";
+    if (state.downloadTop) {state.finalMarginTop += 35;}
+
+    // Set up axis formatting
+    state.axisFormat = this.axisSettings.dateFormat != "customJS" ? this.axisSettings.dateFormat : this.axisSettings.customJS;
+    state.axisValueFormatter = state.axisFormat == "same" ? state.dateValueFormatter : createFormatter(state.axisFormat);      
+
+    // Set padding and create the time scale
+    this.setPadding(state);
+    state.scale = d3.scaleTime()
+        .domain([this.minVal, this.maxVal])
+        .range([0, this.width - (this.padding * 2)]);
+
+    // Configure the chart based on the selected style
+    if (this.styleSettings.timelineStyle !== "image") {
+        this.svg.attr("width", this.width - 4);
+        switch (this.styleSettings.timelineStyle) {
+            case "line":
+                this.configureLineChart(state);
+                break;
+            case "bar":
+                this.configureBarChart(state);
+                break;
+            case "minimalist":
+                this.configureMinimalistView(state);
+                break;
+        }
+        
+        // Set the final height of the SVG
+        state.finalHeight = Math.max(this.height - 4, state.svgHeightTracking);
+        this.svg.attr("height", state.finalHeight);
+
+        // Add transparent container for scrolling if needed
+        let transparentContainer;
+        if (state.needScroll && this.styleSettings.minimalistAxis == "bottom") {
+            transparentContainer = this.container.append('rect')
+                .attr('width', this.width)
+                .attr('x', 0)
+                .attr('fill', "white")
+                .attr('y', state.axisMarginTop)
+                .attr('height', this.height);
+        }
+
+        // Set up the axis
+        this.axisSetup(state, transparentContainer);
+        
+        // Add the "today" icon if enabled
+        this.appendTodayIcon(state);
+
+        // Configure timeline annotations if enabled
+        if (state.enabledAnnotations) {
+            this.configureTimelineAnnotations(state);
+        }
+    } else {
+        // Configure the timeline for image-focused style
+        this.configureImagesTimeline(state);
+    }
+
+    // Remove bold style from titles if boldTitles is off
+    if (!this.textSettings.boldTitles) {
+        this.container.selectAll('.annotationSelector  .annotation-note-title ').style('font-weight', "normal");
+    }
+
+    // Set up event handlers
+    this.svg.on('contextmenu', contextFunction => { this.handleContextMenuRightClick() });
+    this.svg.on('click', clickFunction => {this.handleSvgClick() });
+    this.svg.on('mouseover', mouseoverFunction => {this.handleMouseOver()});
+
+    // Set up download calendar if enabled
+    if (this.downloadSettings.downloadCalendar) {
+        this.setupDownloadCalendar(state);
+    }
+
+    // Signal the completion of the rendering process
+    this.events.renderingFinished(options);
+}
     private appendTodayIcon(state:ChartDrawingState){
         let today = new Date
         if (this.styleSettings.today && today >= this.minVal && today <= this.maxVal) {
