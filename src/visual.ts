@@ -124,9 +124,7 @@ export class Visual implements IVisual {
         const mouseEvent: MouseEvent = <MouseEvent>d3.event;
         const eventTarget: EventTarget = mouseEvent.target;
         const dataPoint: any = d3.select(<Element>eventTarget).datum();
-        if (dataPoint) {
-
-        } else {
+        if (!dataPoint) {
             this.selectionManager.clear().then(() => {
                 if (this.styleSettings.timelineStyle == "minimalist") {
                     d3.selectAll('.annotationSelector').style('opacity', 1)
@@ -339,12 +337,11 @@ export class Visual implements IVisual {
             }
             else {
                 //if minimalist, disconsider margin and spacing is default to one line 
-                let itemHeight
 
                 if (!this.fontHeightLib[`${dataPoint["textSize"]}${fontFamily}`]) {
                     this.fontHeightLib[`${dataPoint["textSize"]}${fontFamily}`] = this.getTextHeight(dataPoint["labelText"], dataPoint["textSize"], fontFamily, false) + 3
                 }
-                itemHeight = this.fontHeightLib[`${dataPoint["textSize"]}${fontFamily}`]
+                const itemHeight = this.fontHeightLib[`${dataPoint["textSize"]}${fontFamily}`]
                 state.spacing = Math.max(itemHeight, state.spacing)
             }
 
@@ -531,7 +528,8 @@ export class Visual implements IVisual {
         let minIcons = this.container.selectAll(".min-icons")
             .data(state.filteredData)
         minIcons.exit().remove();
-        let enterIcons, shapeSize = 8
+        let enterIcons
+        const shapeSize = 8
         //Add dots
         if (this.styleSettings.minimalistStyle !== "thinBar") {
             const size = 150 / this.styleSettings.minimalistSize
@@ -1029,9 +1027,10 @@ export class Visual implements IVisual {
                 .attr("d", d3.symbol().type(d3.symbolTriangle).size(150))
                 .attr("class", "symbol today-symbol")
                 .attr("transform", (d) => {
-                    let transformStr, todayIconY,
-                        todayMarginTop = state.axisMarginTop ? state.axisMarginTop : state.finalMarginTop,
-                        todayPadding = state.axisPadding ? state.axisPadding : this.padding
+                    let transformStr, todayIconY
+                    const todayMarginTop = state.axisMarginTop ? state.axisMarginTop : state.finalMarginTop
+                    const todayPadding = state.axisPadding ? state.axisPadding : this.padding
+
                     if (this.styleSettings.todayTop) {
                         todayIconY = todayMarginTop - 12
                         transformStr = "translate(" + (todayPadding + state.scale(today)) + "," + (todayIconY) + ") rotate(180)"
@@ -1429,13 +1428,12 @@ export class Visual implements IVisual {
     }
 
     private getAnnotationHeight(element: DataPoint) {
-        //annotations config
-        let annotationsData, makeAnnotations
+        let makeAnnotations
 
         element.alignment = new DataPointAlignment();
 
         // element.alignment.note.align = orientation
-        annotationsData = [{
+        const annotationsData = [{
             note: {
                 wrap: this.textSettings.wrap,
                 title: element.labelText,
@@ -1451,6 +1449,9 @@ export class Visual implements IVisual {
         makeAnnotations = svgAnnotations.annotation()
             .annotations(annotationsData)
             .type(new svgAnnotations.annotationCustomType(svgAnnotations['annotationLabel'], element.alignment))
+
+
+            
 
 
         const anno = this.container
@@ -1628,14 +1629,12 @@ export function getCategoricalObjectValue(
     const categoryObjects = category.objects
 
     if (categoryObjects) {
-        let categoryObject
 
-        categoryObject = categoryObjects[index];
+        const categoryObject = categoryObjects[index];
 
         if (categoryObject) {
-            let object
             // if (category.categories) {
-            object = categoryObject[objectName]
+            const object = categoryObject[objectName]
 
 
             if (object) {
@@ -1673,14 +1672,16 @@ function wrap(text, width) {
 
         const text = d3.select(this)
         const words = text.text().split(/\s+/).reverse()
+
+        const lineHeight = 1
+        const x = text.attr("x")
+        const y = text.attr("y")
+        const dy = 0
+
         let word,
             line = [],
             lineNumber = 0,
-            lineHeight = 1,
-            // lineHeight = 1.1, // ems
-            x = text.attr("x"),
-            y = text.attr("y"),
-            dy = 0, //parseFloat(text.attr("dy")),
+            
             tspan = text.text(null)
 
                 .append("tspan")
@@ -1711,25 +1712,27 @@ function wrap(text, width) {
 function wrapAndCrop(text, width) {
     text.each(function () {
 
-        let text = d3.select(this),
-            words = text.text().split(/\s+/).reverse(),
-            word,
-            line = [],
-            lineNumber = 0,
-            lineHeight = 1,
-            // lineHeight = 1.1, // ems
-            x = text.attr("x"),
-            y = text.attr("y"),
-            dy = 0, //parseFloat(text.attr("dy")),
-            tspan = text.text(null)
+        let word
 
-                .append("tspan")
+        const text = d3.select(this)
+        const words = text.text().split(/\s+/).reverse()
+        const line = []  
+        
+        const lineNumber = 0
+        const lineHeight = 1
+        // lineHeight = 1.1, // ems
+        const x = text.attr("x")
+        const y = text.attr("y")
+        const dy = 0 //parseFloat(text.attr("dy")),
+        const tspan = text.text(null)
 
-                // .attr("font-family", fontFamily)
-                // .attr("font-size", textSize)
-                .attr("x", x)
-                .attr("y", y)
-                .attr("dy", dy + "em");
+            .append("tspan")
+
+            // .attr("font-family", fontFamily)
+            // .attr("font-size", textSize)
+            .attr("x", x)
+            .attr("y", y)
+            .attr("dy", dy + "em");
         while (word = words.pop()) {
             line.push(word);
             tspan.text(line.join(" "));
