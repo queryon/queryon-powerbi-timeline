@@ -111,7 +111,7 @@ export class Visual implements IVisual {
     private handleContextMenuRightClick() {
         const mouseEvent: MouseEvent = <MouseEvent>d3.event;
         const eventTarget: EventTarget = mouseEvent.target;
-        let dataPoint: any = d3.select(<Element>eventTarget).datum();
+        const dataPoint: any = d3.select(<Element>eventTarget).datum();
         this.selectionManager.showContextMenu(dataPoint ? dataPoint.selectionId : {}, {
             x: mouseEvent.clientX,
             y: mouseEvent.clientY
@@ -123,7 +123,7 @@ export class Visual implements IVisual {
     private handleSvgClick() {
         const mouseEvent: MouseEvent = <MouseEvent>d3.event;
         const eventTarget: EventTarget = mouseEvent.target;
-        let dataPoint: any = d3.select(<Element>eventTarget).datum();
+        const dataPoint: any = d3.select(<Element>eventTarget).datum();
         if (dataPoint) {
 
         } else {
@@ -146,7 +146,7 @@ export class Visual implements IVisual {
         const mouseEvent: MouseEvent = <MouseEvent>d3.event;
         const eventTarget: EventTarget = mouseEvent.target;
         let args = []
-        let dataPoint: any = d3.select(<Element>eventTarget).datum();
+        const dataPoint: any = d3.select(<Element>eventTarget).datum();
 
         if (dataPoint && dataPoint.labelColumn) {
 
@@ -190,13 +190,13 @@ export class Visual implements IVisual {
     private setPadding(state: ChartDrawingState) {
         //increment padding based on image
         if (state.filteredWithImage.length > 0 && this.styleSettings.timelineStyle !== "minimalist") {
-            let dynamicPadding = Math.max(this.padding, this.imageSettings.imagesWidth / 2)
+            const dynamicPadding = Math.max(this.padding, this.imageSettings.imagesWidth / 2)
             this.padding = dynamicPadding
         }
 
         //increment padding based on values on axis
         if (this.axisSettings.axis === "Values" || this.styleSettings.timelineStyle == "minimalist") {
-            let dynamicPadding = Math.max(this.padding, this.maxPadding)
+            const dynamicPadding = Math.max(this.padding, this.maxPadding)
             this.padding = dynamicPadding
         }
 
@@ -221,7 +221,7 @@ export class Visual implements IVisual {
         let format;
         if (this.textSettings.dateFormat === "same") {
             options.dataViews[0].categorical.categories.forEach(category => {
-                let categoryName = Object.keys(category.source.roles)[0];
+                const categoryName = Object.keys(category.source.roles)[0];
                 if (categoryName == "date") {
                     format = category.source.format;
                 }
@@ -235,12 +235,12 @@ export class Visual implements IVisual {
 
     // Determines the Min & Max date or numeric values for the timeline 
     private setDataRange(data: DataPoint[]) {
-        let minFromData = d3.min(data, d => { return d.date })
-        let maxFromData = d3.max(data, d => { return d.date })
+        const minFromData = d3.min(data, d => { return d.date })
+        const maxFromData = d3.max(data, d => { return d.date })
 
         if (this.axisSettings.manualScale) {
             if (this.axisSettings.barMin && this.axisSettings.barMin != "") {
-                let minFromInput = new Date(this.axisSettings.barMin)
+                const minFromInput = new Date(this.axisSettings.barMin)
 
                 if (Object.prototype.toString.call(minFromInput) === '[object Date]' && !isNaN(minFromInput.getTime())) {
                     this.minVal = minFromInput
@@ -248,7 +248,7 @@ export class Visual implements IVisual {
             }
 
             if (this.axisSettings.barMax && this.axisSettings.barMax != "") {
-                let maxFromInput = new Date(this.axisSettings.barMax)
+                const maxFromInput = new Date(this.axisSettings.barMax)
 
                 if (Object.prototype.toString.call(maxFromInput) === '[object Date]' && !isNaN(maxFromInput.getTime())) {
                     this.maxVal = maxFromInput
@@ -297,7 +297,7 @@ export class Visual implements IVisual {
             // dataPoint["textHeight"] = this.getTextHeight(dataPoint["labelText"], dataPoint["textSize"], fontFamily, true) + 3
             dataPoint["textHeight"] = this.styleSettings.timelineStyle == "minimalist" ? 0 : this.getAnnotationHeight(dataPoint)
 
-            let startTime = [dataPoint.date.getFullYear(), dataPoint.date.getMonth() + 1, dataPoint.date.getDate(), dataPoint.date.getHours(), dataPoint.date.getMinutes()];
+            const startTime = [dataPoint.date.getFullYear(), dataPoint.date.getMonth() + 1, dataPoint.date.getDate(), dataPoint.date.getHours(), dataPoint.date.getMinutes()];
 
             state.ICSevents.push({
                 title: dataPoint.label,
@@ -469,7 +469,7 @@ export class Visual implements IVisual {
         }
         state.strokeColor = this.axisSettings.axisColor.solid.color
         //split screen for minimalist view
-        let newWidth = (this.width * 0.70)
+        const newWidth = (this.width * 0.70)
         state.axisPadding = this.width - newWidth - this.padding;
         //re-do scale
         state.scale = d3.scaleTime()
@@ -485,7 +485,7 @@ export class Visual implements IVisual {
         let textLateral = this.container.selectAll(".text-lateral")
             .data(state.filteredData)
         textLateral.exit().remove();
-        var enter = textLateral.enter()
+        const enter = textLateral.enter()
             .append("g").attr("class", "text-lateral")
             .attr("clip-path", "url(#clip)")
         enter.append("text")
@@ -534,8 +534,8 @@ export class Visual implements IVisual {
         let enterIcons, shapeSize = 8
         //Add dots
         if (this.styleSettings.minimalistStyle !== "thinBar") {
-            let size = 150 / this.styleSettings.minimalistSize
-            let shapeOptions = {
+            const size = 150 / this.styleSettings.minimalistSize
+            const shapeOptions = {
                 "diamond": d3.symbol().type(d3.symbolDiamond).size(size),
                 "circle": d3.symbol().type(d3.symbolCircle).size(size),
                 "square": d3.symbol().type(d3.symbolSquare).size(size),
@@ -692,7 +692,7 @@ export class Visual implements IVisual {
                 }
                 imageX = !imageX ? element.x - (this.imageSettings.imagesWidth / 2) : imageX
                 if (this.imageSettings.style != "default") {
-                    let connector = this.container.append("line")
+                    const connector = this.container.append("line")
                         .attr("x1", element.x)
                         .attr("y1", () => {
                             let result = state.finalMarginTop
@@ -704,7 +704,7 @@ export class Visual implements IVisual {
                         .attr("stroke-width", 1)
                         .attr("stroke", element.textColor);
                 }
-                let image = this.container.append('image')
+                const image = this.container.append('image')
                     //.attr('src', element.image)
                     .attr('xlink:href', element.image)
                     .attr('width', this.imageSettings.imagesWidth)
@@ -769,7 +769,7 @@ export class Visual implements IVisual {
                     .type(new svgAnnotations.annotationCustomType(dateType, element.alignment))
                 makeDates
                     .disable(["connector"])
-                let newAxis = this.container
+                const newAxis = this.container
                     .append("g")
                     .style('font-size', this.axisSettings.fontSize + "px")
                     .style('font-family', this.axisSettings.fontFamily)
@@ -799,9 +799,9 @@ export class Visual implements IVisual {
                 //if (element.image) {
                 if (element.top) { imgCountTop++; imgCounter = imgCountTop; }
                 else { imgCountBottom++; imgCounter = imgCountBottom; }
-                let imageY = state.finalMarginTop + 25
-                let imageX = element.x
-                let image = this.container.append('image')
+                const imageY = state.finalMarginTop + 25
+                const imageX = element.x
+                const image = this.container.append('image')
                     //.attr('src', element.image)
                     .attr('xlink:href', element.image)
                     .attr('width', this.imageSettings.imagesWidth)
@@ -1022,9 +1022,9 @@ export class Visual implements IVisual {
     }
 
     private appendTodayIcon(state: ChartDrawingState) {
-        let today = new Date
+        const today = new Date
         if (this.styleSettings.today && today >= this.minVal && today <= this.maxVal) {
-            let todayIcon = this.container
+            const todayIcon = this.container
                 .append('path')
                 .attr("d", d3.symbol().type(d3.symbolTriangle).size(150))
                 .attr("class", "symbol today-symbol")
@@ -1046,7 +1046,7 @@ export class Visual implements IVisual {
     }
     private setupDownloadCalendar(state: ChartDrawingState) {
         const ics = require('ics')
-        let orientationHorizontal = this.downloadSettings.position.split(",")[1]
+        const orientationHorizontal = this.downloadSettings.position.split(",")[1]
         let calX
         if (orientationHorizontal == "LEFT") {
             calX = 2
@@ -1056,9 +1056,9 @@ export class Visual implements IVisual {
                 calX -= 20
             }
         }
-        let calY = state.downloadTop ? 2 : state.finalHeight - 35
+        const calY = state.downloadTop ? 2 : state.finalHeight - 35
         //append download icon
-        let calendarIcon = this.container.append('image')
+        const calendarIcon = this.container.append('image')
             .attr('xlink:href', "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAQAAACROWYpAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAAmJLR0QAAKqNIzIAAAAJcEhZcwAADsQAAA7EAZUrDhsAAAAHdElNRQfkBg8SOTSmsBjTAAAC8ElEQVQ4y53UbWjVZRgG8N/Ozs7aOZMtWSuTs2UMEvZlK2kp9kogytiLxdyoYJCGYKkEITb6ELE06INpYkFfVviWJEsC8QUN0lJWzGKR5UrTZnNTZyxkL2fn34cdT3s5Luj6dD33c1//57mf+7r/ZMJK3bqt9D9Q5LgGDY4rmjkxlCGyQFwgELcgw/4EZE1Z32e1xX5Uhm7lTvjAhduLcxULp8582st6bdWlCFeVW2uO7Y5IgoQrRiaK31cpAbLdI+yyYSEBsiTluldCrzEQccRbRv8VX/CiXyYUEaTfIjklxgPe1OjSLXFYQjea5PvbnhnZbuckUiWmxCQ1qXZUtSQzMHZPfrDx70Sd8aEiMWZg0cx97lRljyqdGdkZC+1VpXNqY8PIdtCfZhn0PXqnsB+M+E6xXJfNniwPY8wyG90U1YqWSSzPDn+pVipHlhylnnTVoFRv12qzzHXr3K/AnEnsVfO9Yq5vfGKndiedV6/O7+PtGhfP95jZFuky6vE0e9Rcj9jhDV/K1qDcKYd9ocBr+p0dv3bILkmzHLAXUizwkGartYMmSxGy2Q1bXPS6Pl+HM4xHIKbYWbk2paTEHEMstdqvxAbNoZRJaoypscIKNQIhgSXyfHzbCWyTozaTST4y6po1DhlIJ0cNCibYZMAhyzOZZJe3xZXoSKfWqveHHnVq07EOZZlNcl2WiL50Yr5hXZKG5Kdj/SKZTDLkZ9smVbtPiS3Yad/0wahwWqsWlThts1wJo4qdQ9jdeM95HHAXrkig2EgmkxR6zpiYiFOos12jYcdcVO9djfr9hGcUjtc81STfOuqGl7QZUOGETms8j6htKlXY705LfBo2pEWPQCBmFcYE8qxS4EEv2GpE1Fd+E8GIHotdQ7NR7VkWeUqu6Qjc4QmtLtkkaiz1S8x200YlWqx30oyoddo688TFlSoVFzfPeh2WT3f1dCy0QcRBHfpQ7GFLjXpn/NT/ElOoxrPK5Mgy4lef+fyWbf8BTNASSGAMJiEAAAAldEVYdGRhdGU6Y3JlYXRlADIwMjAtMDYtMTVUMTg6NTc6NTItMDQ6MDC+fJWTAAAAJXRFWHRkYXRlOm1vZGlmeQAyMDIwLTA2LTE1VDE4OjU3OjUyLTA0OjAwzyEtLwAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAAASUVORK5CYII=")
             .attr('width', 30)
             .attr('height', 30)
@@ -1070,17 +1070,17 @@ export class Visual implements IVisual {
                 if (error) {
                     return
                 }
-                var blob = new Blob([value]);
+                const blob = new Blob([value]);
                 FileSaver.saveAs(blob, `${this.downloadSettings.calendarName != "" ? this.downloadSettings.calendarName : 'calendar'}.ics`);
             });
     }
     private axisSetup(state: ChartDrawingState, transparentContainer) {
         if (state.axisMarginTop) {
-            let x_axis = d3.axisBottom(state.scale)
+            const x_axis = d3.axisBottom(state.scale)
                 .tickFormat(d => {
                     return state.axisValueFormatter.format(new Date(<any>d))
                 })
-            let sandBox: any = d3.select('#sandbox-host')
+            const sandBox: any = d3.select('#sandbox-host')
             //Append group and insert axis
             let axisSVG = this.container.append("g")
                 .attr("transform", "translate(" + state.axisPadding + "," + (state.needScroll ? state.axisMarginTop + sandBox.property("scrollTop") : state.axisMarginTop) + ")")
@@ -1112,7 +1112,7 @@ export class Visual implements IVisual {
                     });
                 };
                 sandBox.on("scroll", (e) => {
-                    let firstXForm = axisSVG.property("transform").baseVal.getItem(0)
+                    const firstXForm = axisSVG.property("transform").baseVal.getItem(0)
                     axisSVG.remove()
                     if (this.styleSettings.minimalistAxis == "bottom") {
                         transparentContainer.remove()
@@ -1147,7 +1147,7 @@ export class Visual implements IVisual {
                         this.container.selectAll(".axis text").style('font-family', this.axisSettings.fontFamily)
 
                     }
-                    let cal: any = d3.select("#calendar-icon")
+                    const cal: any = d3.select("#calendar-icon")
                     cal.moveToFront()
                 })
             }
@@ -1206,7 +1206,7 @@ export class Visual implements IVisual {
     }
 
     private enumerateDataPointSettings(objectName: string, objectEnumeration: VisualObjectInstance[]) {
-        for (let dataElement of this.viewModel.dataPoints) {//.sort((a, b) => (a.value > b.value) ? 1 : -1)) {
+        for (const dataElement of this.viewModel.dataPoints) {//.sort((a, b) => (a.value > b.value) ? 1 : -1)) {
             objectEnumeration.push({
                 objectName: objectName, displayName: dataElement.label + " custom format",
                 properties: {
@@ -1334,8 +1334,8 @@ export class Visual implements IVisual {
      *
      */
     public enumerateObjectInstances(options: EnumerateVisualObjectInstancesOptions): VisualObjectInstance[] | VisualObjectInstanceEnumerationObject {
-        let objectName: string = options.objectName;
-        let objectEnumeration: VisualObjectInstance[] = [];
+        const objectName: string = options.objectName;
+        const objectEnumeration: VisualObjectInstance[] = [];
         switch (objectName) {
             case 'textSettings':
                 this.enumerateTextSettings(objectName, objectEnumeration);
@@ -1424,7 +1424,7 @@ export class Visual implements IVisual {
                     });
                 }
                 break;
-        };
+        }
         return objectEnumeration;
     }
 
@@ -1453,7 +1453,7 @@ export class Visual implements IVisual {
             .type(new svgAnnotations.annotationCustomType(svgAnnotations['annotationLabel'], element.alignment))
 
 
-        let anno = this.container
+        const anno = this.container
             .append("g")
             .attr('class', `annotation_selector_${element.selectionId.getKey().replace(/\W/g, '')} annotationSelector`)
             .style('font-size', element.textSize + "px")
@@ -1461,18 +1461,18 @@ export class Visual implements IVisual {
             .style('background-color', 'transparent')
             .call(makeAnnotations)
 
-        let result = anno.node().getBBox().height
+        const result = anno.node().getBBox().height
         anno.remove()
 
         return result
     }
     private getTextHeight(textString: string, textSize: number, fontFamily: string, wrappedText: boolean) {
-        let textData = [textString]
+        const textData = [textString]
 
         let textHeight
 
 
-        let txt = this.svg.append('g')
+        const txt = this.svg.append('g')
             .selectAll('.dummyText')
             .data(textData)
             .enter()
@@ -1487,7 +1487,7 @@ export class Visual implements IVisual {
         }
         txt.attr("color", function (d) {
             //Irrelevant color. ".EACH" does not work on IE and we need to iterate over the elements after they have been appended to dom.
-            let thisHeight = this.getBBox().height
+            const thisHeight = this.getBBox().height
             textHeight = thisHeight
             // this.remove()
             if (this.parentNode) {
@@ -1529,10 +1529,10 @@ function generateViewModel(options: VisualUpdateOptions, host: IVisualHost) {
         return viewModel;
     }
 
-    let categoricalData: Record<string, powerbi.DataViewCategoryColumn> = {}
+    const categoricalData: Record<string, powerbi.DataViewCategoryColumn> = {}
 
     dataViews[0].categorical.categories.forEach(category => {
-        let categoryName = Object.keys(category.source.roles)[0]
+        const categoryName = Object.keys(category.source.roles)[0]
         categoricalData[categoryName] = category
     })
 
@@ -1555,7 +1555,7 @@ function generateViewModel(options: VisualUpdateOptions, host: IVisualHost) {
 
     const dataLength = Math.min(dateData.length, labelData.length);
     for (let i = 0; i < dataLength; i++) {
-        let element: DataPoint = new DataPoint();
+        const element: DataPoint = new DataPoint();
         const selectionId = host.createSelectionIdBuilder()
             .withCategory(category, i)
             .createSelectionId();
@@ -1603,11 +1603,11 @@ export function getSettingsValue(objects: powerbi.DataViewObjects, sectionKey: s
 
     //gets settings from global attributes in property pane.
     if (objects) {
-        let object = objects[sectionKey];
+        const object = objects[sectionKey];
 
         if (object) {
 
-            let property = object[settingKey];
+            const property = object[settingKey];
             if (property !== undefined) {
 
                 return property;
@@ -1625,7 +1625,7 @@ export function getCategoricalObjectValue(
     propertyName: string,
     defaultValue: any) {
 
-    let categoryObjects = category.objects
+    const categoryObjects = category.objects
 
     if (categoryObjects) {
         let categoryObject
@@ -1639,7 +1639,7 @@ export function getCategoricalObjectValue(
 
 
             if (object) {
-                let property = object[propertyName];
+                const property = object[propertyName];
 
                 if (property !== undefined) {
                     return property;
@@ -1657,7 +1657,7 @@ declare function require(name: string);
 
 
 function createFormatter(format, precision?: any, value?: number) {
-    let valueFormatter = {}
+    const valueFormatter = {}
     valueFormatter["format"] = format;
     valueFormatter["value"] = value
 
@@ -1671,9 +1671,9 @@ function createFormatter(format, precision?: any, value?: number) {
 function wrap(text, width) {
     text.each(function () {
 
-        var text = d3.select(this)
-        var words = text.text().split(/\s+/).reverse()
-        var word,
+        const text = d3.select(this)
+        const words = text.text().split(/\s+/).reverse()
+        let word,
             line = [],
             lineNumber = 0,
             lineHeight = 1,
@@ -1711,7 +1711,7 @@ function wrap(text, width) {
 function wrapAndCrop(text, width) {
     text.each(function () {
 
-        var text = d3.select(this),
+        let text = d3.select(this),
             words = text.text().split(/\s+/).reverse(),
             word,
             line = [],
@@ -1751,10 +1751,10 @@ function wrapAndCrop(text, width) {
 
 }
 function getWidth(text: string, fontSize: number, fontFace: string) {
-    var canvas = document.createElement('canvas'),
+    const canvas = document.createElement('canvas'),
         context = canvas.getContext('2d');
     context.font = fontSize + 'px ' + fontFace;
-    var returnValue = context.measureText(text).width;
+    const returnValue = context.measureText(text).width;
     canvas.remove();
     return returnValue;
 }

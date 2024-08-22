@@ -35,7 +35,7 @@ export class SettingBase {
         if(objects && objects[settingName]) {
 
             // Enumerate all properties, and check them against the DataViewObject keys
-            for (let key of settingsInstance.settingList){
+            for (const key of settingsInstance.settingList){
                 if(objects[settingName][key] !== undefined) {
                     settingsInstance[key] = <any>objects[settingName][key]; // as any workaround for lack of type checking here
                 }
