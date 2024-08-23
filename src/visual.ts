@@ -1725,52 +1725,6 @@ function wrap(text, width) {
         }
     });
 }
-
-
-function wrapAndCrop(text, width) {
-    text.each(function () {
-
-        let word
-
-        const text = d3.select(this)
-        const words = text.text().split(/\s+/).reverse()
-        const line = []  
-        
-        const lineNumber = 0
-        const lineHeight = 1
-        // lineHeight = 1.1, // ems
-        const x = text.attr("x")
-        const y = text.attr("y")
-        const dy = 0 //parseFloat(text.attr("dy")),
-        const tspan = text.text(null)
-
-            .append("tspan")
-
-            // .attr("font-family", fontFamily)
-            // .attr("font-size", textSize)
-            .attr("x", x)
-            .attr("y", y)
-            .attr("dy", dy + "em");
-        while (word = words.pop()) {
-            line.push(word);
-            tspan.text(line.join(" "));
-            if (tspan.node().getComputedTextLength() > width) {
-                line.pop();
-                line.pop();
-                tspan.text(line.join(" ") + "...");
-
-                break;
-                // line = [word];
-                // tspan = text.append("tspan")
-                //   .attr("x", x)
-                //   .attr("y", y)
-                //   .attr("dy", ++lineNumber * lineHeight + dy + "em")
-                //   .text(word);
-            }
-        }
-    });
-
-}
 function getWidth(text: string, fontSize: number, fontFace: string) {
     const canvas = document.createElement('canvas'),
         context = canvas.getContext('2d');
