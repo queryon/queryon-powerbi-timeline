@@ -750,12 +750,11 @@ export class Visual implements IVisual {
         this.svg.attr("height", state.finalHeight);
         this.svg.attr("width", this.width);
         state.filteredData.forEach((element, i) => {
-            let orientation
             if (element.top) { countTop++; counter = countTop; }
             else { countBottom++; counter = countBottom; }
             element["x"] = i == 0 ? this.padding : this.padding + ((this.textSettings.wrap + 10) * i)
             element["dy"] = this.imageSettings.imagesHeight / 2 + 10
-            orientation = "left"
+            const orientation = "left"
             element.alignment = new DataPointAlignment();
             element.alignment.note.align = orientation
             if (this.axisSettings.axis == "Values") {
@@ -1452,7 +1451,6 @@ export class Visual implements IVisual {
     }
 
     private getAnnotationHeight(element: DataPoint) {
-        let makeAnnotations
 
         element.alignment = new DataPointAlignment();
 
@@ -1470,7 +1468,7 @@ export class Visual implements IVisual {
             color: element.textColor
         }]
 
-        makeAnnotations = svgAnnotations.annotation()
+        const makeAnnotations = svgAnnotations.annotation()
             .annotations(annotationsData)
             .type(new svgAnnotations.annotationCustomType(svgAnnotations['annotationLabel'], element.alignment))
 
