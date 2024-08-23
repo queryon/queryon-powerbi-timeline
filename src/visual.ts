@@ -733,7 +733,22 @@ export class Visual implements IVisual {
                         }
                     });
                 });
+                this.addTooltipsToAnnotations();
+
+                
         });
+    }
+
+    private addTooltipsToAnnotations() {
+        this.container.selectAll('.annotation-note')
+            .attr('title', 'Hi')
+            .on('mouseover', function() {
+                console.log("ttt")
+                d3.select(this).style('cursor', 'pointer');
+            })
+            .on('mouseout', function() {
+                d3.select(this).style('cursor', 'default');
+            });
     }
 
     private configureImagesTimeline(state: ChartDrawingState) {
