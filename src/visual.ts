@@ -934,9 +934,27 @@ export class Visual implements IVisual {
                 sandboxHost.property('scrollLeft', scrollPosition);
             }
         }
+
+        if (this.styleSettings.today && this.axisSettings.manualScalePixel && this.styleSettings.maxDateFocus) {
+            this.scrollToMaxDate(state);
+        }
     
         // Signal the completion of the rendering process
         this.events.renderingFinished(options);
+    }
+
+    private scrollToMaxDate(state: ChartDrawingState): void {
+        const sandboxHost: any = d3.select('#sandbox-host');
+        if (sandboxHost.node()) {
+            const containerWidth = sandboxHost.node().clientWidth;
+            const contentWidth = this.width;
+            const maxScrollLeft = contentWidth - containerWidth;
+            
+            // Ensure we don't set a negative scroll value
+            const scrollPosition = Math.max(0, maxScrollLeft);
+            
+            sandboxHost.node().scrollLeft = scrollPosition;
+        }
     }
 
     private configureChartBasedOnStyle(state: ChartDrawingState): void {
@@ -1341,7 +1359,9 @@ export class Visual implements IVisual {
                 objectName: objectName, properties: {
                     todayColor: this.styleSettings.todayColor,
                     todayTop: this.styleSettings.todayTop,
-                    todayFocus: this.styleSettings.todayFocus
+                    todayFocus: this.styleSettings.todayFocus,
+                    maxDateFocus: this.styleSettings.maxDateFocus
+
                 }, selector: null
             });
         }

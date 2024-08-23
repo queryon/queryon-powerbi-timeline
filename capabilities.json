@@ -881,6 +881,12 @@
                         "bool": true
                     }
                 },
+                "maxDateFocus": {
+                    "displayName": "Focus on the Max date",
+                    "type": {
+                        "bool": true
+                    }
+                },
                 "lineColor": {
                     "displayName": "Line Color",
                     "type": {

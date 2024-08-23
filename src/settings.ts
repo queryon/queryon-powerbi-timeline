@@ -109,7 +109,7 @@ export class AxisSettings extends SettingBase {
 export class StyleSettings extends SettingBase {    
     settingName = "style";
     
-    settingList = ['timelineStyle', 'lineColor', 'lineThickness','minimalistStyle','minimalistAxis','iconsColor','minimalistConnect','connectColor','minimalistSize','barColor','barHt','today','todayTop', 'todayFocus', 'todayColor'];
+    settingList = ['timelineStyle', 'lineColor', 'lineThickness','minimalistStyle','minimalistAxis','iconsColor','minimalistConnect','connectColor','minimalistSize','barColor','barHt','today','todayTop', 'todayFocus', 'maxDateFocus', 'todayColor'];
     public timelineStyle: string = "line";
     public lineColor: powerbi.Fill = { solid: { color: 'black' } };
     public lineThickness: number = 2;
@@ -124,6 +124,8 @@ export class StyleSettings extends SettingBase {
     public today: boolean = false;
     public todayTop: boolean = true;
     public todayFocus: boolean = false;
+    public maxDateFocus: boolean = false;
+
     public todayColor: powerbi.Fill = { solid: { color: 'red' } }
 
     public static FROMVIEWOBJECTS(objects?: powerbi.DataViewObjects) : StyleSettings {
