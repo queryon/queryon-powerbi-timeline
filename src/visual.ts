@@ -10,9 +10,7 @@ import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import IVisual = powerbi.extensibility.visual.IVisual;
 import EnumerateVisualObjectInstancesOptions = powerbi.EnumerateVisualObjectInstancesOptions;
 import VisualObjectInstance = powerbi.VisualObjectInstance;
-import DataView = powerbi.DataView;
 import VisualObjectInstanceEnumerationObject = powerbi.VisualObjectInstanceEnumerationObject;
-import VisualObjectInstanceEnumeration = powerbi.VisualObjectInstanceEnumeration;
 import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import ISelectionIdBuilder = powerbi.extensibility.ISelectionIdBuilder;
 import ISelectionId = powerbi.extensibility.ISelectionId;
@@ -28,7 +26,6 @@ import {
 } from "powerbi-visuals-utils-formattingutils";
 import * as d3 from "d3";
 import * as FileSaver from 'file-saver';
-import { color, text, timeThursday } from "d3";
 // import { image } from "d3";
 
 
@@ -281,7 +278,7 @@ export class Visual implements IVisual {
         } else {
             state.filteredData = state.data.filter(element => element.date >= this.minVal && element.date <= this.maxVal)
         }
-        state.filteredData.forEach((dataPoint, i) => {
+        state.filteredData.forEach((dataPoint) => {
             dataPoint["formatted"] = state.dateValueFormatter.format(dataPoint["date"])
             dataPoint["labelText"] = this.styleSettings.timelineStyle != "image" ? `${dataPoint["formatted"]}${this.textSettings.separator} ${dataPoint["label"]}` : dataPoint["label"]
             dataPoint["textColor"] = dataPoint.customFormat ? dataPoint.textColor : textColor
@@ -672,7 +669,7 @@ export class Visual implements IVisual {
         let annotationsData, makeAnnotations;
         let countTop = -1, countBottom = -1, counter;
         let imgCountTop = 0, imgCountBottom = 0, imgCounter;
-        state.filteredData.forEach((element, i) => {
+        state.filteredData.forEach((element) => {
             let orientation;
             if (element.top) {
                 countTop++;
@@ -1045,11 +1042,11 @@ export class Visual implements IVisual {
     private appendTodayIcon(state: ChartDrawingState) {
         const today = new Date
         if (this.styleSettings.today && today >= this.minVal && today <= this.maxVal) {
-            const todayIcon = this.container
+            this.container
                 .append('path')
                 .attr("d", d3.symbol().type(d3.symbolTriangle).size(150))
                 .attr("class", "symbol today-symbol")
-                .attr("transform", (d) => {
+                .attr("transform", () => {
                     let transformStr, todayIconY
                     const todayMarginTop = state.axisMarginTop ? state.axisMarginTop : state.finalMarginTop
                     const todayPadding = state.axisPadding ? state.axisPadding : this.padding
@@ -1080,7 +1077,7 @@ export class Visual implements IVisual {
         }
         const calY = state.downloadTop ? 2 : state.finalHeight - 35
         //append download icon
-        const calendarIcon = this.container.append('image')
+        this.container.append('image')
             .attr('xlink:href', "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAQAAACROWYpAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAAmJLR0QAAKqNIzIAAAAJcEhZcwAADsQAAA7EAZUrDhsAAAAHdElNRQfkBg8SOTSmsBjTAAAC8ElEQVQ4y53UbWjVZRgG8N/Ozs7aOZMtWSuTs2UMEvZlK2kp9kogytiLxdyoYJCGYKkEITb6ELE06INpYkFfVviWJEsC8QUN0lJWzGKR5UrTZnNTZyxkL2fn34cdT3s5Luj6dD33c1//57mf+7r/ZMJK3bqt9D9Q5LgGDY4rmjkxlCGyQFwgELcgw/4EZE1Z32e1xX5Uhm7lTvjAhduLcxULp8582st6bdWlCFeVW2uO7Y5IgoQrRiaK31cpAbLdI+yyYSEBsiTluldCrzEQccRbRv8VX/CiXyYUEaTfIjklxgPe1OjSLXFYQjea5PvbnhnZbuckUiWmxCQ1qXZUtSQzMHZPfrDx70Sd8aEiMWZg0cx97lRljyqdGdkZC+1VpXNqY8PIdtCfZhn0PXqnsB+M+E6xXJfNniwPY8wyG90U1YqWSSzPDn+pVipHlhylnnTVoFRv12qzzHXr3K/AnEnsVfO9Yq5vfGKndiedV6/O7+PtGhfP95jZFuky6vE0e9Rcj9jhDV/K1qDcKYd9ocBr+p0dv3bILkmzHLAXUizwkGartYMmSxGy2Q1bXPS6Pl+HM4xHIKbYWbk2paTEHEMstdqvxAbNoZRJaoypscIKNQIhgSXyfHzbCWyTozaTST4y6po1DhlIJ0cNCibYZMAhyzOZZJe3xZXoSKfWqveHHnVq07EOZZlNcl2WiL50Yr5hXZKG5Kdj/SKZTDLkZ9smVbtPiS3Yad/0wahwWqsWlThts1wJo4qdQ9jdeM95HHAXrkig2EgmkxR6zpiYiFOos12jYcdcVO9djfr9hGcUjtc81STfOuqGl7QZUOGETms8j6htKlXY705LfBo2pEWPQCBmFcYE8qxS4EEv2GpE1Fd+E8GIHotdQ7NR7VkWeUqu6Qjc4QmtLtkkaiz1S8x200YlWqx30oyoddo688TFlSoVFzfPeh2WT3f1dCy0QcRBHfpQ7GFLjXpn/NT/ElOoxrPK5Mgy4lef+fyWbf8BTNASSGAMJiEAAAAldEVYdGRhdGU6Y3JlYXRlADIwMjAtMDYtMTVUMTg6NTc6NTItMDQ6MDC+fJWTAAAAJXRFWHRkYXRlOm1vZGlmeQAyMDIwLTA2LTE1VDE4OjU3OjUyLTA0OjAwzyEtLwAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAAASUVORK5CYII=")
             .attr('width', 30)
             .attr('height', 30)
@@ -1133,8 +1130,7 @@ export class Visual implements IVisual {
                         this.parentNode.appendChild(this);
                     });
                 };
-                sandBox.on("scroll", (e) => {
-                    const firstXForm = axisSVG.property("transform").baseVal.getItem(0)
+                sandBox.on("scroll", () => {
                     axisSVG.remove()
                     if (this.styleSettings.minimalistAxis == "bottom") {
                         transparentContainer.remove()
@@ -1508,7 +1504,7 @@ export class Visual implements IVisual {
         if (wrappedText) {
             txt.call(wrap, this.textSettings.wrap)
         }
-        txt.attr("color", function (d) {
+        txt.attr("color", function () {
             //Irrelevant color. ".EACH" does not work on IE and we need to iterate over the elements after they have been appended to dom.
             const thisHeight = this.getBBox().height
             textHeight = thisHeight
@@ -1568,13 +1564,11 @@ function generateViewModel(options: VisualUpdateOptions, host: IVisualHost) {
     const dateColumn = categoricalData["date"].source.displayName
 
     const linkData = categoricalData["link"] ? categoricalData["link"].values : false
-    const linkColumn = categoricalData["link"] ? categoricalData["link"].source.displayName : false
 
     const descriptionData = categoricalData["description"] ? categoricalData["description"].values : false
     const descriptionColumn = categoricalData["description"] ? categoricalData["description"].source.displayName : false
 
     const imageData = categoricalData["image_url"] ? categoricalData["image_url"].values : false
-    const imageColumn = categoricalData["image_url"] ? categoricalData["image_url"].source.displayName : false
 
     const dataLength = Math.min(dateData.length, labelData.length);
     for (let i = 0; i < dataLength; i++) {
