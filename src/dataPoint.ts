@@ -41,6 +41,10 @@ export class DataPoint {
     public x: number = 0; // ??
     public dy: number = 0; // ??
 
+    public labelTooltip: string = '';
+    public labelTooltipColumn: string = '';
+
+
     public isImageValid():boolean{
         if (this.image.toString().length > 5 && this.image.toString().substring(0,5).toLowerCase() == "data:")
             return true;

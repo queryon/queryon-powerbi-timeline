@@ -733,17 +733,18 @@ export class Visual implements IVisual {
                         }
                     });
                 });
-                this.addTooltipsToAnnotations();
+                this.addTooltipsToAnnotations(element);
 
                 
         });
     }
 
-    private addTooltipsToAnnotations() {
+    private addTooltipsToAnnotations(element: DataPoint) {
+        const tooltipElement = element; // Create a new variable in the correct scope
         this.container.selectAll('.annotation-note')
-            .attr('title', 'Hi')
+            .attr('title', tooltipElement.labelTooltip || tooltipElement.label)
             .on('mouseover', function() {
-                console.log("ttt")
+                console.log(tooltipElement);
                 d3.select(this).style('cursor', 'pointer');
             })
             .on('mouseout', function() {
@@ -1576,7 +1577,6 @@ function generateViewModel(options: VisualUpdateOptions, host: IVisualHost) {
     const dataViews = options.dataViews;
     const dataObjects = dataViews[0].metadata.objects;
 
-
     const viewModel: ViewModel = {
         dataPoints: [],
         settings: new Settings(dataObjects)
@@ -1587,27 +1587,37 @@ function generateViewModel(options: VisualUpdateOptions, host: IVisualHost) {
         return viewModel;
     }
 
-    const categoricalData: Record<string, powerbi.DataViewCategoryColumn> = {}
+    const categoricalData: Record<string, powerbi.DataViewCategoryColumn> = {};
+    const roleToColumn: Record<string, string> = {};
 
     dataViews[0].categorical.categories.forEach(category => {
-        const categoryName = Object.keys(category.source.roles)[0]
-        categoricalData[categoryName] = category
-    })
+        const roles = Object.keys(category.source.roles);
+        roles.forEach(role => {
+            categoricalData[role] = category;
+            roleToColumn[role] = category.source.displayName;
+        });
+    });
 
-    const category = categoricalData["label"]
+    console.log("Categorical Data:", categoricalData);
+    console.log("Role to Column Mapping:", roleToColumn);
 
-    const labelData = categoricalData["label"].values
-    const labelColumn = categoricalData["label"].source.displayName
+    const category = categoricalData["label"];
 
-    const dateData = categoricalData["date"].values
-    const dateColumn = categoricalData["date"].source.displayName
+    const labelData = categoricalData["label"].values;
+    const labelColumn = roleToColumn["label"];
 
-    const linkData = categoricalData["link"] ? categoricalData["link"].values : false
+    const dateData = categoricalData["date"].values;
+    const dateColumn = roleToColumn["date"];
 
-    const descriptionData = categoricalData["description"] ? categoricalData["description"].values : false
-    const descriptionColumn = categoricalData["description"] ? categoricalData["description"].source.displayName : false
+    const linkData = categoricalData["link"] ? categoricalData["link"].values : false;
 
-    const imageData = categoricalData["image_url"] ? categoricalData["image_url"].values : false
+    const descriptionData = categoricalData["description"] ? categoricalData["description"].values : false;
+    const descriptionColumn = roleToColumn["description"];
+
+    const imageData = categoricalData["image_url"] ? categoricalData["image_url"].values : false;
+
+    const labelTooltipData = categoricalData["labelTooltip"] ? categoricalData["labelTooltip"].values : descriptionData;
+    const labelTooltipColumn = roleToColumn["labelTooltip"];
 
     const dataLength = Math.min(dateData.length, labelData.length);
     for (let i = 0; i < dataLength; i++) {
@@ -1624,6 +1634,8 @@ function generateViewModel(options: VisualUpdateOptions, host: IVisualHost) {
         element.labelColumn = labelColumn;
         element.dateColumn = dateColumn;
         element.descriptionColumn = descriptionColumn;
+        element.labelTooltip = labelTooltipData && labelTooltipData[i] ? labelTooltipData[i].toString() : '';
+        element.labelTooltipColumn = labelTooltipColumn;
 
         element.selectionId = selectionId;
         element.dateAsInt = element.date.getTime();
@@ -1634,20 +1646,19 @@ function generateViewModel(options: VisualUpdateOptions, host: IVisualHost) {
         element.iconColor = getCategoricalObjectValue(category, i, 'dataPoint', 'iconColor', { "solid": { "color": "black" } }).solid.color;
         element.top = getCategoricalObjectValue(category, i, 'dataPoint', 'top', element.top);
         element.customVertical = getCategoricalObjectValue(category, i, 'dataPoint', 'customVertical', element.customVertical);
-
         element.verticalOffset = getCategoricalObjectValue(category, i, 'dataPoint', 'verticalOffset', element.verticalOffset);
-
         element.annotationStyle = getCategoricalObjectValue(category, i, 'dataPoint', 'annotationStyle', element.annotationStyle);
         element.labelOrientation = getCategoricalObjectValue(category, i, 'dataPoint', 'labelOrientation', element.labelOrientation);
 
+        console.log(`DataPoint ${i}:`, element);
+
         if (element.date) {
-            viewModel.dataPoints.push(element)
+            viewModel.dataPoints.push(element);
         }
     }
 
     return viewModel;
 }
-
 
 /** Gets the settings value 
  * @param objects The powerbi.DataViewObjects

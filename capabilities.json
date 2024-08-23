@@ -24,6 +24,11 @@
             "displayName": "Optional Description",
             "name": "description",
             "kind": "GroupingOrMeasure"
+        },
+        {
+            "displayName": "Label Tooltip",
+            "name": "labelTooltip",
+            "kind": "GroupingOrMeasure"
         }
     ],
     "objects": {
@@ -963,6 +968,7 @@
             }
         }
     },
+    
     "sorting": {
         "default": {}
     },
@@ -1010,6 +1016,11 @@
                         {
                             "for": {
                                 "in": "description"
+                            }
+                        },
+                        {
+                            "for": {
+                                "in": "labelTooltip"
                             }
                         }
                     ]
