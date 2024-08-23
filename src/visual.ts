@@ -1464,7 +1464,11 @@ export class Visual implements IVisual {
             color: element.textColor
         }]
 
-        const makeAnnotations = svgAnnotations.annotation()
+        let makeAnnotations
+
+        makeAnnotations = 1;
+
+        makeAnnotations = svgAnnotations.annotation()
             .annotations(annotationsData)
             .type(new svgAnnotations.annotationCustomType(svgAnnotations['annotationLabel'], element.alignment))
 
