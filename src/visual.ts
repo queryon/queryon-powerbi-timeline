@@ -1691,29 +1691,25 @@ function createFormatter(format, precision?: any, value?: number) {
 
 function wrap(text, width) {
     text.each(function () {
+        const text = d3.select(this);
+        const words = text.text().split(/\s+/).reverse();
 
-        const text = d3.select(this)
-        const words = text.text().split(/\s+/).reverse()
+        const lineHeight = 1;
+        const x = text.attr("x");
+        const y = text.attr("y");
+        const dy = 0;
 
-        const lineHeight = 1
-        const x = text.attr("x")
-        const y = text.attr("y")
-        const dy = 0
+        let line = [];
+        let lineNumber = 0;
+        
+        let tspan = text.text(null)
+            .append("tspan")
+            .attr("x", x)
+            .attr("y", y)
+            .attr("dy", dy + "em");
 
-        let word,
-            line = [],
-            lineNumber = 0,
-            
-            tspan = text.text(null)
-
-                .append("tspan")
-
-                // .attr("font-family", fontFamily)
-                // .attr("font-size", textSize)
-                .attr("x", x)
-                .attr("y", y)
-                .attr("dy", dy + "em");
-        while (word = words.pop()) {
+        let word;
+        while ((word = words.pop())) {
             line.push(word);
             tspan.text(line.join(" "));
             if (tspan.node().getComputedTextLength() > width) {
