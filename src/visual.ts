@@ -101,7 +101,7 @@ export class Visual implements IVisual {
         this.tooltipServiceWrapper = createTooltipServiceWrapper(
             options.host.tooltipService,
             options.element);
-        this.fontHeightLib = {}
+        this.fontHeightLib = {}      
     }
 
     // Handle context menu - right click 
@@ -732,24 +732,26 @@ export class Visual implements IVisual {
                             if (!this.textSettings.boldTitles) { this.container.selectAll('.annotationSelector .annotation-note-title').style('font-weight', "normal"); }
                         }
                     });
-                });
-                this.addTooltipsToAnnotations(element);
+                })
+                .selectAll('.annotation-note-content') // Select the annotation-note-content
+                .on('mouseover', (event: any, d: any) => {
+                    const mouseEvent: MouseEvent = <MouseEvent>d3.event;
+                    const eventTarget: EventTarget = mouseEvent.target;
+                    let args = []
 
-                
+                    console.log(element)
+            
+                    args = [{
+                        displayName: element.labelTooltipColumn,
+                        value: element.labelTooltip
+                    }]
+        
+                    
+                    this.tooltipServiceWrapper.addTooltip(d3.select(<Element>eventTarget),
+                        (tooltipEvent: TooltipEventArgs<number>) => args,
+                        (tooltipEvent: TooltipEventArgs<number>) => null);
+                }, true);
         });
-    }
-
-    private addTooltipsToAnnotations(element: DataPoint) {
-        const tooltipElement = element; // Create a new variable in the correct scope
-        this.container.selectAll('.annotation-note')
-            .attr('title', tooltipElement.labelTooltip || tooltipElement.label)
-            .on('mouseover', function() {
-                console.log(tooltipElement);
-                d3.select(this).style('cursor', 'pointer');
-            })
-            .on('mouseout', function() {
-                d3.select(this).style('cursor', 'default');
-            });
     }
 
     private configureImagesTimeline(state: ChartDrawingState) {
@@ -863,7 +865,7 @@ export class Visual implements IVisual {
     public update(options: VisualUpdateOptions) {
         // Signal the start of the rendering process
         this.events.renderingStarted(options);
-    
+        
         // Generate the view model from the incoming data
         this.viewModel = generateViewModel(options, this.host);
     
