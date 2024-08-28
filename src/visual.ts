@@ -101,7 +101,7 @@ export class Visual implements IVisual {
         this.tooltipServiceWrapper = createTooltipServiceWrapper(
             options.host.tooltipService,
             options.element);
-        this.fontHeightLib = {}      
+        this.fontHeightLib = {}
     }
 
     // Handle context menu - right click 
@@ -706,12 +706,12 @@ export class Visual implements IVisual {
             if (element.annotationStyle === 'textOnly') {
                 makeAnnotations.disable(["connector"]);
             }
-    
+
             // Append images
             if (element.top) { imgCountTop++; imgCounter = imgCountTop; }
             else { imgCountBottom++; imgCounter = imgCountBottom; }
             this.appendImageToTimeline(element, state, orientation, imgCounter);
-    
+
             this.container
                 .append("g")
                 .attr('class', `annotation_selector_${element.selectionId.getKey().replace(/\W/g, '')} annotationSelector`)
@@ -736,24 +736,30 @@ export class Visual implements IVisual {
                 })
                 .selectAll('.annotation-note-content') // Select the annotation-note-content
                 .on('mouseover', (event: any, d: any) => {
-
-                    if(!element.labelTooltipColumn)
-                    {
+                    if (!element.tooltips || element.tooltips.length === 0) {
                         return;
                     }
-
+                
                     const mouseEvent: MouseEvent = <MouseEvent>d3.event;
                     const eventTarget: EventTarget = mouseEvent.target;
-                    let args = []
-
-                    console.log(element)
-            
-                    args = [{
-                        displayName: element.labelTooltipColumn,
-                        value: element.labelTooltip
-                    }]
-        
-                    
+                    let args = [];
+                
+                    // Add all tooltips to the args array
+                    element.tooltips.forEach(tooltip => {
+                        args.push({
+                            displayName: tooltip.displayName,
+                            value: tooltip.value
+                        });
+                    });
+                
+                    // If there's a specific labelTooltip, add it first
+                    if (element.labelTooltipColumn && element.labelTooltip) {
+                        args.unshift({
+                            displayName: element.labelTooltipColumn,
+                            value: element.labelTooltip
+                        });
+                    }
+                
                     this.tooltipServiceWrapper.addTooltip(d3.select(<Element>eventTarget),
                         (tooltipEvent: TooltipEventArgs<number>) => args,
                         (tooltipEvent: TooltipEventArgs<number>) => null);
@@ -872,43 +878,43 @@ export class Visual implements IVisual {
     public update(options: VisualUpdateOptions) {
         // Signal the start of the rendering process
         this.events.renderingStarted(options);
-        
+
         // Generate the view model from the incoming data
         this.viewModel = generateViewModel(options, this.host);
-    
+
         // Initialize the state object to track various aspects of the chart
         const state: ChartDrawingState = new ChartDrawingState();
         state.data = this.viewModel.dataPoints;
-    
+
         // Check if the data size is within acceptable limits
         if (this.validateDataSizeConstraints(state.data, options)) {
             this.events.renderingFailed(options);
             return;
         }
-    
+
         // Clear the canvas and reset global variables
         this.setEmptyCanvas();
         this.setDefaultGlobals();
-    
+
         // Set the date range for the timeline
         this.setDataRange(this.viewModel.dataPoints);
-    
+
         // Calculate additional margins for images
         state.addToMargin = this.getAdditionalMargin();
-    
+
         // Create a date formatter based on user settings
         state.dateValueFormatter = this.createDateFormatter(options);
-    
+
         // Process and filter the data
         this.filterAndProcessData(state);
-    
+
         // Separate data points with images
         state.filteredWithImage = state.filteredData.filter(el => el.image);
         const filteredData = state.filteredData;
-    
+
         // Ensure minimum width for text wrapping
         if (this.textSettings.wrap < 90) { this.textSettings.wrap = 90; }
-    
+
         // Set the width of the visual
         if (!this.axisSettings.manualScalePixel || !this.axisSettings.customPixel || isNaN(this.axisSettings.customPixel)) {
             this.width = options.viewport.width - 20;
@@ -917,16 +923,16 @@ export class Visual implements IVisual {
         }
         this.height = options.viewport.height;
         this.barHt = this.styleSettings.barHt;
-    
+
         // Call the new method to configure layout and formatting
         this.configureLayoutAndFormatting(state, filteredData);
-    
+
         // Set padding and create the time scale
         this.setPadding(state);
         state.scale = d3.scaleTime()
             .domain([this.minVal, this.maxVal])
             .range([0, this.width - (this.padding * 2)]);
-    
+
         // Configure the chart based on the selected style
         if (this.styleSettings.timelineStyle !== "image") {
             this.configureChartBasedOnStyle(state);
@@ -935,22 +941,22 @@ export class Visual implements IVisual {
             // Configure the timeline for image-focused style
             this.configureImagesTimeline(state);
         }
-    
+
         // Remove bold style from titles if boldTitles is off
         if (!this.textSettings.boldTitles) {
             this.container.selectAll('.annotationSelector  .annotation-note-title ').style('font-weight', "normal");
         }
-    
+
         // Set up event handlers
         this.svg.on('contextmenu', contextFunction => { this.handleContextMenuRightClick() });
         this.svg.on('click', clickFunction => { this.handleSvgClick() });
         this.svg.on('mouseover', mouseoverFunction => { this.handleMouseOver() });
-    
+
         // Set up download calendar if enabled
         if (this.downloadSettings.downloadCalendar) {
             this.setupDownloadCalendar(state);
         }
-    
+
         if (this.styleSettings.today && this.axisSettings.manualScalePixel && this.styleSettings.todayFocus) {
             const sandboxHost: any = d3.select('#sandbox-host');
             if (sandboxHost.node()) {
@@ -963,7 +969,7 @@ export class Visual implements IVisual {
         if (this.styleSettings.today && this.axisSettings.manualScalePixel && this.styleSettings.maxDateFocus) {
             this.scrollToMaxDate(state);
         }
-    
+
         // Signal the completion of the rendering process
         this.events.renderingFinished(options);
     }
@@ -974,17 +980,17 @@ export class Visual implements IVisual {
             const containerWidth = sandboxHost.node().clientWidth;
             const contentWidth = this.width;
             const maxScrollLeft = contentWidth - containerWidth;
-            
+
             // Ensure we don't set a negative scroll value
             const scrollPosition = Math.max(0, maxScrollLeft);
-            
+
             sandboxHost.node().scrollLeft = scrollPosition;
         }
     }
 
     private configureChartBasedOnStyle(state: ChartDrawingState): void {
         this.svg.attr("width", this.width - 4);
-    
+
         switch (this.styleSettings.timelineStyle) {
             case "line":
                 this.configureLineChart(state);
@@ -996,11 +1002,11 @@ export class Visual implements IVisual {
                 this.configureMinimalistView(state);
                 break;
         }
-    
+
         // Set the final height of the SVG
         state.finalHeight = Math.max(this.height - 4, state.svgHeightTracking);
         this.svg.attr("height", state.finalHeight);
-    
+
         // Add transparent container for scrolling if needed
         let transparentContainer;
         if (state.needScroll && this.styleSettings.minimalistAxis == "bottom") {
@@ -1011,50 +1017,50 @@ export class Visual implements IVisual {
                 .attr('y', state.axisMarginTop)
                 .attr('height', this.height);
         }
-    
+
         // Set up the axis
         this.axisSetup(state, transparentContainer);
-    
+
         // Add the "today" icon if enabled
         this.appendTodayIcon(state);
-    
+
         // Configure timeline annotations if enabled
         if (state.enabledAnnotations) {
             this.configureTimelineAnnotations(state);
         }
     }
-    
+
     private configureLayoutAndFormatting(state: ChartDrawingState, filteredData: DataPoint[]): void {
         // Adjust spacing for certain annotation styles
         if (this.textSettings.annotationStyle === 'annotationCallout' || this.textSettings.annotationStyle === 'annotationCalloutCurve') {
             state.spacing += 10;
         }
-    
+
         // Handle auto-staggering of text
         if (this.textSettings.autoStagger || !this.textSettings.spacing) {
             this.textSettings.spacing = state.spacing;
-            this.host.persistProperties({ 
-                merge: [{ 
-                    objectName: 'textSettings', 
-                    selector: null, 
-                    properties: { spacing: state.spacing } 
-                }] 
+            this.host.persistProperties({
+                merge: [{
+                    objectName: 'textSettings',
+                    selector: null,
+                    properties: { spacing: state.spacing }
+                }]
             });
         }
-    
+
         // Calculate top margin for staggered layout
         state.marginTopStagger += ((filteredData.filter(element => element.top).length) * this.textSettings.spacing) + 20;
         state.marginTopStagger = Math.max(this.marginTop, state.marginTopStagger);
-    
+
         // Adjust margin for images
         if (this.imageSettings.style !== "default" && filteredData.filter(el => !el.top && el.image).length > 0) {
             state.marginTopStagger = Math.max(state.marginTopStagger, state.addToMargin);
         }
-    
+
         // Set final top margin based on style settings
         if (this.styleSettings.timelineStyle !== "image") {
-            state.finalMarginTop = !this.textSettings.stagger || this.styleSettings.timelineStyle == "minimalist" 
-                ? this.marginTop 
+            state.finalMarginTop = !this.textSettings.stagger || this.styleSettings.timelineStyle == "minimalist"
+                ? this.marginTop
                 : state.marginTopStagger;
             if (this.styleSettings.timelineStyle != "minimalist" && filteredData.filter(el => el.top && el.customVertical).length > 0) {
                 state.finalMarginTop = Math.max(state.finalMarginTop, state.maxOffsetTop + this.textSettings.spacing);
@@ -1062,14 +1068,14 @@ export class Visual implements IVisual {
         } else {
             state.finalMarginTop = 20;
         }
-    
+
         // Handle download calendar positioning
         state.downloadTop = this.downloadSettings.downloadCalendar && this.downloadSettings.position.split(",")[0] == "TOP";
         state.downloadBottom = this.downloadSettings.downloadCalendar && this.downloadSettings.position.split(",")[0] !== "TOP";
-        if (state.downloadTop) { 
-            state.finalMarginTop += 35; 
+        if (state.downloadTop) {
+            state.finalMarginTop += 35;
         }
-    
+
         // Set up axis formatting
         state.axisFormat = this.axisSettings.dateFormat != "customJS" ? this.axisSettings.dateFormat : this.axisSettings.customJS;
         state.axisValueFormatter = state.axisFormat == "same" ? state.dateValueFormatter : createFormatter(state.axisFormat);
@@ -1518,7 +1524,7 @@ export class Visual implements IVisual {
             .type(new svgAnnotations.annotationCustomType(svgAnnotations['annotationLabel'], element.alignment))
 
 
-            
+
 
 
         const anno = this.container
@@ -1583,8 +1589,15 @@ export class Visual implements IVisual {
 }
 
 function generateViewModel(options: VisualUpdateOptions, host: IVisualHost) {
+
+
+
+
     const dataViews = options.dataViews;
     const dataObjects = dataViews[0].metadata.objects;
+
+
+
 
     const viewModel: ViewModel = {
         dataPoints: [],
@@ -1607,8 +1620,8 @@ function generateViewModel(options: VisualUpdateOptions, host: IVisualHost) {
         });
     });
 
-    console.log("Categorical Data:", categoricalData);
-    console.log("Role to Column Mapping:", roleToColumn);
+    // console.log("Categorical Data:", categoricalData);
+    // console.log("Role to Column Mapping:", roleToColumn);
 
     const category = categoricalData["label"];
 
@@ -1625,26 +1638,91 @@ function generateViewModel(options: VisualUpdateOptions, host: IVisualHost) {
 
     const imageData = categoricalData["image_url"] ? categoricalData["image_url"].values : false;
 
-    const labelTooltipData = categoricalData["labelTooltip"] ? categoricalData["labelTooltip"].values : descriptionData;
-    const labelTooltipColumn = roleToColumn["labelTooltip"];
+
+    // Identify all tooltip fields
+    const tooltipFields = Object.keys(roleToColumn).filter(role => role.startsWith("tooltip"));
+    // console.log("Tooltip Fields:", tooltipFields);
 
     const dataLength = Math.min(dateData.length, labelData.length);
+
+    let tempTooltips: { name: string; values: powerbi.PrimitiveValue[]; }[] = [];
+
     for (let i = 0; i < dataLength; i++) {
+        try {
+            if (dataViews[0].categorical.categories[i].source.roles.labelTooltip) {
+                const name = dataViews[0].categorical.categories[i].source.displayName;
+                const values = dataViews[0].categorical.categories[i].values;
+
+                // console.log(name);
+                // console.log(values);
+
+                // Check if an entry with the same name and values already exists
+                const isDuplicate = tempTooltips.some(tooltip =>
+                    tooltip.name === name &&
+                    JSON.stringify(tooltip.values) === JSON.stringify(values)
+                );
+
+                if (!isDuplicate) {
+                    tempTooltips.push({ name, values });
+                }
+            }
+        } catch (error) {
+        }
+    }
+
+    // console.log(tempTooltips);
+
+    for (let i = 0; i < dataLength; i++) {
+
+
+
+
+
+
+
         const element: DataPoint = new DataPoint();
         const selectionId = host.createSelectionIdBuilder()
             .withCategory(category, i)
             .createSelectionId();
 
         element.label = labelData[i] ? (<string>labelData[i]).replace(/(\r\n|\n|\r)/gm, " ") : element.label;
-        element.date = new Date(<any>dateData[i]); //any because primitive can be a boolean
+        element.date = new Date(<any>dateData[i]);
+
+        // Process all tooltip fields
+
+
+        element.tooltips = [];
+        tempTooltips.forEach(tooltip => {
+            if (tooltip.values[i] !== null && tooltip.values[i] !== undefined) {
+                element.tooltips.push({
+                    displayName: tooltip.name,
+                    value: tooltip.values[i]
+                });
+            }
+        });
+
+
+
+        // tempTooltips.forEach(tooltip => {
+
+        //     console.log(tooltip.name + " | " +tooltip.values[i])
+        // })
+        // element.tooltips = tooltipFields.map(field => ({
+        //     displayName: roleToColumn[field],
+        //     value: categoricalData[field] ? categoricalData[field].values[i] : null
+        // })).filter(tooltip => tooltip.value !== null);
+
+        console.log(element)
+
+
         element.URL = linkData[i] ? linkData[i] : element.URL;
         element.image = imageData[i] ? imageData[i] : element.image;
         element.description = descriptionData[i] ? descriptionData[i].replace(/(\r\n|\n|\r)/gm, " ") : element.description;
         element.labelColumn = labelColumn;
         element.dateColumn = dateColumn;
         element.descriptionColumn = descriptionColumn;
-        element.labelTooltip = labelTooltipData && labelTooltipData[i] ? labelTooltipData[i].toString() : '';
-        element.labelTooltipColumn = labelTooltipColumn;
+
+        // console.log("adding tooltips")
 
         element.selectionId = selectionId;
         element.dateAsInt = element.date.getTime();
@@ -1659,7 +1737,7 @@ function generateViewModel(options: VisualUpdateOptions, host: IVisualHost) {
         element.annotationStyle = getCategoricalObjectValue(category, i, 'dataPoint', 'annotationStyle', element.annotationStyle);
         element.labelOrientation = getCategoricalObjectValue(category, i, 'dataPoint', 'labelOrientation', element.labelOrientation);
 
-        console.log(`DataPoint ${i}:`, element);
+        // console.log(`DataPoint ${i}:`, element);
 
         if (element.date) {
             viewModel.dataPoints.push(element);
@@ -1754,7 +1832,7 @@ function wrap(text, width) {
 
         let line = [];
         let lineNumber = 0;
-        
+
         let tspan = text.text(null)
             .append("tspan")
             .attr("x", x)

@@ -40,6 +40,7 @@ export class DataPoint {
 
     public labelTooltip: string = '';
     public labelTooltipColumn: string = '';
+    public tooltips: { displayName: string; value: powerbi.PrimitiveValue; }[] = [];
 
 
     public isImageValid():boolean{
