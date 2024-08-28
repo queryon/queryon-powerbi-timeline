@@ -161,8 +161,9 @@ export class Visual implements IVisual {
                 })
             }
             this.tooltipServiceWrapper.addTooltip(d3.select(<Element>eventTarget),
-                (tooltipEvent: TooltipEventArgs<number>) => args,
-                (tooltipEvent: TooltipEventArgs<number>) => null);
+                () => args,
+                () => null
+            );
         }
     }
 
@@ -735,6 +736,12 @@ export class Visual implements IVisual {
                 })
                 .selectAll('.annotation-note-content') // Select the annotation-note-content
                 .on('mouseover', (event: any, d: any) => {
+
+                    if(!element.labelTooltipColumn)
+                    {
+                        return;
+                    }
+
                     const mouseEvent: MouseEvent = <MouseEvent>d3.event;
                     const eventTarget: EventTarget = mouseEvent.target;
                     let args = []
