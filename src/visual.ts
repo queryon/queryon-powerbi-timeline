@@ -1648,7 +1648,6 @@ function generateViewModel(options: VisualUpdateOptions, host: IVisualHost) {
 
     let tempTooltips: { name: string; values: powerbi.PrimitiveValue[]; }[] = [];
 
-    let iValueFormatter = vf.create({ format: "MMMM %d" });
 
 
     for (let i = 0; i < dataLength; i++) {
@@ -1656,34 +1655,32 @@ function generateViewModel(options: VisualUpdateOptions, host: IVisualHost) {
             if (dataViews[0].categorical.categories[i].source.roles.labelTooltip) {
                 const name = dataViews[0].categorical.categories[i].source.displayName;
                 let values = dataViews[0].categorical.categories[i].values;
-
                 
-
-    
                 if (dataViews[0].categorical.categories[i].source.type.dateTime === true) {
-
-                    console.log(dataViews[0].categorical.categories[i].source)
-
-                    const dateObject: Date = new Date(String(values[i]));
-
-                    console.log(dateObject)
-
-
-                    console.log(iValueFormatter.format(dateObject))
-
-
+                    console.log();
                     
+                    let iValueFormatter = vf.create({ format: dataViews[0].categorical.categories[i].source.format });
+                    
+                    // Create a new array to store formatted date values
+                    const formattedValues = values.map(value => {
+                        const dateObject: Date = new Date(String(value));
+                        return iValueFormatter.format(dateObject);
+                    });
+                    
+                    // Replace the original values with the formatted ones
+                    values = formattedValues;
                 }
-    
-                // Check if an entry with the same name and values already exists
-                const isDuplicate = tempTooltips.some(tooltip =>
-                    tooltip.name === name &&
-                    JSON.stringify(tooltip.values) === JSON.stringify(values)
-                );
-    
-                if (!isDuplicate) {
-                    tempTooltips.push({ name, values });
+                
+                // Check if an entry with the same name already exists
+                const existingIndex = tempTooltips.findIndex(tooltip => tooltip.name === name);
+                
+                if (existingIndex !== -1) {
+                    // Remove the existing entry
+                    tempTooltips.splice(existingIndex, 1);
                 }
+                
+                // Add the entry to the end of the array
+                tempTooltips.push({ name, values });
             }
         } catch (error) {
             console.error('Error processing data:', error);
