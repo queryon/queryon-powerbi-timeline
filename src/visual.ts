@@ -739,11 +739,11 @@ export class Visual implements IVisual {
                     if (!element.tooltips || element.tooltips.length === 0) {
                         return;
                     }
-                
+
                     const mouseEvent: MouseEvent = <MouseEvent>d3.event;
                     const eventTarget: EventTarget = mouseEvent.target;
-                    let args = [];
-                
+                    const args = [];
+
                     // Add all tooltips to the args array
                     element.tooltips.forEach(tooltip => {
                         args.push({
@@ -751,7 +751,7 @@ export class Visual implements IVisual {
                             value: tooltip.value
                         });
                     });
-                
+
                     // If there's a specific labelTooltip, add it first
                     if (element.labelTooltipColumn && element.labelTooltip) {
                         args.unshift({
@@ -759,7 +759,7 @@ export class Visual implements IVisual {
                             value: element.labelTooltip
                         });
                     }
-                
+
                     this.tooltipServiceWrapper.addTooltip(d3.select(<Element>eventTarget),
                         (tooltipEvent: TooltipEventArgs<number>) => args,
                         (tooltipEvent: TooltipEventArgs<number>) => null);
@@ -876,6 +876,7 @@ export class Visual implements IVisual {
 
 
     public update(options: VisualUpdateOptions) {
+
         // Signal the start of the rendering process
         this.events.renderingStarted(options);
 
@@ -1590,7 +1591,7 @@ export class Visual implements IVisual {
 
 function generateViewModel(options: VisualUpdateOptions, host: IVisualHost) {
 
-
+    console.log(options)
 
 
     const dataViews = options.dataViews;
@@ -1647,26 +1648,45 @@ function generateViewModel(options: VisualUpdateOptions, host: IVisualHost) {
 
     let tempTooltips: { name: string; values: powerbi.PrimitiveValue[]; }[] = [];
 
+    let iValueFormatter = vf.create({ format: "MMMM %d" });
+
+
     for (let i = 0; i < dataLength; i++) {
         try {
             if (dataViews[0].categorical.categories[i].source.roles.labelTooltip) {
                 const name = dataViews[0].categorical.categories[i].source.displayName;
-                const values = dataViews[0].categorical.categories[i].values;
+                let values = dataViews[0].categorical.categories[i].values;
 
-                // console.log(name);
-                // console.log(values);
+                
 
+    
+                if (dataViews[0].categorical.categories[i].source.type.dateTime === true) {
+
+                    console.log(dataViews[0].categorical.categories[i].source)
+
+                    const dateObject: Date = new Date(String(values[i]));
+
+                    console.log(dateObject)
+
+
+                    console.log(iValueFormatter.format(dateObject))
+
+
+                    
+                }
+    
                 // Check if an entry with the same name and values already exists
                 const isDuplicate = tempTooltips.some(tooltip =>
                     tooltip.name === name &&
                     JSON.stringify(tooltip.values) === JSON.stringify(values)
                 );
-
+    
                 if (!isDuplicate) {
                     tempTooltips.push({ name, values });
                 }
             }
         } catch (error) {
+            console.error('Error processing data:', error);
         }
     }
 
@@ -1712,7 +1732,7 @@ function generateViewModel(options: VisualUpdateOptions, host: IVisualHost) {
         //     value: categoricalData[field] ? categoricalData[field].values[i] : null
         // })).filter(tooltip => tooltip.value !== null);
 
-        console.log(element)
+        // console.log(element)
 
 
         element.URL = linkData[i] ? linkData[i] : element.URL;
