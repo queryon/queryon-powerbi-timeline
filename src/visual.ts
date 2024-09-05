@@ -1090,7 +1090,10 @@ export class Visual implements IVisual {
     }
 
     private appendTodayIcon(state: ChartDrawingState) {
-        const today = new Date
+        const today = new Date()
+        today.setHours(0, 0, 0, 0);
+
+       
         if (this.styleSettings.today && today >= this.minVal && today <= this.maxVal) {
             this.container
                 .append('path')
@@ -1590,29 +1593,17 @@ export class Visual implements IVisual {
 }
 
 function generateViewModel(options: VisualUpdateOptions, host: IVisualHost) {
-
-    console.log(options)
-
-
     const dataViews = options.dataViews;
     const dataObjects = dataViews[0].metadata.objects;
-
-
-
-
     const viewModel: ViewModel = {
         dataPoints: [],
         settings: new Settings(dataObjects)
     };
-
-    // If no data views, return early
     if (!dataViews || !dataViews[0] || !dataViews[0].categorical) {
         return viewModel;
     }
-
     const categoricalData: Record<string, powerbi.DataViewCategoryColumn> = {};
     const roleToColumn: Record<string, string> = {};
-
     dataViews[0].categorical.categories.forEach(category => {
         const roles = Object.keys(category.source.roles);
         roles.forEach(role => {
@@ -1620,36 +1611,18 @@ function generateViewModel(options: VisualUpdateOptions, host: IVisualHost) {
             roleToColumn[role] = category.source.displayName;
         });
     });
-
-    // console.log("Categorical Data:", categoricalData);
-    // console.log("Role to Column Mapping:", roleToColumn);
-
     const category = categoricalData["label"];
-
     const labelData = categoricalData["label"].values;
     const labelColumn = roleToColumn["label"];
-
     const dateData = categoricalData["date"].values;
     const dateColumn = roleToColumn["date"];
-
     const linkData = categoricalData["link"] ? categoricalData["link"].values : false;
-
     const descriptionData = categoricalData["description"] ? categoricalData["description"].values : false;
     const descriptionColumn = roleToColumn["description"];
-
     const imageData = categoricalData["image_url"] ? categoricalData["image_url"].values : false;
-
-
-    // Identify all tooltip fields
     const tooltipFields = Object.keys(roleToColumn).filter(role => role.startsWith("tooltip"));
-    // console.log("Tooltip Fields:", tooltipFields);
-
     const dataLength = Math.min(dateData.length, labelData.length);
-
-    let tempTooltips: { name: string; values: powerbi.PrimitiveValue[]; }[] = [];
-
-
-
+    const tempTooltips: { name: string; values: powerbi.PrimitiveValue[]; }[] = [];
     for (let i = 0; i < dataLength; i++) {
         try {
             if (dataViews[0].categorical.categories[i].source.roles.labelTooltip) {
@@ -1657,20 +1630,15 @@ function generateViewModel(options: VisualUpdateOptions, host: IVisualHost) {
                 let values = dataViews[0].categorical.categories[i].values;
                 
                 if (dataViews[0].categorical.categories[i].source.type.dateTime === true) {
-                    console.log();
-                    
-                    let iValueFormatter = vf.create({ format: dataViews[0].categorical.categories[i].source.format });
-                    
+                    const iValueFormatter = vf.create({ format: dataViews[0].categorical.categories[i].source.format });
                     // Create a new array to store formatted date values
                     const formattedValues = values.map(value => {
                         const dateObject: Date = new Date(String(value));
                         return iValueFormatter.format(dateObject);
                     });
-                    
                     // Replace the original values with the formatted ones
                     values = formattedValues;
                 }
-                
                 // Check if an entry with the same name already exists
                 const existingIndex = tempTooltips.findIndex(tooltip => tooltip.name === name);
                 
@@ -1683,20 +1651,10 @@ function generateViewModel(options: VisualUpdateOptions, host: IVisualHost) {
                 tempTooltips.push({ name, values });
             }
         } catch (error) {
-            console.error('Error processing data:', error);
+            // console.error('Error processing data:', error);
         }
     }
-
-    // console.log(tempTooltips);
-
     for (let i = 0; i < dataLength; i++) {
-
-
-
-
-
-
-
         const element: DataPoint = new DataPoint();
         const selectionId = host.createSelectionIdBuilder()
             .withCategory(category, i)
@@ -1704,10 +1662,6 @@ function generateViewModel(options: VisualUpdateOptions, host: IVisualHost) {
 
         element.label = labelData[i] ? (<string>labelData[i]).replace(/(\r\n|\n|\r)/gm, " ") : element.label;
         element.date = new Date(<any>dateData[i]);
-
-        // Process all tooltip fields
-
-
         element.tooltips = [];
         tempTooltips.forEach(tooltip => {
             if (tooltip.values[i] !== null && tooltip.values[i] !== undefined) {
@@ -1717,30 +1671,12 @@ function generateViewModel(options: VisualUpdateOptions, host: IVisualHost) {
                 });
             }
         });
-
-
-
-        // tempTooltips.forEach(tooltip => {
-
-        //     console.log(tooltip.name + " | " +tooltip.values[i])
-        // })
-        // element.tooltips = tooltipFields.map(field => ({
-        //     displayName: roleToColumn[field],
-        //     value: categoricalData[field] ? categoricalData[field].values[i] : null
-        // })).filter(tooltip => tooltip.value !== null);
-
-        // console.log(element)
-
-
         element.URL = linkData[i] ? linkData[i] : element.URL;
         element.image = imageData[i] ? imageData[i] : element.image;
         element.description = descriptionData[i] ? descriptionData[i].replace(/(\r\n|\n|\r)/gm, " ") : element.description;
         element.labelColumn = labelColumn;
         element.dateColumn = dateColumn;
         element.descriptionColumn = descriptionColumn;
-
-        // console.log("adding tooltips")
-
         element.selectionId = selectionId;
         element.dateAsInt = element.date.getTime();
         element.customFormat = getCategoricalObjectValue(category, i, 'dataPoint', 'customFormat', element.customFormat);
@@ -1753,9 +1689,6 @@ function generateViewModel(options: VisualUpdateOptions, host: IVisualHost) {
         element.verticalOffset = getCategoricalObjectValue(category, i, 'dataPoint', 'verticalOffset', element.verticalOffset);
         element.annotationStyle = getCategoricalObjectValue(category, i, 'dataPoint', 'annotationStyle', element.annotationStyle);
         element.labelOrientation = getCategoricalObjectValue(category, i, 'dataPoint', 'labelOrientation', element.labelOrientation);
-
-        // console.log(`DataPoint ${i}:`, element);
-
         if (element.date) {
             viewModel.dataPoints.push(element);
         }
