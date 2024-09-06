@@ -44,6 +44,9 @@ export class Visual implements IVisual {
     private readonly maxPadding = 30; // Extracted implicitly from use
     private readonly defaultMarginTop = 10; // Extracted implicitly from use
 
+    private initialRenderComplete: boolean = false;
+
+
     private events: IVisualEventService;
 
     private host: IVisualHost;
@@ -967,8 +970,9 @@ export class Visual implements IVisual {
             }
         }
 
-        if (this.styleSettings.today && this.axisSettings.manualScalePixel && this.styleSettings.maxDateFocus) {
+        if (this.styleSettings.today && this.axisSettings.manualScalePixel && this.styleSettings.maxDateFocus && !this.initialRenderComplete) {
             this.scrollToMaxDate(state);
+            this.initialRenderComplete = true;
         }
 
         // Signal the completion of the rendering process
@@ -1093,7 +1097,7 @@ export class Visual implements IVisual {
         const today = new Date()
         today.setHours(0, 0, 0, 0);
 
-       
+
         if (this.styleSettings.today && today >= this.minVal && today <= this.maxVal) {
             this.container
                 .append('path')
@@ -1628,7 +1632,7 @@ function generateViewModel(options: VisualUpdateOptions, host: IVisualHost) {
             if (dataViews[0].categorical.categories[i].source.roles.labelTooltip) {
                 const name = dataViews[0].categorical.categories[i].source.displayName;
                 let values = dataViews[0].categorical.categories[i].values;
-                
+
                 if (dataViews[0].categorical.categories[i].source.type.dateTime === true) {
                     const iValueFormatter = vf.create({ format: dataViews[0].categorical.categories[i].source.format });
                     // Create a new array to store formatted date values
@@ -1641,12 +1645,12 @@ function generateViewModel(options: VisualUpdateOptions, host: IVisualHost) {
                 }
                 // Check if an entry with the same name already exists
                 const existingIndex = tempTooltips.findIndex(tooltip => tooltip.name === name);
-                
+
                 if (existingIndex !== -1) {
                     // Remove the existing entry
                     tempTooltips.splice(existingIndex, 1);
                 }
-                
+
                 // Add the entry to the end of the array
                 tempTooltips.push({ name, values });
             }
