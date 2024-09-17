@@ -25,6 +25,10 @@
     "powerbi-visuals-utils-formattingutils": "6.0.0",
     "powerbi-visuals-utils-tooltiputils": "^2.3.1"
   },
+  
+  "overrides": {
+    "d3-color": "^3.1.0"
+  },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^5.0.0",
     "@typescript-eslint/parser": "^5.0.0",
