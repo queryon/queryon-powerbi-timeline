@@ -108,8 +108,8 @@ export class Visual implements IVisual {
     }
 
     // Handle context menu - right click 
-    private handleContextMenuRightClick() {
-        const mouseEvent: MouseEvent = <MouseEvent>d3.event;
+    private handleContextMenuRightClick(event) {
+        const mouseEvent: MouseEvent = <MouseEvent>event;
         const eventTarget: EventTarget = mouseEvent.target;
         const dataPoint: any = d3.select(<Element>eventTarget).datum();
         this.selectionManager.showContextMenu(dataPoint ? dataPoint.selectionId : {}, {
@@ -120,8 +120,8 @@ export class Visual implements IVisual {
     }
 
     // Handle click on/out bar  
-    private handleSvgClick() {
-        const mouseEvent: MouseEvent = <MouseEvent>d3.event;
+    private handleSvgClick(event) {
+        const mouseEvent: MouseEvent = <MouseEvent>event;
         const eventTarget: EventTarget = mouseEvent.target;
         const dataPoint: any = d3.select(<Element>eventTarget).datum();
         if (!dataPoint) {
@@ -140,8 +140,8 @@ export class Visual implements IVisual {
         }
     }
 
-    private handleMouseOver() {
-        const mouseEvent: MouseEvent = <MouseEvent>d3.event;
+    private handleMouseOver(event) {
+        const mouseEvent: MouseEvent = event;
         const eventTarget: EventTarget = mouseEvent.target;
         let args = []
         const dataPoint: any = d3.select(<Element>eventTarget).datum();
@@ -743,7 +743,7 @@ export class Visual implements IVisual {
                         return;
                     }
 
-                    const mouseEvent: MouseEvent = <MouseEvent>d3.event;
+                    const mouseEvent: MouseEvent = event;
                     const eventTarget: EventTarget = mouseEvent.target;
                     const args = [];
 
@@ -952,9 +952,9 @@ export class Visual implements IVisual {
         }
 
         // Set up event handlers
-        this.svg.on('contextmenu', contextFunction => { this.handleContextMenuRightClick() });
-        this.svg.on('click', clickFunction => { this.handleSvgClick() });
-        this.svg.on('mouseover', mouseoverFunction => { this.handleMouseOver() });
+        this.svg.on('contextmenu', (event) => { this.handleContextMenuRightClick(event); });
+        this.svg.on('click', (event) => { this.handleSvgClick(event); });
+        this.svg.on('mouseover', (event) => { this.handleMouseOver(event); });
 
         // Set up download calendar if enabled
         if (this.downloadSettings.downloadCalendar) {
